@@ -32,10 +32,13 @@ using Caly.Core.Models;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf;
+using Caly.Pdf.Layout;
 using Caly.Pdf.Models;
 using UglyToad.PdfPig.Actions;
+using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.DocumentLayoutAnalysis;
+using EdgeType = Caly.Pdf.Layout.EdgeType;
 
 namespace Caly.Core.Handlers
 {
@@ -674,6 +677,26 @@ namespace Caly.Core.Handlers
             var yellowPen = new Pen(yellowBrush, 0.5);
 
             PdfWord? previousWord = null;
+
+            var edges = CalyTextEdgesExtractor.GetEdges(control.PdfTextLayer.TextBlocks.SelectMany(b=>b.TextLines.SelectMany(l=>l.Words)));
+
+            var redPenEdge = new Pen(redBrush, 2);
+            foreach (var edge in edges[EdgeType.Left])
+            {
+                context.DrawLine(redPenEdge, new Point( edge.Point1.X, edge.Point1.Y), new Point(edge.Point2.X, edge.Point2.Y));
+            }
+
+            var bluePenEdge = new Pen(blueBrush, 2);
+            foreach (var edge in edges[EdgeType.Mid])
+            {
+                context.DrawLine(bluePenEdge, new Point(edge.Point1.X, edge.Point1.Y), new Point(edge.Point2.X, edge.Point2.Y));
+            }
+
+            var greenPenEdge = new Pen(greenBrush, 2);
+            foreach (var edge in edges[EdgeType.Right])
+            {
+                context.DrawLine(greenPenEdge, new Point(edge.Point1.X, edge.Point1.Y), new Point(edge.Point2.X, edge.Point2.Y));
+            }
 
             foreach (var block in control.PdfTextLayer.TextBlocks)
             {

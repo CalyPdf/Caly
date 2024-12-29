@@ -75,6 +75,9 @@ namespace Caly.Pdf
 
             var letters = CalyDuplicateOverlappingTextProcessor.GetInPlace(page.Letters, token);
             var words = CalyNNWordExtractor.Instance.GetWords(letters, token);
+
+            var edges = CalyTextEdgesExtractor.GetEdges(words);
+
             var pdfBlocks = CalyDocstrum.Instance.GetBlocks(words, token);
 
             int wordIndex = 0;
