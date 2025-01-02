@@ -28,13 +28,32 @@ namespace Caly.Core.Controls
 
     internal sealed class CalyLayoutTransformControl : LayoutTransformControl, IScrollSnapPointsInfo
     {
+        private ItemsPresenter? _itemsPresenter;
         private IScrollSnapPointsInfo? _scrollSnapPointsInfoImplementation;
+
+        public override void ApplyTemplate()
+        {
+            base.ApplyTemplate();
+
+            if (_itemsPresenter is null)
+            {
+                _itemsPresenter = this.FindDescendantOfType<ItemsPresenter>();
+                if (_itemsPresenter is null)
+                {
+                    throw new NullReferenceException("this.FindDescendantOfType<ItemsPresenter>()");
+                }
+            }
+        }
 
         public IReadOnlyList<double> GetIrregularSnapPoints(Orientation orientation, SnapPointsAlignment snapPointsAlignment)
         {
             if (_scrollSnapPointsInfoImplementation is null)
             {
-                _scrollSnapPointsInfoImplementation = this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                if (_scrollSnapPointsInfoImplementation is null)
+                {
+                    throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                }
             }
             return _scrollSnapPointsInfoImplementation.GetIrregularSnapPoints(orientation, snapPointsAlignment);
         }
@@ -43,7 +62,11 @@ namespace Caly.Core.Controls
         {
             if (_scrollSnapPointsInfoImplementation is null)
             {
-                _scrollSnapPointsInfoImplementation = this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                if (_scrollSnapPointsInfoImplementation is null)
+                {
+                    throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                }
             }
             return _scrollSnapPointsInfoImplementation.GetRegularSnapPoints(orientation, snapPointsAlignment, out offset);
         }
@@ -54,7 +77,11 @@ namespace Caly.Core.Controls
             {
                 if (_scrollSnapPointsInfoImplementation is null)
                 {
-                    _scrollSnapPointsInfoImplementation = this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                    _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                    if (_scrollSnapPointsInfoImplementation is null)
+                    {
+                        throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                    }
                 }
 
                 return _scrollSnapPointsInfoImplementation.AreHorizontalSnapPointsRegular;
@@ -63,7 +90,11 @@ namespace Caly.Core.Controls
             {
                 if (_scrollSnapPointsInfoImplementation is null)
                 {
-                    _scrollSnapPointsInfoImplementation = this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                    _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                    if (_scrollSnapPointsInfoImplementation is null)
+                    {
+                        throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                    }
                 }
                 _scrollSnapPointsInfoImplementation.AreHorizontalSnapPointsRegular = value;
             }
@@ -75,8 +106,11 @@ namespace Caly.Core.Controls
             {
                 if (_scrollSnapPointsInfoImplementation is null)
                 {
-                    _scrollSnapPointsInfoImplementation =
-                        this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                    _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                    if (_scrollSnapPointsInfoImplementation is null)
+                    {
+                        throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                    }
                 }
 
                 return _scrollSnapPointsInfoImplementation.AreVerticalSnapPointsRegular;
@@ -85,8 +119,11 @@ namespace Caly.Core.Controls
             {
                 if (_scrollSnapPointsInfoImplementation is null)
                 {
-                    _scrollSnapPointsInfoImplementation =
-                        this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                    _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                    if (_scrollSnapPointsInfoImplementation is null)
+                    {
+                        throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                    }
                 }
 
                 _scrollSnapPointsInfoImplementation.AreVerticalSnapPointsRegular = value;
@@ -99,7 +136,11 @@ namespace Caly.Core.Controls
             {
                 if (_scrollSnapPointsInfoImplementation is null)
                 {
-                    _scrollSnapPointsInfoImplementation = this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                    _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                    if (_scrollSnapPointsInfoImplementation is null)
+                    {
+                        throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                    }
                 }
                 _scrollSnapPointsInfoImplementation.HorizontalSnapPointsChanged += value;
             }
@@ -112,7 +153,11 @@ namespace Caly.Core.Controls
             {
                 if (_scrollSnapPointsInfoImplementation is null)
                 {
-                    _scrollSnapPointsInfoImplementation = this.FindDescendantOfType<ItemsPresenter>().Panel as VirtualizingStackPanel;
+                    _scrollSnapPointsInfoImplementation = _itemsPresenter!.Panel as IScrollSnapPointsInfo;
+                    if (_scrollSnapPointsInfoImplementation is null)
+                    {
+                        throw new NullReferenceException("_itemsPresenter!.Panel as IScrollSnapPointsInfo");
+                    }
                 }
                 _scrollSnapPointsInfoImplementation.VerticalSnapPointsChanged += value;
             }
