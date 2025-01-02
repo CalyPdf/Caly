@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
+using System.Reactive.Disposables;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -32,10 +33,7 @@ namespace Caly.Core.Controls
         private static readonly Cursor IbeamCursor = new(StandardCursorType.Ibeam);
         private static readonly Cursor HandCursor = new(StandardCursorType.Hand);
 
-        private IDisposable? _pointerMovedDisposable;
-        private IDisposable? _pointerWheelChangedDisposable;
-        private IDisposable? _pointerPressedDisposable;
-        private IDisposable? _pointerReleasedDisposable;
+        private CompositeDisposable? _pointerDisposables;
 
         public static readonly StyledProperty<PdfTextLayer?> PdfTextLayerProperty =
             AvaloniaProperty.Register<PdfPageTextLayerControl, PdfTextLayer?>(nameof(PdfTextLayer));
@@ -129,24 +127,27 @@ namespace Caly.Core.Controls
             if (change.Property == TextSelectionHandlerProperty)
             {
                 // If the textSelectionHandler was already attached, we unsubscribe
-                _pointerMovedDisposable?.Dispose();
-                _pointerWheelChangedDisposable?.Dispose();
-                _pointerPressedDisposable?.Dispose();
-                _pointerReleasedDisposable?.Dispose();
+                _pointerDisposables?.Dispose();
                 
                 if (TextSelectionHandler is not null)
                 {
-                    _pointerMovedDisposable = this.GetObservable(PointerMovedEvent)
+                    var pointerMovedDisposable = this.GetObservable(PointerMovedEvent)
                         .Subscribe(TextSelectionHandler!.OnPointerMoved);
 
-                    _pointerWheelChangedDisposable = this.GetObservable(PointerWheelChangedEvent, handledEventsToo: true)
+                    var pointerWheelChangedDisposable = this.GetObservable(PointerWheelChangedEvent, handledEventsToo: true)
                         .Subscribe(TextSelectionHandler!.OnPointerMoved);
 
-                    _pointerPressedDisposable = this.GetObservable(PointerPressedEvent)
+                    var pointerPressedDisposable = this.GetObservable(PointerPressedEvent)
                         .Subscribe(TextSelectionHandler.OnPointerPressed);
 
-                    _pointerReleasedDisposable = this.GetObservable(PointerReleasedEvent)
+                    var pointerReleasedDisposable = this.GetObservable(PointerReleasedEvent)
                         .Subscribe(TextSelectionHandler.OnPointerReleased);
+
+                    _pointerDisposables = new CompositeDisposable(
+                        pointerMovedDisposable,
+                        pointerWheelChangedDisposable,
+                        pointerPressedDisposable,
+                        pointerReleasedDisposable);
                 }
             }
         }
@@ -154,11 +155,7 @@ namespace Caly.Core.Controls
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnDetachedFromVisualTree(e);
-
-            _pointerMovedDisposable?.Dispose();
-            _pointerWheelChangedDisposable?.Dispose();
-            _pointerPressedDisposable?.Dispose();
-            _pointerReleasedDisposable?.Dispose();
+            _pointerDisposables?.Dispose();
         }
     }
 }
