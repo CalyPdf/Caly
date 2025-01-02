@@ -180,11 +180,6 @@ public sealed class PdfPageItemsControl : ItemsControl
     {
         base.PrepareContainerForItemOverride(container, item, index);
 
-        if (_isEnsureScrollBars)
-        {
-            return;
-        }
-
         if (_isTabDragging ||
             container is not PdfPageItem cp ||
             item is not PdfPageViewModel vm)
@@ -222,11 +217,6 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void _onContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (_isEnsureScrollBars)
-        {
-            return;
-        }
-
         if (e.Property == ContentPresenter.ContentProperty &&
             e.OldValue is PdfPageViewModel vm)
         {
@@ -395,19 +385,17 @@ public sealed class PdfPageItemsControl : ItemsControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        EnsureScrollBars();
         ItemsPanelRoot!.DataContextChanged += ItemsPanelRoot_DataContextChanged;
     }
 
     private void ItemsPanelRoot_DataContextChanged(object? sender, EventArgs e)
     {
-        LayoutUpdated += ExecuteScrollWhenLayoutUpdated;
+        LayoutUpdated += OnLayoutUpdatedOnce;
     }
 
-    private void ExecuteScrollWhenLayoutUpdated(object? sender, EventArgs e)
+    private void OnLayoutUpdatedOnce(object? sender, EventArgs e)
     {
-        LayoutUpdated -= ExecuteScrollWhenLayoutUpdated;
-        EnsureScrollBars();
+        LayoutUpdated -= OnLayoutUpdatedOnce;
 
         // Ensure the pages visibility is set when OnApplyTemplate()
         // is not called, i.e. when a new document is opened but the
@@ -848,44 +836,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         double s = 1 - scale;
         return new Vector(x * s, y * s);
     }
-
-    private bool _isEnsureScrollBars = false;
-
-    /// <summary>
-    /// Ensure the scroll bars are correctly set.
-    /// </summary>
-    private void EnsureScrollBars()
-    {
-        int currentPage = SelectedPageIndex.HasValue ? SelectedPageIndex.Value - 1 : 0;
-
-        try
-        {
-            _isSettingPageVisibility = true;
-            _isEnsureScrollBars = true;
-
-            // There's a bug in VirtualizingStackPanel. Scroll bars do not display correctly
-            // This hack fixes that by scrolling into view a page that's not realised
-            if (currentPage >= GetMinPageIndex() && currentPage <= GetMaxPageIndex())
-            {
-                // Current page is realised
-                if (currentPage != 0)
-                {
-                    ScrollIntoView(0);
-                }
-                else if (currentPage != PageCount - 1)
-                {
-                    ScrollIntoView(PageCount - 1);
-                }
-            }
-        }
-        finally
-        {
-            _isSettingPageVisibility = false;
-            _isEnsureScrollBars = false;
-            ScrollIntoView(currentPage);
-        }
-    }
-
+    
 #if DEBUG
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
