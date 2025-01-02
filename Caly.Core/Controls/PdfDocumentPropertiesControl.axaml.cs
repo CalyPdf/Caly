@@ -25,16 +25,11 @@ public sealed class PdfDocumentPropertiesControl : TemplatedControl
     /// <summary>
     /// Defines the <see cref="FirstColumnWidth"/> property.
     /// </summary>
-    public static readonly StyledProperty<int> FirstColumnWidthProperty = AvaloniaProperty.Register<PdfPageItem, int>(nameof(FirstColumnWidth));
+    public static readonly StyledProperty<int> FirstColumnWidthProperty = AvaloniaProperty.Register<PdfDocumentPropertiesControl, int>(nameof(FirstColumnWidth), DefaultFirstColumnWidth);
 
     public int FirstColumnWidth
     {
         get => GetValue(FirstColumnWidthProperty);
         set => SetValue(FirstColumnWidthProperty, value);
-    }
-
-    static PdfDocumentPropertiesControl()
-    {
-        FirstColumnWidthProperty.OverrideDefaultValue<PdfDocumentPropertiesControl>(DefaultFirstColumnWidth);
     }
 }
