@@ -28,46 +28,24 @@ namespace Caly.Core.Services
         private async Task<IRef<SKPicture>?> GetRenderPageAsync(int pageNumber, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
-            bool hasLock = false;
 
-            SKPicture? pic;
-            try
-            {
-                token.ThrowIfCancellationRequested();
-
-                if (IsDisposed())
+            SKPicture? pic = await ExecuteWithLockAsync(() =>
                 {
-                    return null;
-                }
-
-                await _semaphore.WaitAsync(token);
-                hasLock = true;
-
-                if (IsDisposed())
-                {
-                    return null;
-                }
-
-                token.ThrowIfCancellationRequested();
-
-                pic = _document!.GetPage<SKPicture>(pageNumber);
-            }
-            catch (OperationCanceledException)
-            {
-                throw; // No error picture to generate
-            }
-            catch (Exception e)
-            {
-                Debug.WriteExceptionToFile(e);
-                pic = GetErrorPicture(pageNumber, e, token);
-            }
-            finally
-            {
-                if (hasLock && !IsDisposed())
-                {
-                    _semaphore.Release();
-                }
-            }
+                    try
+                    {
+                        return _document?.GetPage<SKPicture>(pageNumber);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw; // No error picture to generate
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteExceptionToFile(e);
+                        return GetErrorPicture(pageNumber, e, token);
+                    }
+                },
+                token);
 
             return pic is null ? null : RefCountable.Create(pic);
         }

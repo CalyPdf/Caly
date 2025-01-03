@@ -44,12 +44,12 @@ namespace Caly.Core.Services
     /// </summary>
     internal sealed partial class PdfPigPdfService : IPdfService
     {
+        private const string PdfVersionFormat = "0.0";
+        private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
+
         private readonly IDialogService _dialogService;
         private readonly ITextSearchService _textSearchService;
-
-        // PdfPig only allow to read 1 page at a time for now
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-
+        
         private MemoryStream? _fileStream;
         private PdfDocument? _document;
         private Uri? _filePath;
@@ -163,94 +163,45 @@ namespace Caly.Core.Services
                 return 0;
             }
         }
-        
-        public async Task SetPageInformationAsync(PdfPageViewModel page, CancellationToken token)
+
+        public async Task SetPageSizeAsync(PdfPageViewModel pdfPage, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
-            bool hasLock = false;
 
-            try
+            PdfPageInformation? pageInfo = await ExecuteWithLockAsync(
+                () => _document?.GetPage<PdfPageInformation>(pdfPage.PageNumber),
+                token);
+
+            if (pageInfo.HasValue && !token.IsCancellationRequested)
             {
-                token.ThrowIfCancellationRequested();
-
-                if (IsDisposed())
-                {
-                    return;
-                }
-
-                await _semaphore.WaitAsync(token);
-                hasLock = true;
-
-                if (IsDisposed())
-                {
-                    return;
-                }
-
-                token.ThrowIfCancellationRequested();
-
-                var info = _document!.GetPage<PdfPageInformation>(page.PageNumber);
-
-                if (!token.IsCancellationRequested)
-                {
-                    page.Width = info.Width;
-                    page.Height = info.Height;
-                }
-            }
-            finally
-            {
-                if (hasLock && !IsDisposed())
-                {
-                    _semaphore.Release();
-                }
+                pdfPage.Width = pageInfo.Value.Width;
+                pdfPage.Height = pageInfo.Value.Height;
             }
         }
 
         public async Task SetPageTextLayer(PdfPageViewModel page, CancellationToken token)
         {
-            page.PdfTextLayer ??= await GetTextLayerAsync(page.PageNumber, token);
+            Debug.ThrowOnUiThread();
+
+            if (page.PdfTextLayer is null)
+            {
+                var pageTextLayer = await ExecuteWithLockAsync(
+                    () => _document?.GetPage<PageTextLayerContent>(page.PageNumber),
+                    token);
+
+                if (pageTextLayer is null)
+                {
+                    return;
+                }
+
+                page.PdfTextLayer = PdfTextLayerHelper.GetTextLayer(pageTextLayer, token);
+            }
+
             if (page.PdfTextLayer is not null)
             {
                 // We ensure the correct selection is set now that we have the text layer
                 page.TextSelectionHandler.Selection.SelectWordsInRange(page);
             }
-        }
-
-        private async Task<PdfTextLayer?> GetTextLayerAsync(int pageNumber, CancellationToken token)
-        {
-            Debug.ThrowOnUiThread();
-            bool hasLock = false;
-
-            PageTextLayerContent? page;
-            try
-            {
-                token.ThrowIfCancellationRequested();
-
-                if (IsDisposed())
-                {
-                    return null;
-                }
-
-                await _semaphore.WaitAsync(token);
-                hasLock = true;
-
-                if (IsDisposed())
-                {
-                    return null;
-                }
-
-                token.ThrowIfCancellationRequested();
-
-                page = _document.GetPage<PageTextLayerContent>(pageNumber);
-            }
-            finally
-            {
-                if (hasLock && !IsDisposed())
-                {
-                    _semaphore.Release();
-                }
-            }
-
-            return page is null ? null : PdfTextLayerHelper.GetTextLayer(page, token);
         }
 
         public ValueTask SetDocumentPropertiesAsync(PdfDocumentViewModel document, CancellationToken token)
@@ -272,7 +223,7 @@ namespace Caly.Core.Services
 
             document.Properties = new PdfDocumentProperties()
             {
-                PdfVersion = _document.Version.ToString("0.0"),
+                PdfVersion = _document.Version.ToString(PdfVersionFormat),
                 Title = info.Title,
                 Author = info.Author,
                 CreationDate = FormatPdfDate(info.CreationDate),
@@ -301,7 +252,7 @@ namespace Caly.Core.Services
 
             if (UglyToad.PdfPig.Util.DateFormatHelper.TryParseDateTimeOffset(rawDate, out DateTimeOffset offset))
             {
-                return offset.ToString("yyyy-MM-dd HH:mm:ss zzz");
+                return offset.ToString(DateTimeFormat);
             }
 
             return rawDate;
@@ -310,46 +261,21 @@ namespace Caly.Core.Services
         public async Task SetPdfBookmark(PdfDocumentViewModel pdfDocument, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
-            bool hasLock = false;
 
-            Bookmarks? bookmarks = null;
+            Bookmarks? bookmarks = await ExecuteWithLockAsync(() =>
+                {
+                    if (_document!.TryGetBookmarks(out var b))
+                    {
+                        return b;
+                    }
 
+                    return null;
+                },
+                token);
+            
             try
             {
-                token.ThrowIfCancellationRequested();
-
-                if (IsDisposed())
-                {
-                    return;
-                }
-
-                await _semaphore.WaitAsync(token);
-                hasLock = true;
-
-                if (IsDisposed())
-                {
-                    return;
-                }
-
-                token.ThrowIfCancellationRequested();
-
-                if (!_document!.TryGetBookmarks(out bookmarks))
-                {
-                    return;
-                }
-            }
-            catch (OperationCanceledException) { }
-            finally
-            {
-                if (hasLock && !IsDisposed())
-                {
-                    _semaphore.Release();
-                }
-            }
-
-            try
-            {
-                if (IsDisposed() || bookmarks is null || bookmarks.Roots.Count == 0)
+                if (bookmarks is null || IsDisposed() || bookmarks.Roots.Count == 0)
                 {
                     return;
                 }
