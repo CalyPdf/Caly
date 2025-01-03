@@ -91,9 +91,10 @@ namespace Caly.Core.Services
                     return 0; // no pdf loaded
                 }
 
-                if (Path.GetExtension(storageFile.Path.LocalPath) != ".pdf")
+                if (Path.GetExtension(storageFile.Path.LocalPath) != ".pdf" && !CalyExtensions.IsMobilePlatform())
                 {
-                    //throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
+                    // TODO - Need to handle Mobile
+                    throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
                 }
 
                 _filePath = storageFile.Path;
