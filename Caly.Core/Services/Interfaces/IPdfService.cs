@@ -47,7 +47,7 @@ namespace Caly.Core.Services.Interfaces
         Task<IEnumerable<TextSearchResultViewModel>> SearchText(PdfDocumentViewModel pdfDocument, string query, CancellationToken token);
 
 
-        Task SetPageInformationAsync(PdfPageViewModel page, CancellationToken token);
+        Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token);
 
         void AskPagePicture(PdfPageViewModel page, CancellationToken token);
 

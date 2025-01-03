@@ -123,7 +123,7 @@ namespace Caly.Core.ViewModels
 
         public async Task LoadPageSize(CancellationToken cancellationToken)
         {
-            await _pdfService.SetPageInformationAsync(this, cancellationToken);
+            await _pdfService.SetPageSizeAsync(this, cancellationToken);
         }
 
         public void FlagSelectionChanged()
