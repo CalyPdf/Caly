@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -90,21 +91,64 @@ namespace Caly.Core.ViewModels
         }
 
         [RelayCommand]
-        private void RotateClockwise()
+        private void RotateAllPagesClockwise()
         {
-            foreach (PdfPageViewModel page in Pages)
+            ExecutePreservePage(() =>
             {
-                page.RotateClockwise();
-            }
+                foreach (PdfPageViewModel page in Pages)
+                {
+                    page.RotateClockwise();
+                }
+            });
         }
 
         [RelayCommand]
-        private void RotateCounterclockwise()
+        private void RotateAllPagesCounterclockwise()
         {
-            foreach (PdfPageViewModel page in Pages)
+            ExecutePreservePage(() =>
             {
-                page.RotateCounterclockwise();
+                foreach (PdfPageViewModel page in Pages)
+                {
+                    page.RotateCounterclockwise();
+                }
+            });
+        }
+
+        [RelayCommand]
+        private void RotatePageClockwise(int pageNumber)
+        {
+            if (pageNumber <= 0 || pageNumber > Pages.Count)
+            {
+                return;
             }
+
+            ExecutePreservePage(() => Pages[pageNumber - 1].RotateClockwise());
+        }
+
+        [RelayCommand]
+        private void RotatePageCounterclockwise(int pageNumber)
+        {
+            if (pageNumber <= 0 || pageNumber > Pages.Count)
+            {
+                return;
+            }
+
+            ExecutePreservePage(() => Pages[pageNumber - 1].RotateCounterclockwise());
+        }
+
+        private void ExecutePreservePage(Action action)
+        {
+            // TODO - Investigate why page selection changes
+
+            int? current = SelectedPageIndex;
+
+            action();
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                // We makes sure selected page did not change
+                SelectedPageIndex = current;
+            }, DispatcherPriority.Loaded);
         }
     }
 }
