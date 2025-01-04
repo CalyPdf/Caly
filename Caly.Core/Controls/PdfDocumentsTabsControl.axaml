@@ -105,11 +105,11 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Stretch"
                                 Background="Transparent"
-                                Command="{Binding RotateCounterclockwiseCommand}">
+                                Command="{Binding RotateAllPagesCounterclockwiseCommand}">
 							<PathIcon Width="17"
                                       Height="17"
                                       Data="{StaticResource arrow_rotate_counterclockwise_regular}">
-								<ToolTip.Tip>Rotate Counterclockwise</ToolTip.Tip>
+								<ToolTip.Tip>Rotate Pages Counterclockwise</ToolTip.Tip>
 							</PathIcon>
 						</Button>
 
@@ -117,11 +117,11 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Stretch"
                                 Background="Transparent"
-                                Command="{Binding RotateClockwiseCommand}">
+                                Command="{Binding RotateAllPagesClockwiseCommand}">
 							<PathIcon Width="17"
                                       Height="17"
                                       Data="{StaticResource arrow_rotate_clockwise_regular}">
-								<ToolTip.Tip>Rotate Clockwise</ToolTip.Tip>
+								<ToolTip.Tip>Rotate Pages Clockwise</ToolTip.Tip>
 							</PathIcon>
 						</Button>
 

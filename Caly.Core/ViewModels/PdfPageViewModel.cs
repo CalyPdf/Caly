@@ -205,13 +205,11 @@ namespace Caly.Core.ViewModels
             await _pdfService.SetPageTextLayer(this, token);
         }
 
-        [RelayCommand]
         internal void RotateClockwise()
         {
             Rotation = (Rotation + 90) % 360;
         }
 
-        [RelayCommand]
         internal void RotateCounterclockwise()
         {
             Rotation = (Rotation + 270) % 360;

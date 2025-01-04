@@ -35,7 +35,8 @@
 				<Separator/>
 
                 <MenuItem Header="Rotate Clockwise"
-                          Command="{Binding RotateClockwiseCommand}">
+                          Command="{Binding $parent[controls:PdfPageItemsControl].((viewModels:PdfDocumentViewModel)DataContext).RotatePageClockwiseCommand}"
+                          CommandParameter="{Binding PageNumber}">
                     <MenuItem.Icon>
                         <PathIcon Width="15"
                                   Height="15"
@@ -44,7 +45,8 @@
                 </MenuItem>
 
 				<MenuItem Header="Rotate Counterclockwise"
-                          Command="{Binding RotateCounterclockwiseCommand}">
+                          Command="{Binding $parent[controls:PdfPageItemsControl].((viewModels:PdfDocumentViewModel)DataContext).RotatePageCounterclockwiseCommand}"
+                          CommandParameter="{Binding PageNumber}">
 					<MenuItem.Icon>
 						<PathIcon Width="15"
                                   Height="15"
