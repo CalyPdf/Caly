@@ -50,6 +50,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Caly.Tests", "Caly.Tests\Ca
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UglyToad.PdfPig.Rendering.Skia.Tests", "external\PdfPig.Rendering.Skia\UglyToad.PdfPig.Rendering.Skia.Tests\UglyToad.PdfPig.Rendering.Skia.Tests.csproj", "{67FC56B9-3AE2-4048-A9EC-F8391196CF9F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PdfPig.Filters.Jbig2.PdfboxJbig2", "PdfPig.Filters.Jbig2.PdfboxJbig2", "{A245C5F0-70FF-403E-92D8-B6A8AC2FDD77}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UglyToad.PdfPig.Filters.Jbig2.PdfboxJbig2", "external\UglyToad.PdfPig.Filters.Jbig2.PdfboxJbig2\UglyToad.PdfPig.Filters.Jbig2.PdfboxJbig2\UglyToad.PdfPig.Filters.Jbig2.PdfboxJbig2.csproj", "{40D08F1B-5878-4569-AB1A-F803767F7333}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PdfPig.Filters.Dct.JpegLibrary", "PdfPig.Filters.Dct.JpegLibrary", "{E39010BB-B278-4AAD-A168-C65FE50A039C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UglyToad.PdfPig.Filters.Dct.JpegLibrary", "external\UglyToad.PdfPig.Filters.Dct.JpegLibrary\UglyToad.PdfPig.Filters.Dct.JpegLibrary\UglyToad.PdfPig.Filters.Dct.JpegLibrary.csproj", "{18B853A9-2B84-44D7-A7DC-B8F831357E4A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -128,6 +136,14 @@ Global
 		{67FC56B9-3AE2-4048-A9EC-F8391196CF9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67FC56B9-3AE2-4048-A9EC-F8391196CF9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{67FC56B9-3AE2-4048-A9EC-F8391196CF9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40D08F1B-5878-4569-AB1A-F803767F7333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40D08F1B-5878-4569-AB1A-F803767F7333}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40D08F1B-5878-4569-AB1A-F803767F7333}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40D08F1B-5878-4569-AB1A-F803767F7333}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18B853A9-2B84-44D7-A7DC-B8F831357E4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18B853A9-2B84-44D7-A7DC-B8F831357E4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18B853A9-2B84-44D7-A7DC-B8F831357E4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18B853A9-2B84-44D7-A7DC-B8F831357E4A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -146,6 +162,10 @@ Global
 		{853A1CDC-9AB5-479A-AE18-BB744957D540} = {729644E9-1B3D-4BE2-90F4-D31B9A431DF6}
 		{E5D37628-7B7C-4DFB-8550-ADC3A354A5F1} = {853A1CDC-9AB5-479A-AE18-BB744957D540}
 		{67FC56B9-3AE2-4048-A9EC-F8391196CF9F} = {853A1CDC-9AB5-479A-AE18-BB744957D540}
+		{A245C5F0-70FF-403E-92D8-B6A8AC2FDD77} = {729644E9-1B3D-4BE2-90F4-D31B9A431DF6}
+		{40D08F1B-5878-4569-AB1A-F803767F7333} = {A245C5F0-70FF-403E-92D8-B6A8AC2FDD77}
+		{E39010BB-B278-4AAD-A168-C65FE50A039C} = {729644E9-1B3D-4BE2-90F4-D31B9A431DF6}
+		{18B853A9-2B84-44D7-A7DC-B8F831357E4A} = {E39010BB-B278-4AAD-A168-C65FE50A039C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E4266927-3627-47FF-B829-F45BBA8830F9}

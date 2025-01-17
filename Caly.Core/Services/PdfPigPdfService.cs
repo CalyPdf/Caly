@@ -112,7 +112,8 @@ namespace Caly.Core.Services
                     var pdfParsingOptions = new ParsingOptions()
                     {
                         SkipMissingFonts = true,
-                        Logger = new CalyPdfPigLogger(_dialogService)
+                        Logger = new CalyPdfPigLogger(_dialogService),
+                        FilterProvider = SkiaRenderingParsingOptions.Instance.FilterProvider
                     };
 
                     if (!string.IsNullOrEmpty(password))
@@ -124,7 +125,7 @@ namespace Caly.Core.Services
                     _document.AddPageFactory<PdfPageInformation, PageInformationFactory>();
                     _document.AddPageFactory<SKPicture, SkiaPageFactory>();
                     _document.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
-
+                    
                     NumberOfPages = _document.NumberOfPages;
                     return NumberOfPages;
                 }, token);
@@ -164,19 +165,66 @@ namespace Caly.Core.Services
                 return 0;
             }
         }
+        
+        public async Task SetDocumentLayersAsync(PdfDocumentViewModel document, CancellationToken token)
+        {
+            var ocs = await ExecuteWithLockAsync(() =>
+                {
+                    if (_document.Structure.TryGetOptionalContentProperties(out var oc))
+                    {
+                        return oc;
+                    }
+                    return null;
+                },
+                token);
 
-        public async Task SetPageSizeAsync(PdfPageViewModel pdfPage, CancellationToken token)
+            if (ocs is null || ocs.Count == 0)
+            {
+                return;
+            }
+
+            var layers = new ObservableCollection<PdfDocumentLayerViewModel>();
+            foreach (var oc in ocs.GroupBy(o => o.Label))
+            {
+                if (string.IsNullOrEmpty(oc.Key))
+                {
+                    foreach (var e in oc)
+                    {
+                        layers.Add(PdfDocumentLayerViewModel.BuildRecursively(e));
+                    }
+                    continue;
+                }
+                
+                var nodes = new ObservableCollection<PdfDocumentLayerViewModel>();
+
+                foreach (var e in oc)
+                {
+                    nodes.Add(PdfDocumentLayerViewModel.BuildRecursively(e));
+                }
+
+                layers.Add(new PdfDocumentLayerViewModel()
+                {
+                    Title = oc.Key,
+                    IsVisible = true,
+                    Nodes = nodes
+                });
+            }
+
+            document.Layers = layers;
+        }
+        
+        public async Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
             PdfPageInformation? pageInfo = await ExecuteWithLockAsync(
-                () => _document?.GetPage<PdfPageInformation>(pdfPage.PageNumber),
+                () => _document?.GetPage<PdfPageInformation>(page.PageNumber),
                 token);
 
             if (pageInfo.HasValue && !token.IsCancellationRequested)
             {
-                pdfPage.Width = pageInfo.Value.Width;
-                pdfPage.Height = pageInfo.Value.Height;
+                page.Width = pageInfo.Value.Width;
+                page.Height = pageInfo.Value.Height;
             }
         }
 

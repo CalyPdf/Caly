@@ -294,6 +294,11 @@ namespace Caly.Pdf.TextLayer
             DictionaryToken? properties)
         {
             // No op
+            if (propertyDictionaryName != null)
+            {
+                var actual = ResourceStore.GetMarkedContentPropertiesDictionary(propertyDictionaryName);
+                properties = actual ?? properties;
+            }
         }
 
         public override void EndMarkedContent()

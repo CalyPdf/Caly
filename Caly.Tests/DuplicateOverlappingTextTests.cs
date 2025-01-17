@@ -23,6 +23,16 @@ namespace Caly.Tests
     public class DuplicateOverlappingTextTests
     {
         [Fact]
+        public void GetOptionalContent()
+        {
+            using (var doc = PdfDocument.Open("JWO_IS_eksport_pdf_.pdf"))
+            {
+                var page = doc.GetPage(1);
+                var layers = page.ExperimentalAccess.GetOptionalContents();
+            }
+        }
+
+        [Fact]
         public void Document_PublisherError_1()
         {
             using (var doc = PdfDocument.Open("Document-PublisherError-1.pdf"))
