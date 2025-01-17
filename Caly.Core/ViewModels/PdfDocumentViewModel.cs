@@ -164,6 +164,7 @@ namespace Caly.Core.ViewModels
             _loadPagesTask = new Lazy<Task>(LoadPages);
             _loadBookmarksTask = new Lazy<Task>(LoadBookmarks);
             _loadPropertiesTask = new Lazy<Task>(LoadProperties);
+            _loadLayersTask = new Lazy<Task>(LoadLayers);
             _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
 
             _searchResultsDisposable = SearchResults

@@ -218,6 +218,25 @@
                                                           HorizontalAlignment="Stretch"/>
 										</TabItem>
 
+										<!-- Layers tab -->
+                                        <TabItem MinHeight="40"
+                                                 IsVisible="{Binding Layers, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                 IsEnabled="{Binding Layers, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                            <TabItem.Header>
+                                                <PathIcon Width="17"
+                                                          Height="17"
+                                                          Data="{StaticResource layer_regular}">
+                                                    <ToolTip.Tip>Layers</ToolTip.Tip>
+                                                </PathIcon>
+                                            </TabItem.Header>
+
+                                            <TreeDataGrid Source="{Binding LayersSource}"
+                                                          IsVisible="{Binding !!Layers.Count}"
+                                                          ShowColumnHeaders="False"
+                                                          CanUserSortColumns="False"
+                                                          HorizontalAlignment="Stretch"/>
+                                        </TabItem>
+
 										<!-- Search tab -->
 										<TabItem MinHeight="40">
 											<TabItem.Header>

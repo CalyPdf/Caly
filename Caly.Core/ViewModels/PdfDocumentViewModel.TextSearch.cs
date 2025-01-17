@@ -60,7 +60,7 @@ namespace Caly.Core.ViewModels
         private void ActivateSearchTextTab()
         {
             IsPaneOpen = true;
-            SelectedTabIndex = 2;
+            SelectedTabIndex = 3; // TODO - index can change
         }
         
         private async Task BuildSearchIndex()

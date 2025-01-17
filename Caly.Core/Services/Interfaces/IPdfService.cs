@@ -39,7 +39,9 @@ namespace Caly.Core.Services.Interfaces
         Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token);
 
         ValueTask SetDocumentPropertiesAsync(PdfDocumentViewModel page, CancellationToken token);
-        
+
+        Task SetDocumentLayersAsync(PdfDocumentViewModel document, CancellationToken token);
+
         Task SetPdfBookmark(PdfDocumentViewModel pdfDocument, CancellationToken token);
 
         Task BuildIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token);
