@@ -1,5 +1,9 @@
 ## Caly Pdf Reader: A Fast, Cross-Platform Pdf Reader
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/604c1d8a-5cdf-49c6-8be3-d85bfb680a99" />
+</p>
+
 **Caly Pdf Reader** is a free, cross-platform and open-source Pdf reader built with performance and efficiency in mind. Written in C# (net8.0 with AOT), it's designed to be lightweight, fast, and consume minimal memory.
 
 > [!IMPORTANT]
