@@ -33,7 +33,6 @@ using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
 using SkiaSharp;
 using UglyToad.PdfPig;
-using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Exceptions;
 using UglyToad.PdfPig.Outline;
 using UglyToad.PdfPig.Rendering.Skia;
