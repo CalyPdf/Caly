@@ -29,7 +29,7 @@ As of now, only the Windows, Linux and Android versions have been tested. Androi
 * **Rotate pages:** Rotate all or single pages of the document.
 * **Minimalist UI:** Enjoy a clean and distraction-free reading experience.
 
-![caly preview](https://github.com/user-attachments/assets/985c9271-2b0e-4cc9-a5d4-15fd061875e0)
+![caly preview](https://github.com/user-attachments/assets/d4382989-2d2e-4fb8-a40e-69757660598a)
 
 ## Usage
 
@@ -51,7 +51,7 @@ As of now, only the Windows, Linux and Android versions have been tested. Androi
 * **Lightweight & Fast:** Designed for optimal performance and minimal resource consumption.
 * **Active Development:** We are constantly working on improving Caly Pdf Reader with new features and bug fixes.
 
-![caly preview 2](https://github.com/user-attachments/assets/7f87be85-7f37-4be5-a12e-2fe2397d0620)
+![caly preview 2](https://github.com/user-attachments/assets/f850dc94-cefb-43c7-b856-acd34e2fc373)
 
 ## Getting Started
 
@@ -80,4 +80,4 @@ You can also help Caly Pdf Reader by contributing to:
 
 Caly Pdf Reader is licensed under the [GPL-3.0 License](https://github.com/BobLd/Caly?tab=GPL-3.0-1-ov-file#readme).
 
-![caly preview 3](https://github.com/user-attachments/assets/daebe394-718a-46b3-8886-7e6402695328)
+![caly preview 3](https://github.com/user-attachments/assets/49a5cea8-a407-48b2-9f53-3d3022a120ba)
