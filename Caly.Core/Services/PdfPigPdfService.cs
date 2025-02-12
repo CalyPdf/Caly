@@ -112,6 +112,7 @@ namespace Caly.Core.Services
                     var pdfParsingOptions = new ParsingOptions()
                     {
                         SkipMissingFonts = true,
+                        FilterProvider = SkiaRenderingFilterProvider.Instance,
                         Logger = new CalyPdfPigLogger(_dialogService)
                     };
 
