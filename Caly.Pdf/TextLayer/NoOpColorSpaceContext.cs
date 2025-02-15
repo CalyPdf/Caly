@@ -37,7 +37,7 @@ namespace Caly.Pdf.TextLayer
             // No op
         }
 
-        public void SetStrokingColor(double[] operands, NameToken? patternName = null)
+        public void SetStrokingColor(IReadOnlyList<double> operands, NameToken? patternName = null)
         {
             // No op
         }
@@ -57,11 +57,11 @@ namespace Caly.Pdf.TextLayer
             // No op
         }
 
-        public void SetNonStrokingColor(double[] operands, NameToken? patternName = null)
+        public void SetNonStrokingColor(IReadOnlyList<double> operands, NameToken? patternName = null)
         {
             // No op
         }
-
+        
         public void SetNonStrokingColorGray(double gray)
         {
             // No op
