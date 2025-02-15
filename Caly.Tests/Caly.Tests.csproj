@@ -25,9 +25,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="Document-PublisherError-1.pdf">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="Document-PublisherError-1.pdf">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>
