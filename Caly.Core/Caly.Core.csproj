@@ -27,7 +27,6 @@
 		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.12" />
 		<PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.1.1" />
-		<PackageReference Include="Caly.Tabalonia" Version="11.3.9.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
@@ -40,6 +39,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Caly.Pdf\Caly.Pdf.csproj" />
+		<ProjectReference Include="..\external\PdfPig.Rendering.Skia\UglyToad.PdfPig.Rendering.Skia\UglyToad.PdfPig.Rendering.Skia.csproj" />
+		<ProjectReference Include="..\external\Tabalonia\Tabalonia\Tabalonia.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
