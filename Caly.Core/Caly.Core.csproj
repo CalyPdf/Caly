@@ -25,10 +25,12 @@
 		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
 		<PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.1.0" />
+		<PackageReference Include="Caly.Tabalonia" Version="11.2.3.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Lifti.Core" Version="6.3.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.10.1-alpha003" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />
 		<PackageReference Include="System.Reactive" Version="6.0.1" />
@@ -36,8 +38,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Caly.Pdf\Caly.Pdf.csproj" />
-		<ProjectReference Include="..\external\PdfPig.Rendering.Skia\UglyToad.PdfPig.Rendering.Skia\UglyToad.PdfPig.Rendering.Skia.csproj" />
-		<ProjectReference Include="..\external\Tabalonia\Tabalonia\Tabalonia.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

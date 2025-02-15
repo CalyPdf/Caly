@@ -27,7 +27,7 @@
 		<NativeLibrary Include="Dependency.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />
 	</ItemGroup>
 	-->
-	
+
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<!-- Only for Release config to allow Avalonia design mode -->
 		<PublishAot>true</PublishAot>
@@ -63,15 +63,15 @@
 	</PropertyGroup>
 
 	<PropertyGroup Label="Avalonia">
-	  <AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
-	  <ApplicationIcon>..\Caly.Core\Assets\caly-logo.ico</ApplicationIcon>
+		<AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
+		<ApplicationIcon>..\Caly.Core\Assets\caly-logo.ico</ApplicationIcon>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Caly.Core\Caly.Core.csproj" />
+		<ProjectReference Include="..\Caly.Core\Caly.Core.csproj" />
 	</ItemGroup>
 </Project>
