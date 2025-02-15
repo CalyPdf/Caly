@@ -54,8 +54,11 @@ As of now, only the Windows, Linux and Android versions have been tested. Androi
 ![caly preview 2](https://github.com/user-attachments/assets/f850dc94-cefb-43c7-b856-acd34e2fc373)
 
 ## Getting Started
+### `master` branch
+The `master` branch of Caly Pdf Reader uses NuGet packages. You can ignore the `external` folder.
 
-Caly Pdf Reader uses submodules, you will need to run the following command after cloning it:
+### `develop` branch
+The `develop` branch of Caly Pdf Reader uses submodules (located in the `external` folder), you will need to run the following command after cloning it:
 ```
 git submodule update --init --recursive
 ```
@@ -63,6 +66,7 @@ git submodule update --init --recursive
 > [!IMPORTANT]
 > If the submodule branches appear as 'detached', you can re-link each of them to their respective `develop-caly` branches.
 
+### Publishing
 Caly Pdf Reader is a net8.0 application with Native AOT (ahead of time compilation) enabled. To publish the application, run the following (example for Windows):
 ```
 dotnet publish -r win-x64 -c Release -f net8.0
