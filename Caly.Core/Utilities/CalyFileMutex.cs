@@ -48,17 +48,20 @@ namespace Caly.Core.Utilities
                 // File already in use
                 return false;
             }
-            catch (Exception exception)
-            {
-                System.Diagnostics.Debug.WriteLine(exception);
-            }
 
             return true;
         }
 
         public void ReleaseMutex()
         {
-            File.Delete(_lockFileName);
+            try
+            {
+                File.Delete(_lockFileName);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteExceptionToFile(e);
+            }
 
             if (_lockFile is null)
             {
