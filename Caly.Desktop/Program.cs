@@ -15,7 +15,6 @@
 
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Caly.Core;
@@ -29,7 +28,7 @@ namespace Caly.Desktop
     {
         private const string _appName = "Caly Pdf Reader";
 
-        private static readonly Mutex mutex = new Mutex(true, _appName);
+        private static readonly CalyFileMutex mutex = new(true, _appName);
 
         // Initialization code. Don't use any Avalonia, third-party APIs or any
         // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
@@ -46,7 +45,7 @@ namespace Caly.Desktop
             {
                 // Make sure a single instance of the app is running
                 isMainInstance = mutex.WaitOne(TimeSpan.Zero, true);
-
+                
                 if (isMainInstance)
                 {
                     SendToMainInstance(args);
