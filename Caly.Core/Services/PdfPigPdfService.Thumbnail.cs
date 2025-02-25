@@ -42,16 +42,17 @@ namespace Caly.Core.Services
             }
 
             SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width, tHeight / (float)vm.Height);
-
-            using (SKBitmap bitmap = new SKBitmap(tWidth, tHeight))
-            using (SKCanvas canvas = new SKCanvas(bitmap))
+            
+            using (var surface = SKSurface.Create(new SKImageInfo(tWidth, tHeight)))
+            using (var canvas = surface.Canvas)
             {
                 token.ThrowIfCancellationRequested();
 
                 canvas.Clear(SKColors.White);
                 canvas.DrawPicture(picture, ref scale);
 
-                using (SKData d = bitmap.Encode(SKEncodedImageFormat.Jpeg, 50))
+                using (var image = surface.Snapshot())
+                using (SKData d = image.Encode(SKEncodedImageFormat.Jpeg, 50))
                 await using (Stream stream = d.AsStream())
                 {
                     vm.Thumbnail = Bitmap.DecodeToWidth(stream, vm.ThumbnailWidth,
