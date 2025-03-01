@@ -27,6 +27,7 @@ using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Tabalonia.Controls;
 
 namespace Caly.Core.ViewModels
@@ -46,7 +47,7 @@ namespace Caly.Core.ViewModels
 #if DEBUG
         partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
         {
-            System.Diagnostics.Debug.WriteLine($"Selected Document Index changed from {oldValue} to {newValue}.");
+            App.Current?.Logger.LogInformation("Selected Document Index changed from {old} to {new}.", newValue, oldValue);
         }
 #endif
 

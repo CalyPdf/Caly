@@ -17,9 +17,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Logging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Services
 {
@@ -29,9 +31,11 @@ namespace Caly.Core.Services
     {
         private readonly Visual _target;
         private readonly IReadOnlyList<FilePickerFileType> _pdfFileFilter = new[] { FilePickerFileTypes.Pdf };
+        private readonly ILogger<FilesService> _logger;
 
-        public FilesService(Visual target)
+        public FilesService(Visual target, ILogger<FilesService> logger)
         {
+            _logger = logger;
             _target = target;
         }
 
@@ -79,7 +83,8 @@ namespace Caly.Core.Services
                 return await Dispatcher.UIThread.InvokeAsync(() => top.StorageProvider.TryGetFileFromPathAsync(path));
             }
 
-            System.Diagnostics.Debug.WriteLine($"Could not get TopLevel in FilesService.TryGetFileFromPathAsync (path: '{path}').");
+            _logger.LogError("Could not get TopLevel in FilesService.TryGetFileFromPathAsync (path: '{path}').", path);
+
             return null;
         }
     }

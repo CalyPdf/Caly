@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using System;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -28,6 +29,7 @@ using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using Microsoft.Extensions.Logging;
 using Tabalonia.Controls;
 
 namespace Caly.Core.Controls;
@@ -153,7 +155,8 @@ public sealed class PdfPageItemsControl : ItemsControl
     /// <returns>The page control, or <c>null</c> if not found.</returns>
     public PdfPageItem? GetPdfPageItem(int pageNumber)
     {
-        System.Diagnostics.Debug.WriteLine($"GetPdfPageItem {pageNumber}.");
+        App.Current?.Logger.LogInformation("GetPdfPageItem {pageNumber}.", pageNumber);
+
         if (ContainerFromIndex(pageNumber - 1) is PdfPageItem presenter)
         {
             return presenter;
@@ -184,7 +187,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             container is not PdfPageItem cp ||
             item is not PdfPageViewModel vm)
         {
-            System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
+            App.Current?.Logger.LogInformation("Skipping LoadPage() for page {page} (IsTabDragging: {isTabDragging})", index + 1, _isTabDragging);
             return;
         }
 
@@ -263,7 +266,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         // Quick reject
         if (!Presenter.Bounds.Contains(point))
         {
-            System.Diagnostics.Debug.WriteLine("GetPdfPageItemOver Quick reject.");
+            App.Current?.Logger.LogInformation("GetPdfPageItemOver Quick reject.");
             return null;
         }
 
@@ -277,7 +280,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         // Check selected current page
         if (ContainerFromIndex(startIndex) is PdfPageItem presenter)
         {
-            System.Diagnostics.Debug.WriteLine($"GetPdfPageItemOver page {startIndex + 1}.");
+            App.Current?.Logger.LogInformation("GetPdfPageItemOver page {page}.", startIndex + 1);
             if (presenter.Bounds.Contains(point))
             {
                 return presenter;
@@ -291,7 +294,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             // Start with checking forward
             for (int p = startIndex + 1; p < maxPageIndex; ++p)
             {
-                System.Diagnostics.Debug.WriteLine($"GetPdfPageItemOver page {p + 1}.");
+                App.Current?.Logger.LogInformation("GetPdfPageItemOver page {page}.", p + 1);
                 if (ContainerFromIndex(p) is not PdfPageItem cp)
                 {
                     continue;
@@ -313,7 +316,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             // Continue with checking backward
             for (int p = startIndex - 1; p >= minPageIndex; --p)
             {
-                System.Diagnostics.Debug.WriteLine($"GetPdfPageItemOver page {p + 1}.");
+                App.Current?.Logger.LogInformation("GetPdfPageItemOver page {page}.", p + 1);
                 if (ContainerFromIndex(p) is not PdfPageItem cp)
                 {
                     continue;
@@ -675,7 +678,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void _onHoldingChangedHandler(object? sender, HoldingRoutedEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"Holding {e.HoldingState}: {e.Position.X}, {e.Position.Y}");
+        App.Current?.Logger.LogInformation("Holding page {holdingState}: {x}, {y}", e.HoldingState, e.Position.X, e.Position.Y);
     }
 
     private double _pinchZoomReference = 1.0;
