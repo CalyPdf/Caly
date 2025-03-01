@@ -15,7 +15,7 @@
 
 namespace Caly.Core.Models
 {
-    public sealed class CalySettings
+    public sealed record CalySettings
     {
         public static readonly CalySettings Default = new CalySettings()
         {

@@ -19,6 +19,7 @@
 	<ItemGroup>
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
 		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.5" />
+		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Microsoft.Extensions.Logging.Debug" Version="9.0.2" />
 
 		<PackageReference Include="Avalonia" Version="11.2.5" />
 		<PackageReference Include="Avalonia.Skia" Version="11.2.5" />
@@ -30,6 +31,7 @@
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Lifti.Core" Version="6.3.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
 		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.10.1-alpha008" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />

@@ -17,10 +17,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Logging;
 using Avalonia.Threading;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
+using Microsoft.Extensions.Logging;
 using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Models
@@ -132,12 +134,15 @@ namespace Caly.Core.Models
 
         private readonly IReadOnlyList<PdfWord>?[] _selectedWords;
 
+        private readonly ILogger<PdfDocumentViewModel> _logger;
+
 #if DEBUG
         public int NumberOfPages;
 #endif
 
-        public PdfTextSelection(int numberOfPages)
+        public PdfTextSelection(int numberOfPages, ILogger<PdfDocumentViewModel> logger)
         {
+            _logger = logger;
             _selectedWords = new IReadOnlyList<PdfWord>[numberOfPages];
 #if DEBUG
             NumberOfPages = numberOfPages;

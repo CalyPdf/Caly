@@ -16,7 +16,6 @@
 using System;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -24,24 +23,22 @@ using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.Views;
+using Microsoft.Extensions.Logging;
 using static Caly.Core.Models.CalySettings;
 
 namespace Caly.Core.Services
 {
-    [JsonSerializable(typeof(CalySettings), GenerationMode = JsonSourceGenerationMode.Metadata)]
-    internal partial class SourceGenerationContext : JsonSerializerContext
-    {
-    }
-    
     internal sealed class JsonSettingsService : ISettingsService
     {
         private const string _settingsFile = "caly_settings";
         
         private readonly Visual _target;
 
+        private readonly ILogger<JsonSettingsService> _logger;
+
         private CalySettings? _current;
 
-        public JsonSettingsService(Visual target)
+        public JsonSettingsService(Visual target, ILogger<JsonSettingsService> logger)
         {
             if (CalyExtensions.IsMobilePlatform())
             {
@@ -49,6 +46,7 @@ namespace Caly.Core.Services
                 return;
             }
 
+            _logger = logger;
             _target = target;
             if (_target is Window w)
             {
@@ -253,6 +251,8 @@ namespace Caly.Core.Services
 
         public void Save()
         {
+            _logger.LogInformation("Saving settings: {settings}.", _current);
+
             if (CalyExtensions.IsMobilePlatform())
             {
                 return; // TODO - Create proper mobile class

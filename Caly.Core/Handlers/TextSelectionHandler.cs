@@ -22,6 +22,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Logging;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Threading;
@@ -33,6 +34,7 @@ using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf;
 using Caly.Pdf.Models;
+using Microsoft.Extensions.Logging;
 using UglyToad.PdfPig.Actions;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.DocumentLayoutAnalysis;
@@ -50,6 +52,8 @@ namespace Caly.Core.Handlers
 
         private static readonly Color _searchColor = Color.FromArgb(0xa9, 255, 0, 0);
 
+        private readonly ILogger<PdfDocumentViewModel> _logger;
+
         /// <summary>
         /// <c>true</c> if we are currently selecting text. <c>false</c> otherwise.
         /// </summary>
@@ -64,9 +68,10 @@ namespace Caly.Core.Handlers
 
         public PdfTextSelection Selection { get; }
 
-        public TextSelectionHandler(int numberOfPages)
+        public TextSelectionHandler(int numberOfPages, ILogger<PdfDocumentViewModel> logger)
         {
-            Selection = new PdfTextSelection(numberOfPages);
+            _logger = logger;
+            Selection = new PdfTextSelection(numberOfPages, _logger);
         }
 
         public void ClearSelection(PdfDocumentControl pdfDocumentControl)
@@ -414,7 +419,7 @@ namespace Caly.Core.Handlers
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: Not handled, got {e.ClickCount} click(s).");
+                _logger.LogInformation("HandleMultipleClick: Not handled, got {count} click(s).", e.ClickCount);
                 return;
             }
 
@@ -425,7 +430,7 @@ namespace Caly.Core.Handlers
             Selection.Extend(pageNumber, endWord);
             Selection.SelectWordsInRange(vm);
 
-            System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: {startWord} -> {endWord}.");
+            _logger.LogInformation("HandleMultipleClick: {startWord} -> {endWord}.", startWord?.Value, endWord?.Value);
         }
 
         public void OnPointerPressed(PointerPressedEventArgs e)
@@ -587,8 +592,6 @@ namespace Caly.Core.Handlers
 
         private static void ShowAnnotation(PdfPageTextLayerControl control, PdfAnnotation annotation)
         {
-            //System.Diagnostics.Debug.WriteLine($"Annotation: [{annotation.Date}] '{annotation.Content}'");
-
             if (FlyoutBase.GetAttachedFlyout(control) is not Flyout attachedFlyout)
             {
                 return;

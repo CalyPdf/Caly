@@ -27,6 +27,7 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Services
 {
@@ -39,6 +40,7 @@ namespace Caly.Core.Services
             public required PdfDocumentViewModel ViewModel { get; init; }
         }
 
+        private readonly ILogger<PdfDocumentsService> _logger;
         private readonly Visual _target;
         private readonly MainViewModel _mainViewModel;
         private readonly IFilesService _filesService;
@@ -74,17 +76,18 @@ namespace Caly.Core.Services
             catch (Exception e)
             {
                 // Critical error - can't open document anymore
-                System.Diagnostics.Debug.WriteLine($"ERROR in WorkerProc {e}");
+                _logger.LogError(e, "ERROR in WorkerProc");
                 Debug.WriteExceptionToFile(e);
                 await _dialogService.ShowExceptionWindowAsync(e);
                 throw;
             }
         }
 
-        public PdfDocumentsService(Visual target, IFilesService filesService, IDialogService dialogService)
+        public PdfDocumentsService(Visual target, IFilesService filesService, IDialogService dialogService, ILogger<PdfDocumentsService> logger)
         {
             Debug.ThrowNotOnUiThread();
 
+            _logger = logger;
             _target = target;
 
             if (_target.DataContext is not MainViewModel mvm)
@@ -105,6 +108,8 @@ namespace Caly.Core.Services
             _channelReader = _fileChannel.Reader;
 
             _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
+
+            _logger.LogInformation("Caly Pdf Reader started.");
         }
 
         public async Task OpenLoadDocument(CancellationToken cancellationToken)
