@@ -24,6 +24,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Caly.Core.Loggers;
 using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
@@ -31,6 +32,7 @@ using Caly.Core.ViewModels;
 using Caly.Pdf;
 using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
@@ -49,7 +51,8 @@ namespace Caly.Core.Services
 
         private readonly IDialogService _dialogService;
         private readonly ITextSearchService _textSearchService;
-        
+        private readonly ILogger<PdfPigPdfService> _logger;
+
         private MemoryStream? _fileStream;
         private PdfDocument? _document;
         private Uri? _filePath;
@@ -62,9 +65,10 @@ namespace Caly.Core.Services
 
         public int NumberOfPages { get; private set; }
 
-        public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
+        public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService, ILogger<PdfPigPdfService> logger)
         {
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
+            _logger = logger;
             _textSearchService = textSearchService;
 
             // Priority to rendering page
@@ -98,7 +102,7 @@ namespace Caly.Core.Services
                 }
 
                 _filePath = storageFile.Path;
-                System.Diagnostics.Debug.WriteLine($"[INFO] Opening {FileName}...");
+                _logger.LogInformation("Opening {FileName}...", FileName);
 
                 _fileStream = new MemoryStream();
                 await using (var fs = await storageFile.OpenReadAsync())
@@ -113,7 +117,7 @@ namespace Caly.Core.Services
                     {
                         SkipMissingFonts = true,
                         FilterProvider = SkiaRenderingFilterProvider.Instance,
-                        Logger = new CalyPdfPigLogger(_dialogService)
+                        Logger = new CalyPdfPigLogger(_dialogService, _logger)
                     };
 
                     if (!string.IsNullOrEmpty(password))
@@ -363,11 +367,11 @@ namespace Caly.Core.Services
             {
                 if (IsDisposed())
                 {
-                    System.Diagnostics.Debug.WriteLine($"[WARN] Trying to dispose but already disposed for {FileName}.");
+                    _logger.LogWarning("Trying to dispose but already disposed for {FileName}.", FileName);
                     return;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"[INFO] Disposing document async for {FileName}.");
+                _logger.LogInformation("Disposing document async for {FileName}.", FileName);
 
                 Interlocked.Increment(ref _isDisposed); // Flag as disposed
 
@@ -404,7 +408,7 @@ namespace Caly.Core.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[INFO] ERROR DisposeAsync for {FileName}: {ex.Message}");
+                _logger.LogError(ex, "DisposeAsync for {FileName}", FileName);
             }
         }
 

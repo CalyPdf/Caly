@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Caly.Core.ViewModels;
+using Microsoft.Extensions.Logging;
 using SkiaSharp;
 
 namespace Caly.Core.Services
@@ -65,7 +66,7 @@ namespace Caly.Core.Services
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[RENDER] Thumbnail Count {_bitmaps.Count}");
+            _logger.LogInformation("[RENDER] Thumbnail Count {count}", _bitmaps.Count);
         }
 
         public void ClearAllThumbnail()

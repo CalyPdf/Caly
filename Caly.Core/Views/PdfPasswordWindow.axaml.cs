@@ -18,6 +18,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Views
 {
@@ -73,7 +74,7 @@ namespace Caly.Core.Views
 
             if (!textBox.Focus())
             {
-                System.Diagnostics.Debug.WriteLine("Something wrong happened while setting focus on password box.");
+                App.Current?.Logger.LogInformation("Something wrong happened while setting focus on password box.");
             }
         }
     }

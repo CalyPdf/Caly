@@ -34,6 +34,7 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.ViewModels
 {
@@ -121,7 +122,7 @@ namespace Caly.Core.ViewModels
 
                 await Parallel.ForEachAsync(_channelReader.ReadAllAsync(token), token, async (p, ct) =>
                 {
-                    System.Diagnostics.Debug.WriteLine($"Processing task for page {p.PageNumber}.");
+                    _logger.LogInformation("Processing task for page {pageNumber}.", p.PageNumber);
                     await p.LoadPageSize(ct);
                 });
             }
@@ -129,7 +130,7 @@ namespace Caly.Core.ViewModels
             { }
             catch (Exception e)
             {
-                System.Diagnostics.Debug.WriteLine($"ERROR in WorkerProc {e}");
+                _logger.LogError(e, "ERROR in WorkerProc");
                 Debug.WriteExceptionToFile(e);
                 Exception = new ExceptionViewModel(e);
             }
@@ -137,12 +138,16 @@ namespace Caly.Core.ViewModels
 
         private readonly IDisposable _searchResultsDisposable;
 
-        public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
+        private readonly ILogger<PdfDocumentViewModel> _logger;
+
+        public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService, ILogger<PdfDocumentViewModel> logger)
         {
             ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
             ArgumentNullException.ThrowIfNull(settingsService, nameof(settingsService));
 
             System.Diagnostics.Debug.Assert(pdfService.NumberOfPages == 0);
+
+            _logger = logger;
 
             _pdfService = pdfService;
             _settingsService = settingsService;
@@ -260,7 +265,7 @@ namespace Caly.Core.ViewModels
                 FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
             }
 
-            TextSelectionHandler = new TextSelectionHandler(PageCount);
+            TextSelectionHandler = new TextSelectionHandler(PageCount, _logger);
 
             if (PageCount > 1)
             {

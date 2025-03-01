@@ -19,10 +19,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
+using Avalonia.Logging;
 using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
+using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Services
 {
@@ -30,6 +33,7 @@ namespace Caly.Core.Services
     {
         private readonly TimeSpan _annotationExpiration = TimeSpan.FromSeconds(20);
         private readonly Visual _target;
+        private readonly ILogger<DialogService> _logger;
         private readonly TimeSpan _minDelay = TimeSpan.FromSeconds(3);
 
         private string? _previousNotificationMessage;
@@ -39,8 +43,9 @@ namespace Caly.Core.Services
 
         private WindowNotificationManager? _windowNotificationManager;
 
-        public DialogService(Visual target)
+        public DialogService(Visual target, ILogger<DialogService> logger)
         {
+            _logger = logger;
             _target = target;
             if (_target is Window w)
             {
@@ -83,7 +88,9 @@ namespace Caly.Core.Services
             Dispatcher.UIThread.Post(() =>
             {
                 Debug.ThrowNotOnUiThread();
-                System.Diagnostics.Debug.WriteLine($"Annotation ({type}): {title}\n{message}");
+
+                _logger.LogInformation("Annotation ({type}): {title}\n{message}", type, title, message);
+
                 if (_windowNotificationManager is not null)
                 {
                     DateTime now = DateTime.UtcNow;
@@ -101,7 +108,7 @@ namespace Caly.Core.Services
                 else
                 {
                     // TODO - we need a queue system to display the annotations when the manager is loaded
-                    System.Diagnostics.Debug.WriteLine($"Annotation (ERROR NOT LOADED) ({type}): {title}\n{message}");
+                    _logger.LogError("Annotation (ERROR NOT LOADED) ({type}): {title}\n{message}", type, title, message);
                 }
             }, DispatcherPriority.Loaded);
         }
@@ -116,7 +123,8 @@ namespace Caly.Core.Services
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 Debug.ThrowNotOnUiThread();
-                System.Diagnostics.Debug.WriteLine(exception.ToString());
+                _logger.LogInformation(exception.ToString());
+
                 if (_target is not Window w)
                 {
                     return;
@@ -149,7 +157,7 @@ namespace Caly.Core.Services
             Dispatcher.UIThread.Post(() =>
             {
                 Debug.ThrowNotOnUiThread();
-                System.Diagnostics.Debug.WriteLine(exception.ToString());
+                _logger.LogInformation(exception.ToString());
 
                 if (exception.Message != _previousExceptionWindowMessage) // TODO - Improve to count same messages
                 {

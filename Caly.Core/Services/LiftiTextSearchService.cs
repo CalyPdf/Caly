@@ -19,17 +19,20 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Logging;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Lifti;
 using Lifti.Querying;
 using Lifti.Tokenization;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Services
 {
     internal sealed class LiftiTextSearchService : ITextSearchService
     {
+        private readonly ILogger<LiftiTextSearchService> _logger;
         private readonly FullTextIndex<int> _index;
 
         /// <summary>
@@ -48,8 +51,10 @@ namespace Caly.Core.Services
             }
         }
 
-        public LiftiTextSearchService()
+        public LiftiTextSearchService(ILogger<LiftiTextSearchService> logger)
         {
+            _logger = logger;
+
             _index = new FullTextIndexBuilder<int>()
                 //.WithIndexModificationAction(OnIndexChange)
                 .WithObjectTokenization<PdfPageViewModel>(
@@ -207,7 +212,7 @@ namespace Caly.Core.Services
         public void Dispose()
         {
             _index.Dispose();
-            System.Diagnostics.Debug.WriteLine("Text search service disposed");
+            _logger.LogInformation("Text search service disposed.");
         }
     }
 }

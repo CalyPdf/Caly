@@ -15,43 +15,51 @@
 
 using System;
 using Avalonia.Controls.Notifications;
+using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 using UglyToad.PdfPig.Logging;
 
-namespace Caly.Core.Utilities
+namespace Caly.Core.Loggers
 {
     internal sealed class CalyPdfPigLogger : ILog
     {
         private const string _annotationTitle = "Error in pdf document";
 
+        private readonly ILogger<PdfPigPdfService> _logger;
         private readonly IDialogService _dialogService;
 
-        public CalyPdfPigLogger(IDialogService dialogService)
+        public CalyPdfPigLogger(IDialogService dialogService, ILogger<PdfPigPdfService> logger)
         {
             ArgumentNullException.ThrowIfNull(dialogService, nameof(dialogService));
+            _logger = logger;
             _dialogService = dialogService;
         }
 
         public void Debug(string message)
         {
+            _logger.LogDebug("PdfPig: {message}", message);
         }
 
         public void Debug(string message, Exception ex)
         {
+            _logger.LogDebug(ex, "PdfPig: {message}", message);
         }
 
         public void Warn(string message)
         {
+            _logger.LogWarning("PdfPig: {message}", message);
         }
 
         public void Error(string message)
         {
+            _logger.LogError("PdfPig: {message}", message);
             _dialogService.ShowNotification(_annotationTitle, message, NotificationType.Warning);
         }
 
         public void Error(string message, Exception ex)
         {
-            // We ignore the ex for the moment
+            _logger.LogError(ex, "PdfPig: {message}", message);
             _dialogService.ShowNotification(_annotationTitle, message, NotificationType.Warning);
         }
     }

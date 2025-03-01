@@ -22,6 +22,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Controls;
 
@@ -35,7 +36,7 @@ public sealed class PdfSearchPanelControl : TemplatedControl
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            DataContext = new PdfDocumentViewModel(null, null);
+            DataContext = new PdfDocumentViewModel(null, null, null);
         }
 #endif
     }
@@ -79,7 +80,7 @@ public sealed class PdfSearchPanelControl : TemplatedControl
 
         if (!textBox.Focus())
         {
-            System.Diagnostics.Debug.WriteLine("Something wrong happened while setting focus on search box.");
+            App.Current?.Logger.LogInformation("Something wrong happened while setting focus on search box.");
         }
     }
 
