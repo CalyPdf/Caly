@@ -71,5 +71,20 @@ namespace Caly.Core.Utilities
             _lockFile.Dispose();
             _lockFile = null;
         }
+
+        public static bool ForceReleaseMutex()
+        {
+            try
+            {
+                File.Delete(_lockFileName);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteExceptionToFile(e);
+            }
+
+            return false;
+        }
     }
 }

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Pipes;
 using System.Runtime.CompilerServices;
 using System.Security.Principal;
@@ -34,6 +35,8 @@ namespace Caly.Core.Utilities
         private static readonly string _pipeName = "caly_pdf_files.pipe";
 
         private static readonly ReadOnlyMemory<byte> _keyPhrase = "ca1y k3y pa$$"u8.ToArray();
+
+        private static readonly TimeSpan _connectTimeout = TimeSpan.FromSeconds(2);
 
         private readonly NamedPipeServerStream _pipeServer;
 
@@ -129,7 +132,7 @@ namespace Caly.Core.Utilities
             await _pipeServer.DisposeAsync();
         }
 
-        public static void SendPath(string filePath)
+        public static bool SendPath(string filePath)
         {
             try
             {
@@ -137,13 +140,12 @@ namespace Caly.Core.Utilities
                            PipeDirection.Out, PipeOptions.CurrentUserOnly,
                            TokenImpersonationLevel.Identification))
                 {
-                    pipeClient.Connect();
+                    pipeClient.Connect(_connectTimeout);
 
                     Memory<byte> pathBytes = Encoding.UTF8.GetBytes(filePath);
                     if (pathBytes.Length > ushort.MaxValue)
                     {
-                        // TODO - Log
-                        return;
+                        throw new PathTooLongException($"The pdf file path passed to Caly is too long. Received {pathBytes.Length} bytes, and maximum size is {ushort.MaxValue}.");
                     }
 
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)pathBytes.Length);
@@ -153,16 +155,28 @@ namespace Caly.Core.Utilities
 
                     pipeClient.Flush();
                 }
+
+                return true;
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException uae)
             {
                 // Server must be running in admin, but not the client
                 // Handle the case and display error message
+                Debug.WriteExceptionToFile(uae);
+                throw;
+            }
+            catch (TimeoutException toe)
+            {
+                // Could not connect to the running instance of Caly
+                // probably because it is actually not running, i.e. the 
+                // lock file was not properly deleted after close
+                Debug.WriteExceptionToFile(toe);
+                CalyFileMutex.ForceReleaseMutex();
                 throw;
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Debug.WriteExceptionToFile(e);
                 throw;
             }
         }

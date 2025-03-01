@@ -118,6 +118,7 @@ namespace Caly.Desktop
                 }
 
                 Debug.WriteExceptionToFile(ex);
+                ShowExceptionSafely(ex);
                 throw;
             }
         }
