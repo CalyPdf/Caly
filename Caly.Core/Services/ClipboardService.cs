@@ -25,6 +25,7 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Services
 {
@@ -35,9 +36,11 @@ namespace Caly.Core.Services
         private static ReadOnlySpan<char> _noWhitespaceBefore => [' ', ')', ']', '}', ':', '.', '′', '\'', ',', '?', '!'];
 
         private readonly Visual _target;
+        private readonly ILogger<ClipboardService> _logger;
 
-        public ClipboardService(Visual target)
+        public ClipboardService(Visual target, ILogger<ClipboardService> logger)
         {
+            _logger = logger;
             _target = target;
         }
 
@@ -51,10 +54,10 @@ namespace Caly.Core.Services
             {
                 return;
             }
-            
+
             // https://docs.avaloniaui.net/docs/next/concepts/services/clipboardS
 
-            System.Diagnostics.Debug.WriteLine("Starting IClipboardService.SetAsync");
+            _logger.LogInformation("Starting IClipboardService.SetAsync");
 
             string text = await Task.Run(async () =>
             {
@@ -94,7 +97,7 @@ namespace Caly.Core.Services
             }, token);
 
             await SetAsync(text);
-            System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
+            _logger.LogInformation("Ended IClipboardService.SetAsync");
         }
 
         public async Task SetAsync(string text)

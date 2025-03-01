@@ -22,6 +22,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Controls
 {
@@ -57,6 +58,7 @@ namespace Caly.Core.Controls
         {
             if (e.Property == DataContextProperty && e.OldValue is PdfDocumentViewModel oldVm)
             {
+                App.Current?.Logger.LogInformation("Thumbnails control DataContext changed: clearing all thumbnail for {count} page.", oldVm.PageCount);
                 oldVm.ClearAllThumbnails();
             }
         }
@@ -72,7 +74,8 @@ namespace Caly.Core.Controls
             {
                 return;
             }
-            
+
+            App.Current?.Logger.LogInformation("Thumbnails control ContainerPrepared: page {page}.", vm.PageNumber);
             container.PropertyChanged += _onContainerPropertyChanged;
             vm.LoadThumbnail();
         }
@@ -106,7 +109,9 @@ namespace Caly.Core.Controls
                     try
                     {
                         _isScrollingToPage = true;
+                        App.Current?.Logger.LogInformation("Thumbnails control visibility changed to true. Scrolling to page {page}.", _listBox.SelectedIndex);
                         _listBox.ScrollIntoView(_listBox.SelectedIndex);
+                        App.Current?.Logger.LogInformation("Thumbnails control done scrolling to page {page}.", _listBox.SelectedIndex);
                     }
                     finally
                     {
@@ -124,6 +129,7 @@ namespace Caly.Core.Controls
                     {
                         if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
                         {
+                            App.Current?.Logger.LogInformation("Thumbnails control page {page} is visible, loading image.", vm.PageNumber);
                             vm.LoadThumbnail(); // Load image
                         }
                     }
@@ -131,6 +137,7 @@ namespace Caly.Core.Controls
                 else if (change is { OldValue: true, NewValue: false })
                 {
                     // Thumbnails control is hidden
+                    App.Current?.Logger.LogInformation("Thumbnails control visibility changed to false. Clearing all thumbnails.");
                     if (DataContext is PdfDocumentViewModel vm)
                     {
                         vm.ClearAllThumbnails();

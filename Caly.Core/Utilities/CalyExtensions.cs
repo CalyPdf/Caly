@@ -20,6 +20,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Utilities
 {
@@ -53,7 +55,7 @@ namespace Caly.Core.Utilities
             var element = e.Find<T>(name);
             return element ?? throw new NullReferenceException($"Could not find {name}.");
         }
-
+        
         public static bool IsEmpty(this Rect rect)
         {
             return rect.Size.IsEmpty();

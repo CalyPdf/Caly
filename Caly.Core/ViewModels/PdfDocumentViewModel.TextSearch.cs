@@ -25,6 +25,7 @@ using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Lifti;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.ViewModels
 {
@@ -95,8 +96,7 @@ namespace Caly.Core.ViewModels
 
                 if (previousCts is not null)
                 {
-                    // cancel the previous session and wait for its termination
-                    System.Diagnostics.Debug.WriteLine("cancel the previous session and wait for its termination");
+                    _logger.LogInformation("Cancelling the previous search session and waiting for its termination.");
                     await previousCts.CancelAsync();
                     try
                     {
@@ -104,7 +104,6 @@ namespace Caly.Core.ViewModels
                     }
                     catch (OperationCanceledException e)
                     {
-                        System.Diagnostics.Debug.WriteLine(e);
                         throw;
                     }
                     catch
@@ -224,13 +223,13 @@ namespace Caly.Core.ViewModels
             { }
             catch (LiftiException qpe)
             {
-                System.Diagnostics.Debug.Write(qpe.ToString());
+                _logger.LogError(qpe, "Error in Lifti while searching text.");
                 _isSearchQueryError = true;
                 SetSearchStatus(qpe.Message);
             }
             catch (Exception e)
             {
-                System.Diagnostics.Debug.Write(e.ToString());
+                _logger.LogError(e, "Error while searching text.");
                 Exception = new ExceptionViewModel(e);
             }
         }

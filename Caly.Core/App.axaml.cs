@@ -23,6 +23,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using Caly.Core.Loggers;
 using Avalonia.Threading;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
@@ -30,6 +31,7 @@ using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core
 {
@@ -49,6 +51,8 @@ namespace Caly.Core
         /// Gets the <see cref="IServiceProvider"/> instance to resolve application services.
         /// </summary>
         public IServiceProvider? Services { get; private set; }
+
+        public ILogger<App> Logger { get; private set; }
 
         public override void Initialize()
         {
@@ -88,12 +92,15 @@ namespace Caly.Core
                 services.AddSingleton(_ => (Visual)singleViewPlatform.MainView);
             }
 #if DEBUG
-            else if (ApplicationLifetime is null && Avalonia.Controls.Design.IsDesignMode)
+            else if (ApplicationLifetime is null && Design.IsDesignMode)
             {
                 var mainView = new MainView { DataContext = new MainViewModel() };
                 services.AddSingleton(_ => (Visual)mainView);
             }
+            services.AddLogging(builder => builder.AddDebug());
 #endif
+            services.AddLogging(builder => builder.AddCalyLogger());
+
             services.AddSingleton<ISettingsService, JsonSettingsService>();
             services.AddSingleton<IFilesService, FilesService>();
             services.AddSingleton<IDialogService, DialogService>();
@@ -103,7 +110,7 @@ namespace Caly.Core
             services.AddScoped<IPdfService, PdfPigPdfService>();
             services.AddScoped<ITextSearchService, LiftiTextSearchService>();
             services.AddScoped<PdfDocumentViewModel>();
-
+            
             Services = services.BuildServiceProvider();
 
 #pragma warning disable CS8601 // Possible null reference assignment.
@@ -113,6 +120,8 @@ namespace Caly.Core
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
             _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
 #pragma warning restore CS8601 // Possible null reference assignment.
+
+            Logger = Services.GetRequiredService<ILogger<App>>();
 
             // TODO - Check https://github.com/AvaloniaUI/Avalonia/commit/0e014f9cb627d99fb4e1afa389b4c073c836e9b6
 

@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.Models
 {
@@ -82,7 +83,7 @@ namespace Caly.Core.Models
                 await page.SetPageTextLayer(token);
                 selectedWords = GetPageSelectedWords(pageNumber);
 
-                System.Diagnostics.Debug.WriteLine($"GetPageSelectionAsAsync: loaded page interactive layer {pageNumber}.");
+                _logger.LogInformation("GetPageSelectionAsAsync: loaded page interactive layer {pageNumber}.", pageNumber);
 
                 if (selectedWords is null)
                 {
@@ -189,7 +190,7 @@ namespace Caly.Core.Models
                 int endIndex = firstWord.Count - 1;
                 if (wordStartIndex > endIndex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"ERROR: wordStartIndex {wordStartIndex} is larger than {endIndex}.");
+                    _logger.LogError("GetPageSelectionAs: in page {page} wordStartIndex {wordStartIndex} is larger than {endIndex}.", pageNumber, wordStartIndex, endIndex);
                     wordStartIndex = endIndex;
                 }
 

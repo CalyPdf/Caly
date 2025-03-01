@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Caly.Core.Services.Interfaces;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Caly.Core.ViewModels
 {
@@ -41,7 +42,7 @@ namespace Caly.Core.ViewModels
             }
             catch (Exception e)
             {
-                System.Diagnostics.Debug.Write(e.ToString());
+                _logger.LogError(e, "Error in CopyText().");
                 Exception = new ExceptionViewModel(e);
             }
         }
