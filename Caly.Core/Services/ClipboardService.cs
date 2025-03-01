@@ -70,7 +70,7 @@ namespace Caly.Core.Services
                         continue;
                     }
 
-                    if (_noWhitespaceBefore.Contains(word.Span[0]) && char.IsWhiteSpace(sb[^1]))
+                    if (sb.Length > 0 && _noWhitespaceBefore.Contains(word.Span[0]) && char.IsWhiteSpace(sb[^1]))
                     {
                         sb.Length--;
                     }
