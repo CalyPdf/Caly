@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -110,9 +111,28 @@ namespace Caly.Core.Services
             _channelReader = _fileChannel.Reader;
 
             _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
-
+            _ = Task.Run(MonitorMemoryUsage);
             _logger.LogInformation("Caly Pdf Reader started.");
         }
+
+        private async Task MonitorMemoryUsage()
+        {
+            _logger.LogInformation("Starting monitoring process");
+
+            // https://stackoverflow.com/questions/46153053/what-is-the-right-way-to-monitor-application-memory-usage
+            var process = Process.GetCurrentProcess();
+
+            while (true)
+            {
+                process.Refresh();
+                //string ws = Helpers.FormatSizeBytes(process.WorkingSet64);
+                string privateMemory = Helpers.FormatSizeBytes(process.PrivateMemorySize64);
+                int handles = process.HandleCount;
+                _logger.LogInformation("Monitoring: Memory usage: {privateMemory}, handles: {handles}", privateMemory, handles);
+                await Task.Delay(2500);
+            }
+        }
+
 
         public async Task OpenLoadDocument(CancellationToken cancellationToken)
         {
