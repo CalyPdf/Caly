@@ -52,7 +52,7 @@ namespace Caly.Core.Utilities
             _pipeServer = new(_pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
         }
 
-        public async IAsyncEnumerable<string> ReceivePathAsync([EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<string?> ReceivePathAsync([EnumeratorCancellation] CancellationToken token)
         {
             while (true)
             {
@@ -88,13 +88,45 @@ namespace Caly.Core.Utilities
                         continue;
                     }
 
-                    // Read file path
-                    pathBuffer = new byte[len];
-
-                    if (await _pipeServer.ReadAsync(pathBuffer, token) != len)
+                    // Read message type
+                    Memory<byte> byteBuffer = new byte[1];
+                    if (await _pipeServer.ReadAsync(byteBuffer, token) != 1)
                     {
                         // TODO - Log
                         continue;
+                    }
+
+                    switch ((PipeMessageType)byteBuffer.Span[0])
+                    {
+                        case PipeMessageType.FilePath:
+                            {
+                                // Read file path
+                                pathBuffer = new byte[len];
+
+                                if (await _pipeServer.ReadAsync(pathBuffer, token) != len)
+                                {
+                                    // TODO - Log
+                                    continue;
+                                }
+                            }
+                            break;
+
+                        case PipeMessageType.Command:
+                            {
+                                byteBuffer.Span.Clear();
+                                if (await _pipeServer.ReadAsync(byteBuffer, token) != 1)
+                                {
+                                    // TODO - Log
+                                    continue;
+                                }
+
+                                ProcessMessageCommand((PipeCommandMessageType)byteBuffer.Span[0]);
+                            }
+                            break;
+
+                        default:
+                            // TODO - Log
+                            break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -122,6 +154,20 @@ namespace Caly.Core.Utilities
             }
         }
 
+        private static void ProcessMessageCommand(PipeCommandMessageType commandType)
+        {
+            switch (commandType)
+            {
+                case PipeCommandMessageType.BringToFront:
+                    App.Current?.TryBringToFront();
+                    break;
+
+                default:
+                    // TODO - Log
+                    break;
+            }
+        }
+
         public void Dispose()
         {
             _pipeServer.Dispose();
@@ -130,6 +176,50 @@ namespace Caly.Core.Utilities
         public async ValueTask DisposeAsync()
         {
             await _pipeServer.DisposeAsync();
+        }
+
+        public static bool SendBringToFront()
+        {
+            try
+            {
+                using (var pipeClient = new NamedPipeClientStream(".", _pipeName,
+                           PipeDirection.Out, PipeOptions.CurrentUserOnly,
+                           TokenImpersonationLevel.Identification))
+                {
+                    pipeClient.Connect(_connectTimeout);
+
+                    Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)1);
+                    pipeClient.Write(lengthBytes.Span);
+                    pipeClient.Write(_keyPhrase.Span);
+                    pipeClient.WriteByte((byte)PipeMessageType.Command);
+                    pipeClient.WriteByte((byte)PipeCommandMessageType.BringToFront);
+
+                    pipeClient.Flush();
+                }
+
+                return true;
+            }
+            catch (UnauthorizedAccessException uae)
+            {
+                // Server must be running in admin, but not the client
+                // Handle the case and display error message
+                Debug.WriteExceptionToFile(uae);
+                throw;
+            }
+            catch (TimeoutException toe)
+            {
+                // Could not connect to the running instance of Caly
+                // probably because it is actually not running, i.e. the 
+                // lock file was not properly deleted after close
+                Debug.WriteExceptionToFile(toe);
+                CalyFileMutex.ForceReleaseMutex();
+                throw;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteExceptionToFile(e);
+                throw;
+            }
         }
 
         public static bool SendPath(string filePath)
@@ -151,6 +241,7 @@ namespace Caly.Core.Utilities
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)pathBytes.Length);
                     pipeClient.Write(lengthBytes.Span);
                     pipeClient.Write(_keyPhrase.Span);
+                    pipeClient.WriteByte((byte)PipeMessageType.FilePath);
                     pipeClient.Write(pathBytes.Span);
 
                     pipeClient.Flush();
@@ -179,6 +270,19 @@ namespace Caly.Core.Utilities
                 Debug.WriteExceptionToFile(e);
                 throw;
             }
+        }
+
+        private enum PipeMessageType : byte
+        {
+            None = 0,
+            FilePath = 1,
+            Command = 2
+        }
+
+        private enum PipeCommandMessageType : byte
+        {
+            None = 0,
+            BringToFront = 1
         }
     }
 }
