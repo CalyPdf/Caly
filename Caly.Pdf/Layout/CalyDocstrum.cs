@@ -221,7 +221,13 @@ namespace Caly.Pdf.Layout
                 throw new ArgumentException("DocstrumBoundingBoxes: the bin length must be positive when commputing peak average distance.", nameof(binLength));
             }
 
-            var max = (int)Math.Ceiling(distances.Max());
+            double maxDbl = Math.Ceiling(distances.Max());
+            if (maxDbl > int.MaxValue)
+            {
+                throw new OverflowException($"Error while casting maximum distance of {maxDbl} to integer.");
+            }
+
+            int max = (int)maxDbl;
             if (max == 0)
             {
                 max = binLength;
