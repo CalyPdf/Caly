@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -28,11 +29,12 @@ namespace Caly.Core.Controls
     public sealed class PdfDocumentThumbnailControl : TemplatedControl
     {
         private ListBox? _listBox;
+        private bool _isScrollingToPage = false;
 
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
-
+            
             _listBox = e.NameScope.FindFromNameScope<ListBox>("PART_ListBox");
             _listBox.ContainerPrepared += _listBox_ContainerPrepared;
             _listBox.ContainerClearing += _listBox_ContainerClearing;
@@ -61,11 +63,16 @@ namespace Caly.Core.Controls
         
         private void _listBox_ContainerPrepared(object? sender, ContainerPreparedEventArgs e)
         {
-            if (e.Container is not ListBoxItem container || e.Container.DataContext is not PdfPageViewModel vm)
+            if (_isScrollingToPage)
             {
                 return;
             }
 
+            if (e.Container is not ListBoxItem container || e.Container.DataContext is not PdfPageViewModel vm)
+            {
+                return;
+            }
+            
             container.PropertyChanged += _onContainerPropertyChanged;
             vm.LoadThumbnail();
         }
@@ -95,7 +102,39 @@ namespace Caly.Core.Controls
             {
                 if (change is { OldValue: false, NewValue: true })
                 {
-                    _listBox.ScrollIntoView(_listBox.SelectedIndex);
+                    // Thumbnails control becomes visible
+                    try
+                    {
+                        _isScrollingToPage = true;
+                        _listBox.ScrollIntoView(_listBox.SelectedIndex);
+                    }
+                    finally
+                    {
+                        _isScrollingToPage = false;
+                    }
+
+                    // Check thumbnails visibility
+                    if (_listBox.Parent is not ScrollViewer sv)
+                    {
+                        return;
+                    }
+
+                    Rect viewPort = new Rect((Point)sv.Offset, sv.Viewport);
+                    foreach (ListBoxItem listBoxItem in _listBox.GetRealizedContainers().OfType<ListBoxItem>())
+                    {
+                        if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
+                        {
+                            vm.LoadThumbnail(); // Load image
+                        }
+                    }
+                }
+                else if (change is { OldValue: true, NewValue: false })
+                {
+                    // Thumbnails control is hidden
+                    if (DataContext is PdfDocumentViewModel vm)
+                    {
+                        vm.ClearAllThumbnails();
+                    }
                 }
             }
         }
