@@ -97,7 +97,7 @@ namespace Caly.Desktop
             {
                 if (args.Length == 0)
                 {
-                    // TODO - Still bring app to front even if there's no file to open
+                    FilePipeStream.SendBringToFront();
                     return;
                 }
 

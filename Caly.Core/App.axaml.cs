@@ -23,6 +23,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
@@ -118,6 +119,39 @@ namespace Caly.Core
             base.OnFrameworkInitializationCompleted();
         }
 
+        public bool TryBringToFront()
+        {
+            if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                return false;
+            }
+
+            if (desktop.MainWindow is null)
+            {
+                return false;
+            }
+
+            try
+            {
+                desktop.MainWindow.Activate(); // Bring window to front
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    // Popup from taskbar
+                    if (desktop.MainWindow.WindowState == WindowState.Minimized)
+                    {
+                        desktop.MainWindow.WindowState = WindowState.Normal;
+                    }
+                });
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private async void Desktop_Startup(object? sender, ControlledApplicationLifetimeStartupEventArgs e)
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -153,8 +187,15 @@ namespace Caly.Core
             try
             {
                 await Parallel.ForEachAsync(_pipeServer.ReceivePathAsync(_listeningToFilesCts.Token),
-                    _listeningToFilesCts.Token,
-                    async (path, ct) => await OpenDoc(path, ct));
+                    _listeningToFilesCts.Token, async (path, ct) =>
+                    {
+                        if (string.IsNullOrEmpty(path))
+                        {
+                            return;
+                        }
+
+                        await OpenDoc(path, ct);
+                    });
             }
             catch (OperationCanceledException)
             {

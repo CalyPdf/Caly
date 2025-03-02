@@ -22,9 +22,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
@@ -209,7 +207,7 @@ namespace Caly.Core.Services
                     _mainViewModel.SelectedDocumentIndex = index;
                 }
 
-                BringMainWindowToFront();
+                App.Current?.TryBringToFront();
                 return;
             }
 
@@ -250,7 +248,7 @@ namespace Caly.Core.Services
                     {
                         // We need a lock to avoid issues with tabs when opening documents in parallel
                         _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
-                        BringMainWindowToFront();
+                        App.Current?.TryBringToFront();
                         return;
                     }
                 }
@@ -264,25 +262,6 @@ namespace Caly.Core.Services
         {
             // The backslash character (\) is reserved for mutex names
             return Convert.ToBase64String(Encoding.UTF8.GetBytes(path)).Replace('\\', '#');
-        }
-
-        private void BringMainWindowToFront()
-        {
-            if (_target is not Window w)
-            {
-                return;
-            }
-
-            w.Activate(); // Bring window to front
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                // Popup from taskbar
-                if (w.WindowState == WindowState.Minimized)
-                {
-                    w.WindowState = WindowState.Normal;
-                }
-            });
         }
     }
 }
