@@ -207,7 +207,6 @@ namespace Caly.Core.Services
                     _mainViewModel.SelectedDocumentIndex = index;
                 }
 
-                App.Current?.TryBringToFront();
                 return;
             }
 
@@ -248,7 +247,6 @@ namespace Caly.Core.Services
                     {
                         // We need a lock to avoid issues with tabs when opening documents in parallel
                         _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
-                        App.Current?.TryBringToFront();
                         return;
                     }
                 }

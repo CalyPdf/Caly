@@ -108,7 +108,10 @@ namespace Caly.Desktop
                     return;
                 }
 
-                FilePipeStream.SendPath(path);
+                if (FilePipeStream.SendPath(path))
+                {
+                    FilePipeStream.SendBringToFront();
+                }
             }
             catch (Exception ex)
             {
