@@ -21,7 +21,8 @@ namespace Caly.Core.Models
         {
             Width = 1000,
             Height = 500,
-            PaneSize = 350
+            PaneSize = 350,
+            Logs = false
         };
 
         // TODO - Add version for compatibility checks
@@ -32,9 +33,12 @@ namespace Caly.Core.Models
 
         public int PaneSize { get; set; }
 
-        public enum CalySettingsProperty
+        public bool Logs { get; set; }
+        
+        public enum CalySettingsProperty : ushort
         {
-            PaneSize = 0
+            PaneSize = 0,
+            Logs = 1
         }
     }
 }

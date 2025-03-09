@@ -34,11 +34,9 @@ namespace Caly.Core.Services
         
         private readonly Visual _target;
 
-        private readonly ILogger<JsonSettingsService> _logger;
-
         private CalySettings? _current;
 
-        public JsonSettingsService(Visual target, ILogger<JsonSettingsService> logger)
+        public JsonSettingsService(Visual target)
         {
             if (CalyExtensions.IsMobilePlatform())
             {
@@ -46,7 +44,6 @@ namespace Caly.Core.Services
                 return;
             }
 
-            _logger = logger;
             _target = target;
             if (_target is Window w)
             {
@@ -105,6 +102,10 @@ namespace Caly.Core.Services
                 {
                     case CalySettingsProperty.PaneSize:
                         _current.PaneSize = (int)(double)value;
+                        break;
+
+                    case CalySettingsProperty.Logs:
+                        _current.Logs = (bool)value;
                         break;
                 }
             }
@@ -251,7 +252,7 @@ namespace Caly.Core.Services
 
         public void Save()
         {
-            _logger.LogInformation("Saving settings: {settings}.", _current);
+            App.Current?.Logger.LogInformation("Saving settings: {settings}.", _current);
 
             if (CalyExtensions.IsMobilePlatform())
             {
