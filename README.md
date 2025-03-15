@@ -82,6 +82,6 @@ You can also help Caly Pdf Reader by contributing to:
 
 ## License
 
-Caly Pdf Reader is licensed under the [GPL-3.0 License](https://github.com/BobLd/Caly?tab=GPL-3.0-1-ov-file#readme).
+Caly Pdf Reader is licensed under the [MIT License](https://github.com/CalyPdf/Caly/blob/master/LICENSE).
 
 ![caly preview 3](https://github.com/user-attachments/assets/49a5cea8-a407-48b2-9f53-3d3022a120ba)
