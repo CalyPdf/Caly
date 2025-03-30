@@ -311,6 +311,11 @@ namespace Caly.Pdf.TextLayer
             // No op
         }
 
+        protected override void ClipToRectangle(PdfRectangle rectangle, FillingRule clippingRule)
+        {
+            // No op
+        }
+
         public override void PaintShading(NameToken shadingName)
         {
             // No op
