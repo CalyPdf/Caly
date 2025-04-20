@@ -37,21 +37,21 @@ namespace Caly.Core.Controls
     {
         private sealed class SkiaDrawOperation : ICustomDrawOperation
         {
-            private readonly SKPaint? _paint;
-
+            private readonly IRef<SKPicture>? _picture;
+            private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
 
-            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, SKPaint? paint)
+            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality)
             {
-                _paint = paint;
+                _picture = picture?.Clone();
                 _visibleArea = visibleArea;
+                _filterQuality = filterQuality;
                 Bounds = bounds;
             }
 
             public void Dispose()
             {
-                _paint?.Shader?.Dispose();
-                _paint?.Dispose();
+                _picture?.Dispose();
             }
 
             public Rect Bounds { get; }
@@ -67,9 +67,7 @@ namespace Caly.Core.Controls
             {
                 Debug.ThrowOnUiThread();
 
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                if (_paint is null || !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+                if (_picture?.Item is null || !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
                 {
                     return;
                 }
@@ -84,13 +82,19 @@ namespace Caly.Core.Controls
 
                     canvas.Save();
                     canvas.ClipRect(_visibleArea);
-                    canvas.DrawPaint(_paint);
+                    using (var p = new SKPaint())
+                    {
+                        p.FilterQuality = _filterQuality;
+                        p.IsDither = false;
+                        p.FakeBoldText = false;
+                        p.IsAntialias = false;
+
+                        canvas.DrawPicture(_picture.Item, p);
+                    }
                     canvas.Restore();
                 }
             }
         }
-
-        private const SKShaderTileMode TileMode = SKShaderTileMode.Clamp;
 
         /// <summary>
         /// Defines the <see cref="Picture"/> property.
@@ -156,11 +160,18 @@ namespace Caly.Core.Controls
                 return;
             }
 
-            SKMatrix translate = SKMatrix.CreateTranslation((float)VisibleArea.Value.Left, (float)VisibleArea.Value.Top);
             SKRect tile = VisibleArea.Value.ToSKRect();
 
-            SKPaint paint = new SKPaint() { Shader = picture.Item.ToShader(TileMode, TileMode, translate, tile) };
-            context.Custom(new SkiaDrawOperation(viewPort, tile, paint));
+            var filter = RenderOptions.GetBitmapInterpolationMode(this);
+
+            /*
+            context.PushRenderOptions(new RenderOptions()
+            {
+                BitmapInterpolationMode = filter
+            });
+            */
+
+            context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality()));
 
             base.Render(context);
         }

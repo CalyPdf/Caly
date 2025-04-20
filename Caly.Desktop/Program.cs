@@ -184,7 +184,7 @@ namespace Caly.Desktop
                     .WithInterFont()
                     .UseSkia()
                     // https://github.com/AvaloniaUI/Avalonia/discussions/12597
-                    .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software] })
+                    .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software], DpiAwareness = Win32DpiAwareness.Unaware })
                     .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Software], WmClass = _appName })
                     .With(new AvaloniaNativePlatformOptions { RenderingMode = [AvaloniaNativeRenderingMode.Software] })
                     .LogToTrace();

@@ -41,9 +41,10 @@ namespace Caly.Core.Controls
             base.OnApplyTemplate(e);
             
             _listBox = e.NameScope.FindFromNameScope<ListBox>("PART_ListBox");
+            _listBox.PreparingContainer += ListBoxOnPreparingContainer;
             _listBox.ContainerPrepared += _listBox_ContainerPrepared;
             _listBox.ContainerClearing += _listBox_ContainerClearing;
-            _listBox.PropertyChanged += _listBox_PropertyChanged;
+            _listBox.PropertyChanged += ListBoxOnPropertyChanged;
         }
 
         protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
@@ -52,13 +53,24 @@ namespace Caly.Core.Controls
 
             if (_listBox is not null)
             {
+                _listBox.PreparingContainer -= ListBoxOnPreparingContainer;
                 _listBox.ContainerPrepared -= _listBox_ContainerPrepared;
                 _listBox.ContainerClearing -= _listBox_ContainerClearing;
-                _listBox.PropertyChanged -= _listBox_PropertyChanged;
+                _listBox.PropertyChanged -= ListBoxOnPropertyChanged;
             }
         }
-        
-        private void _listBox_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+
+        private void ListBoxOnPreparingContainer(object? sender, ContainerPreparedEventArgs e)
+        {
+            if (_isScrollingToPage || e.Container is not ListBoxItem container)
+            {
+                return;
+            }
+            
+            container.PropertyChanged += _onContainerPropertyChanged;
+        }
+
+        private void ListBoxOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
             if (e.Property == DataContextProperty && e.OldValue is PdfDocumentViewModel oldVm)
             {
@@ -73,17 +85,11 @@ namespace Caly.Core.Controls
         
         private void _listBox_ContainerPrepared(object? sender, ContainerPreparedEventArgs e)
         {
-            if (_isScrollingToPage)
-            {
-                return;
-            }
-
-            if (e.Container is not ListBoxItem container || e.Container.DataContext is not PdfPageViewModel vm)
+            if (_isScrollingToPage || e.Container.DataContext is not PdfPageViewModel vm)
             {
                 return;
             }
             
-            container.PropertyChanged += _onContainerPropertyChanged;
             vm.LoadThumbnail();
         }
 

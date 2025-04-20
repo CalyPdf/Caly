@@ -180,7 +180,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         ScrollIntoView(pageNumber - 1);
     }
-
+    
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
