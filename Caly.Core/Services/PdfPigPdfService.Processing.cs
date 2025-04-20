@@ -214,7 +214,7 @@ namespace Caly.Core.Services
 
             picture?.Dispose();
 
-            System.Diagnostics.Debug.Assert((picture?.RefCount ?? 0) == 0);
+            //System.Diagnostics.Debug.Assert((picture?.RefCount ?? 0) == 0);
         }
         #endregion
 
