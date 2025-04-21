@@ -64,6 +64,11 @@ namespace Caly.Core.Controls
             {
                 oldVm.ClearAllThumbnails();
             }
+            else if (e.Property == SelectingItemsControl.SelectedIndexProperty && DataContext is PdfDocumentViewModel vm)
+            {
+                // Looks like there a bug where the binding does not work when new page = old page + 1
+                vm.SelectedPageIndex = (int?)e.NewValue + 1;
+            }
         }
         
         private void _listBox_ContainerPrepared(object? sender, ContainerPreparedEventArgs e)
