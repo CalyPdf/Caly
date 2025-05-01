@@ -27,13 +27,17 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Threading;
+using System;
 
 namespace Caly.Core.Controls;
 
-[TemplatePart("PART_TextBoxSearch", typeof(TextBox))]
+[TemplatePart("PART_AutoCompleteBoxSearch", typeof(AutoCompleteBox))]
 public sealed class PdfSearchPanelControl : TemplatedControl
 {
-    private TextBox? _textBoxSearch;
+    private AutoCompleteBox? _textBoxSearch;
 
     public PdfSearchPanelControl()
     {
@@ -49,7 +53,7 @@ public sealed class PdfSearchPanelControl : TemplatedControl
     {
         base.OnApplyTemplate(e);
 
-        _textBoxSearch = e.NameScope.FindFromNameScope<TextBox>("PART_TextBoxSearch");
+        _textBoxSearch = e.NameScope.FindFromNameScope<AutoCompleteBox>("PART_AutoCompleteBoxSearch");
         _textBoxSearch.KeyDown += TextBoxSearch_OnKeyDown;
         _textBoxSearch.Loaded += TextBox_Loaded;
     }

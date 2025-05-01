@@ -18,11 +18,12 @@
 			<ControlTemplate>
 
 				<DockPanel Focusable="True">
-					<TextBox DockPanel.Dock="Top"
-                             Name="PART_TextBoxSearch"
-                             Focusable="True"
-                             Watermark="Search..."
-                             Text="{Binding TextSearch}"/>
+					<AutoCompleteBox DockPanel.Dock="Top"
+                                     Name="PART_AutoCompleteBoxSearch"
+                                     ItemsSource="{Binding AutoCompleteSuggestions}"
+                                     Focusable="True"
+                                     Watermark="Search..."
+                                     Text="{Binding TextSearch}"/>
 
 					<ProgressBar DockPanel.Dock="Top"
                                  Padding="0,0,0,0"

@@ -316,6 +316,13 @@ namespace Caly.Core.Services
             return _textSearchService.Search(pdfDocument, query, token);
         }
 
+        public ValueTask<IEnumerable<string>> GetAutoCompleteSuggestions(PdfDocumentViewModel pdfDocument, string query, CancellationToken token)
+        {
+            Debug.ThrowOnUiThread();
+
+            return _textSearchService.GetAutoCompleteSuggestions(pdfDocument, query, token);
+        }
+        
         private static PdfBookmarkNode? BuildPdfBookmarkNode(BookmarkNode node, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

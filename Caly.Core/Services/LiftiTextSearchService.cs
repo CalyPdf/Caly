@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -161,6 +162,27 @@ namespace Caly.Core.Services
 
                 return results.Select(r => ToViewModel(pdfDocument, r, token));
             }, token);
+        }
+
+        public async ValueTask<IEnumerable<string>> GetAutoCompleteSuggestions(PdfDocumentViewModel pdfDocument, string text, CancellationToken token)
+        {
+            using (var navigator = _index.CreateNavigator())
+            {
+                //var test = navigator.EnumerateIndexedTokens();
+
+                Span<char> search = new char[text.Length];
+                text.AsSpan().ToUpper(search, CultureInfo.InvariantCulture);
+                
+                if (navigator.Process(search))
+                {
+                    //IReadOnlyCollection<string> result = navigator.EnumerateIndexedTokens().ToArray(); // TODO - do we need the ToArray()
+                    //return result;
+
+                    return navigator.EnumerateIndexedTokens().Select(s =>s.ToLowerInvariant());
+                }
+
+                return Array.Empty<string>();
+            }
         }
 
         private static SearchResultItemType GetSearchResultItemType(string fieldName)

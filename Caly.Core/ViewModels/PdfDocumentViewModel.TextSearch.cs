@@ -51,11 +51,14 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private string? _textSearch;
 
+        [ObservableProperty] private ObservableCollection<string> _autoCompleteSuggestions = [];
         [ObservableProperty] private ObservableCollection<TextSearchResultViewModel> _searchResults = [];
         [ObservableProperty] private HierarchicalTreeDataGridSource<TextSearchResultViewModel> _searchResultsSource;
 
         [ObservableProperty] private TextSearchResultViewModel? _selectedTextSearchResult;
 
+        [ObservableProperty] private Func<string?, CancellationToken, Task<IEnumerable<object>>>? _getAutoComplete;
+        
         async partial void OnTextSearchChanged(string? value)
         {
             await SearchText(); // TODO - subscribe to event change instead and use rolling time window
@@ -71,6 +74,7 @@ namespace Caly.Core.ViewModels
         private async Task BuildSearchIndex()
         {
             _cts.Token.ThrowIfCancellationRequested();
+
             var progress = new Progress<int>(done =>
             {
                 BuildIndexProgress = (int)Math.Ceiling((done / (double)PageCount) * 100);
@@ -180,6 +184,7 @@ namespace Caly.Core.ViewModels
                         token.ThrowIfCancellationRequested();
                         indexBuildTaskComplete = indexBuildTask.IsCompleted;
                         var searchResults = await _pdfService.SearchText(this, TextSearch, token);
+                        AutoCompleteSuggestions = new ObservableCollection<string>(await _pdfService.GetAutoCompleteSuggestions(this, TextSearch, token)); 
 
                         foreach (var result in searchResults.OrderBy(r => r.PageNumber))
                         {

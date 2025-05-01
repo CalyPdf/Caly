@@ -30,6 +30,8 @@ namespace Caly.Core.Services.Interfaces
     {
         Task BuildPdfDocumentIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token);
 
+        ValueTask<IEnumerable<string>> GetAutoCompleteSuggestions(PdfDocumentViewModel pdfDocument, string text, CancellationToken token);
+
         Task<IEnumerable<TextSearchResultViewModel>> Search(PdfDocumentViewModel pdfDocument, string text, CancellationToken token);
     }
 }

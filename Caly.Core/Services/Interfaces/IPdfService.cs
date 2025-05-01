@@ -51,6 +51,7 @@ namespace Caly.Core.Services.Interfaces
 
         Task<IEnumerable<TextSearchResultViewModel>> SearchText(PdfDocumentViewModel pdfDocument, string query, CancellationToken token);
 
+        public ValueTask<IEnumerable<string>> GetAutoCompleteSuggestions(PdfDocumentViewModel pdfDocument, string query, CancellationToken token);
 
         Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token);
 
