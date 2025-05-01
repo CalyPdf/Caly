@@ -181,13 +181,21 @@ namespace Caly.Pdf.Layout
             /// If the function returns <c>false</c>, letters will belong to different words.
             /// <para>Default value checks whether the neighbour is a white space or not. If it is the case, it returns <c>false</c>.</para>
             /// </summary>
-            public Func<PdfLetter, PdfLetter, bool> Filter { get; init; } = (_, l2) => !l2.Value.Span.IsWhiteSpace();
+            public Func<PdfLetter, PdfLetter, bool> Filter { get; init; } = (_, l2) =>
+            {
+                var spanL2 = l2.Value.Span;
+                return !spanL2.IsWhiteSpace() && !spanL2.IsPunctuation() && !spanL2.IsSeparator();
+            };
 
             /// <summary>
             /// Function used prior searching for the nearest neighbour. If return false, no search will be done.
             /// <para>Default value checks whether the current letter is a white space or not. If it is the case, it returns false and no search is done.</para>
             /// </summary>
-            public Func<PdfLetter, bool> FilterPivot { get; init; } = l => !l.Value.Span.IsWhiteSpace();
+            public Func<PdfLetter, bool> FilterPivot { get; init; } = l =>
+            {
+                var spanL = l.Value.Span;
+                return !spanL.IsWhiteSpace() && !spanL.IsPunctuation() && !spanL.IsSeparator();
+            };
 
             /// <summary>
             /// If <c>true</c>, letters will be grouped by <see cref="TextOrientation"/> before processing.
