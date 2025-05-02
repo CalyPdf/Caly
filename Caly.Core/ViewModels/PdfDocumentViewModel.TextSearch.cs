@@ -157,14 +157,50 @@ namespace Caly.Core.ViewModels
             }
         }
 
+        private async Task UpdateAutoCompleteSuggestions(CancellationToken token)
+        {
+            var current = AutoCompleteSuggestions.ToArray();
+
+            if (string.IsNullOrEmpty(TextSearch))
+            {
+                await Dispatcher.UIThread.InvokeAsync(AutoCompleteSuggestions.ClearSafely);
+                return;
+            }
+
+            var suggestions = (await _pdfService.GetAutoCompleteSuggestions(this, TextSearch, token))?.ToArray();
+            if (suggestions is null || suggestions.Length == 0)
+            {
+                await Dispatcher.UIThread.InvokeAsync(AutoCompleteSuggestions.ClearSafely);
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                foreach (var toRemove in current.Except(suggestions))
+                {
+                    AutoCompleteSuggestions.RemoveSafely(toRemove);
+                }
+
+                foreach (var toAdd in suggestions.Except(current))
+                {
+                    AutoCompleteSuggestions.AddSafely(toAdd);
+                }
+            });
+        }
+
         private async Task SearchTextInternal(CancellationToken token)
         {
             try
             {
                 ActivateSearchTextTab();
                 SelectedTextSearchResult = null;
-                SearchResults.ClearSafely();
 
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    SearchResults.ClearSafely();
+                    AutoCompleteSuggestions.ClearSafely();
+                });
+                
                 Task indexBuildTask = _buildSearchIndex.Value;
 
                 if (string.IsNullOrEmpty(TextSearch))
@@ -183,8 +219,10 @@ namespace Caly.Core.ViewModels
                     {
                         token.ThrowIfCancellationRequested();
                         indexBuildTaskComplete = indexBuildTask.IsCompleted;
+
+                        await UpdateAutoCompleteSuggestions(token);
+
                         var searchResults = await _pdfService.SearchText(this, TextSearch, token);
-                        AutoCompleteSuggestions = new ObservableCollection<string>(await _pdfService.GetAutoCompleteSuggestions(this, TextSearch, token)); 
 
                         foreach (var result in searchResults.OrderBy(r => r.PageNumber))
                         {
@@ -199,7 +237,11 @@ namespace Caly.Core.ViewModels
                                 continue;
                             }
 
-                            SearchResults.AddSafely(result);
+                            await Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                SearchResults.AddSafely(result);
+                            });
+                            
                             pagesDone.Add(result.PageNumber);
                         }
 
