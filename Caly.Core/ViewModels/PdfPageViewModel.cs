@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -43,8 +44,9 @@ namespace Caly.Core.ViewModels
         private PdfTextLayer? _pdfTextLayer;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsPageRendering))]
-        private IRef<SKPicture>? _pdfPicture;
+        //[NotifyPropertyChangedFor(nameof(IsPageRendering))]
+        //private IRef<SKPicture>? _pdfPicture;
+        private ObservableCollection<SKPicture> _pdfPicture = new();
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ThumbnailWidth))]
@@ -94,7 +96,8 @@ namespace Caly.Core.ViewModels
 
         public double DisplayHeight => IsPortrait ? Height : Width;
 
-        public bool IsPageRendering => PdfPicture is null || PdfPicture.Item is null; // TODO - refactor might not be optimal
+        [ObservableProperty]
+        public bool _isPageRendering; //=> PdfPicture is null || PdfPicture.Item is null; // TODO - refactor might not be optimal
 
         public bool IsThumbnailRendering => Thumbnail is null;
 
@@ -162,10 +165,10 @@ namespace Caly.Core.ViewModels
 
         private void LoadPagePicture()
         {
-            if (PdfPicture?.Item is not null)
-            {
-                return;
-            }
+            //if (PdfPicture?.Item is not null)
+            //{
+            //    return;
+            //}
             _pdfService.AskPagePicture(this, _cts.Token);
         }
 

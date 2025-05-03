@@ -19,8 +19,11 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using SkiaSharp;
@@ -30,29 +33,21 @@ namespace Caly.Core.Services
 {
     internal sealed partial class PdfPigPdfService
     {
-        private async Task<IRef<SKPicture>?> GetRenderPageAsync(int pageNumber, CancellationToken token)
+        private async IAsyncEnumerable<SKPicture> GetRenderPageAsync(int pageNumber, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
-
-            SKPicture? pic = await ExecuteWithLockAsync(() =>
+            try
+            {
+                await _semaphore.WaitAsync(token);
+                await foreach (var d in _document.GetPage<IAsyncEnumerable<SKPicture>>(pageNumber))
                 {
-                    try
-                    {
-                        return _document?.GetPage<SKPicture>(pageNumber);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw; // No error picture to generate
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteExceptionToFile(e);
-                        return GetErrorPicture(pageNumber, e, token);
-                    }
-                },
-                token);
-
-            return pic is null ? null : RefCountable.Create(pic);
+                    yield return d;
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         private SKPicture? GetErrorPicture(int pageNumber, Exception ex, CancellationToken cancellationToken)

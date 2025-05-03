@@ -160,15 +160,11 @@ namespace Caly.Core.Services
                     System.Diagnostics.Debug.WriteLine($"[RENDER] [PICTURE] No need process {renderRequest.Page.PageNumber}");
                     return;
                 }
-
-                var picture = await GetRenderPageAsync(renderRequest.Page.PageNumber, renderRequest.Token);
-
-                renderRequest.Page.PdfPicture = picture;
-
-                if (renderRequest.Page.PdfPicture?.Item is not null)
+                await foreach (var layer in GetRenderPageAsync(renderRequest.Page.PageNumber, renderRequest.Token))
                 {
-                    renderRequest.Page.Width = renderRequest.Page.PdfPicture.Item.CullRect.Width;
-                    renderRequest.Page.Height = renderRequest.Page.PdfPicture.Item.CullRect.Height;
+                    renderRequest.Page.PdfPicture.Add(layer);
+                    renderRequest.Page.Width = layer.CullRect.Width;
+                    renderRequest.Page.Height = layer.CullRect.Height;
                 }
             }
             finally
@@ -212,7 +208,7 @@ namespace Caly.Core.Services
                 cts.Dispose();
             }
 
-            picture?.Dispose();
+            //picture?.Dispose();
 
             //System.Diagnostics.Debug.Assert((picture?.RefCount ?? 0) == 0);
         }
@@ -303,6 +299,7 @@ namespace Caly.Core.Services
                     return;
                 }
 
+                /*
                 var picture = renderRequest.Page.PdfPicture?.Clone();
                 if (picture is not null)
                 {
@@ -323,6 +320,7 @@ namespace Caly.Core.Services
                         await SetThumbnail(renderRequest.Page, picture.Item, renderRequest.Token);
                     }
                 }
+                */
             }
             finally
             {
