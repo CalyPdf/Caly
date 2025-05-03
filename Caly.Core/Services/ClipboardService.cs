@@ -63,7 +63,13 @@ namespace Caly.Core.Services
             _target = target;
         }
 
-        private static bool ShouldAddWhitespace(UnicodeCategory prevCategory, UnicodeCategory currentCategory)
+        public static bool ShouldDehyphenate(in UnicodeCategory prevCategory, in int previousLine, in int currentLine)
+        {
+            // This is a very basic dehyphenation method
+            return currentLine > previousLine && prevCategory is UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation;
+        }
+
+        private static bool ShouldAddWhitespace(in UnicodeCategory prevCategory, in UnicodeCategory currentCategory)
         {
             return !_noSpaceAfter.Contains(prevCategory) &&
                    !_noSpaceBefore.Contains(currentCategory);
@@ -79,7 +85,7 @@ namespace Caly.Core.Services
             {
                 return;
             }
-            
+
             // https://docs.avaloniaui.net/docs/next/concepts/services/clipboardS
 
             System.Diagnostics.Debug.WriteLine("Starting IClipboardService.SetAsync");
@@ -87,9 +93,8 @@ namespace Caly.Core.Services
             string text = await Task.Run(async () =>
             {
                 var request = selection.GetDocumentSelectionAsAsync(
-                    w => w.Value,
-                    PartialWord, document,
-                    token);
+                    GetWord, GetPartialWord,
+                    document, token);
 
                 await using (var enumerator = request.GetAsyncEnumerator(token))
                 {
@@ -103,26 +108,31 @@ namespace Caly.Core.Services
                         return string.Empty;
                     }
 
-                    var sb = new StringBuilder().Append(enumerator.Current);
+                    var sb = new StringBuilder().Append(enumerator.Current.Word);
+                    int previousLine = enumerator.Current.LineNumber;
 
                     while (await enumerator.MoveNextAsync())
                     {
-                        var word = enumerator.Current;
+                        var blob = enumerator.Current;
 
-                        if (word.IsEmpty)
+                        if (blob.Word.IsEmpty)
                         {
                             continue;
                         }
 
                         var prevLast = CharUnicodeInfo.GetUnicodeCategory(sb[^1]);
-                        var currentFirst = CharUnicodeInfo.GetUnicodeCategory(word.Span[0]);
 
-                        if (ShouldAddWhitespace(prevLast, currentFirst))
+                        if (ShouldDehyphenate(in prevLast, in previousLine, blob.LineNumber))
+                        {
+                            sb.Length--; // Remove hyphen
+                        }
+                        else if (ShouldAddWhitespace(in prevLast, CharUnicodeInfo.GetUnicodeCategory(blob.Word.Span[0])))
                         {
                             sb.Append(' '); // TODO - Add condition to check if next word exist
                         }
 
-                        sb.Append(word);
+                        sb.Append(blob.Word);
+                        previousLine = blob.LineNumber;
                     }
 
                     if (sb.Length > 0 && char.IsWhiteSpace(sb[^1]))
@@ -135,7 +145,7 @@ namespace Caly.Core.Services
             }, token);
 
             await SetAsync(text);
-            
+
             System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
         }
 
@@ -154,8 +164,28 @@ namespace Caly.Core.Services
 
             await clipboard.ClearAsync();
         }
-        
-        private static ReadOnlyMemory<char> PartialWord(PdfWord word, int startIndex, int endIndex)
+
+        private readonly struct TextBlob
+        {
+            public TextBlob(ReadOnlyMemory<char> word, int lineNumber)
+            {
+                Word = word;
+                LineNumber = lineNumber;
+            }
+
+            public ReadOnlyMemory<char> Word { get; }
+
+            public int LineNumber { get; }
+
+            public bool IsEmpty => Word.IsEmpty;
+        }
+
+        private static TextBlob GetWord(PdfWord word)
+        {
+            return new TextBlob(word.Value, word.TextLineIndex);
+        }
+
+        private static TextBlob GetPartialWord(PdfWord word, int startIndex, int endIndex)
         {
             System.Diagnostics.Debug.Assert(startIndex != -1);
             System.Diagnostics.Debug.Assert(endIndex != -1);
@@ -163,7 +193,9 @@ namespace Caly.Core.Services
 
             endIndex = word.GetCharIndexFromBboxIndex(endIndex);
 
-            return word.Value.Slice(startIndex, endIndex - startIndex + 1);
+            var span = word.Value.Slice(startIndex, endIndex - startIndex + 1);
+
+            return new TextBlob(span, word.TextLineIndex);
         }
     }
 }
