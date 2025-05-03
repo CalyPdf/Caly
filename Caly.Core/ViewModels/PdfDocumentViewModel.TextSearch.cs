@@ -155,6 +155,8 @@ namespace Caly.Core.ViewModels
 
         private async Task SearchTextInternal(CancellationToken token)
         {
+            Debug.ThrowNotOnUiThread(); // TODO - Check if better not to be on UI thread
+            
             try
             {
                 ActivateSearchTextTab();
@@ -171,6 +173,8 @@ namespace Caly.Core.ViewModels
 
                 Task searchTask = Task.Run(async () =>
                 {
+                    Debug.ThrowOnUiThread();
+                    
                     SetSearchStatus("Searching...");
 
                     bool indexBuildTaskComplete;
@@ -194,7 +198,7 @@ namespace Caly.Core.ViewModels
                                 continue;
                             }
 
-                            SearchResults.AddSafely(result);
+                            await Dispatcher.UIThread.InvokeAsync(() => SearchResults.AddSafely(result));
                             pagesDone.Add(result.PageNumber);
                         }
 
