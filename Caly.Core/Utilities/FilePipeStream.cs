@@ -191,7 +191,7 @@ namespace Caly.Core.Utilities
                            PipeDirection.Out, PipeOptions.CurrentUserOnly,
                            TokenImpersonationLevel.Identification))
                 {
-                    pipeClient.Connect(_connectTimeout);
+                    pipeClient.Connect(_connectTimeout); // If you are getting a timeout in debug mode, just re-run Caly
 
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)1);
                     pipeClient.Write(lengthBytes.Span);

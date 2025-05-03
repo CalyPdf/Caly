@@ -19,6 +19,9 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +30,6 @@ using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
-using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
 
@@ -36,14 +38,35 @@ namespace Caly.Core.Services
     internal sealed class ClipboardService : IClipboardService
     {
         // English rules
-        private static ReadOnlySpan<char> _noWhitespaceAfter => [' ', '(', '[', '{'];
-        private static ReadOnlySpan<char> _noWhitespaceBefore => [' ', ')', ']', '}', ':', '.', '′', '\'', ',', '?', '!'];
+        private static readonly FrozenSet<UnicodeCategory> _noSpaceAfter = new HashSet<UnicodeCategory>
+        {
+            UnicodeCategory.OpenPunctuation,        // ( [ {
+            UnicodeCategory.InitialQuotePunctuation,// “ ‘
+            UnicodeCategory.DashPunctuation,        // -
+            UnicodeCategory.ConnectorPunctuation    // _
+        }.ToFrozenSet();
+
+        private static readonly FrozenSet<UnicodeCategory> _noSpaceBefore = new HashSet<UnicodeCategory>
+        {
+            UnicodeCategory.ClosePunctuation,       // ) ] }
+            UnicodeCategory.FinalQuotePunctuation,  // ” ’
+            UnicodeCategory.OtherPunctuation,       // , . ! ?
+            UnicodeCategory.DashPunctuation,        // -
+            UnicodeCategory.MathSymbol,             // + = 
+            UnicodeCategory.CurrencySymbol          // $
+        }.ToFrozenSet();
 
         private readonly Visual _target;
 
         public ClipboardService(Visual target)
         {
             _target = target;
+        }
+
+        private static bool ShouldAddWhitespace(UnicodeCategory prevCategory, UnicodeCategory currentCategory)
+        {
+            return !_noSpaceAfter.Contains(prevCategory) &&
+                   !_noSpaceBefore.Contains(currentCategory);
         }
 
         public async Task SetAsync(PdfDocumentViewModel document, CancellationToken token)
@@ -63,42 +86,56 @@ namespace Caly.Core.Services
 
             string text = await Task.Run(async () =>
             {
-                var sb = new StringBuilder();
+                var request = selection.GetDocumentSelectionAsAsync(
+                    w => w.Value,
+                    PartialWord, document,
+                    token);
 
-                await foreach (var word in selection
-                                   .GetDocumentSelectionAsAsync(w => w.Value,
-                                       PartialWord, document,
-                                       token))
+                await using (var enumerator = request.GetAsyncEnumerator(token))
                 {
-                    if (word.IsEmpty)
+                    while (enumerator.Current.IsEmpty && await enumerator.MoveNextAsync())
                     {
-                        continue;
+                        // Find first word that is not empty
                     }
 
-                    if (sb.Length > 0 && _noWhitespaceBefore.Contains(word.Span[0]) && char.IsWhiteSpace(sb[^1]))
+                    if (enumerator.Current.IsEmpty)
                     {
-                        sb.Length--;
+                        return string.Empty;
                     }
 
-                    sb.AppendClean(word);
+                    var sb = new StringBuilder().Append(enumerator.Current);
 
-                    if (sb.Length == 0 || _noWhitespaceAfter.Contains(sb[^1]))
+                    while (await enumerator.MoveNextAsync())
                     {
-                        continue;
+                        var word = enumerator.Current;
+
+                        if (word.IsEmpty)
+                        {
+                            continue;
+                        }
+
+                        var prevLast = CharUnicodeInfo.GetUnicodeCategory(sb[^1]);
+                        var currentFirst = CharUnicodeInfo.GetUnicodeCategory(word.Span[0]);
+
+                        if (ShouldAddWhitespace(prevLast, currentFirst))
+                        {
+                            sb.Append(' '); // TODO - Add condition to check if next word exist
+                        }
+
+                        sb.Append(word);
                     }
 
-                    sb.Append(' ');
+                    if (sb.Length > 0 && char.IsWhiteSpace(sb[^1]))
+                    {
+                        sb.Length--; // Last char added was a space
+                    }
+
+                    return sb.ToString();
                 }
-
-                if (sb.Length > 0 && sb[^1] == ' ')
-                {
-                    sb.Length--; // Last char added was a space
-                }
-
-                return sb.ToString();
             }, token);
 
             await SetAsync(text);
+            
             System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
         }
 
