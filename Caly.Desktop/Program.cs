@@ -37,6 +37,8 @@ namespace Caly.Desktop
 
         private static readonly CalyFileMutex mutex = new(true, _appName);
 
+        private static bool _isRestart = false;
+        
         // Initialization code. Don't use any Avalonia, third-party APIs or any
         // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
         // yet and stuff might break.
@@ -59,7 +61,22 @@ namespace Caly.Desktop
                 }
                 else // App instance already running
                 {
-                    SendToRunningInstance(args);
+                    try
+                    {
+                        SendToRunningInstance(args);
+                    }
+                    catch (CalyCriticalException e)
+                    {
+                        if (!_isRestart && e.TryRestartApp)
+                        {
+                            _isRestart = true; // Prevent infinite loop by checking if it's already a restart
+                            Main(args);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
                 }
             }
             finally

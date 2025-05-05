@@ -218,7 +218,7 @@ namespace Caly.Core.Utilities
                 // lock file was not properly deleted after close
                 Debug.WriteExceptionToFile(toe);
                 CalyFileMutex.ForceReleaseMutex();
-                throw;
+                throw ThrowOnTimeoutException(toe);
             }
             catch (Exception e)
             {
@@ -268,13 +268,23 @@ namespace Caly.Core.Utilities
                 // lock file was not properly deleted after close
                 Debug.WriteExceptionToFile(toe);
                 CalyFileMutex.ForceReleaseMutex();
-                throw;
+                throw ThrowOnTimeoutException(toe);
             }
             catch (Exception e)
             {
                 Debug.WriteExceptionToFile(e);
                 throw;
             }
+        }
+
+        private static CalyCriticalException ThrowOnTimeoutException(TimeoutException toe)
+        {
+            return new CalyCriticalException("Could not connect to the running instance of Caly," +
+                                            " probably because it is actually not running, i.e. the" +
+                                            " Caly lock was not properly removed after close.", toe)
+            {
+                TryRestartApp = true
+            };
         }
 
         private enum PipeMessageType : byte
