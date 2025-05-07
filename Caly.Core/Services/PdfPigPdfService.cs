@@ -36,6 +36,7 @@ using Caly.Core.ViewModels;
 using Caly.Pdf;
 using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
+using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
@@ -190,12 +191,24 @@ namespace Caly.Core.Services
         {
             Debug.ThrowOnUiThread();
 
-            if (page.PdfTextLayer is null)
+            var picture = page.PdfPicture;
+            if (picture?.Item is null)
             {
-                var pageTextLayer = await ExecuteWithLockAsync(
-                    () => _document?.GetPage<PageTextLayerContent>(page.PageNumber),
+                picture = await GetRenderPageAsync(page.PageNumber, token);
+            }
+            
+            if (picture?.Item is not null && page.PdfTextLayer is null)
+            {
+                var ocrService = App.Current.Services.GetRequiredService<IOcrService>();
+                var ocrResult = await ExecuteWithLockAsync(
+                    () =>
+                    {
+                        return ocrService.GetWords(page.PdfPicture.Item, null);
+                    },
                     token);
 
+                var pageTextLayer = new PageTextLayerContent() { Letters = ocrResult, Annotations = [] };
+                
                 if (pageTextLayer is null)
                 {
                     return;

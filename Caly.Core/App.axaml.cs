@@ -104,6 +104,7 @@ namespace Caly.Core
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddSingleton<IPdfDocumentsService, PdfDocumentsService>();
+            services.AddSingleton<IOcrService, RapidOcrService>();
 
             services.AddScoped<IPdfService, PdfPigPdfService>();
             services.AddScoped<ITextSearchService, LiftiTextSearchService>();
