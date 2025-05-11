@@ -30,7 +30,7 @@
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Lifti.Core" Version="6.4.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
-		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.11.1-alpha007" />
+		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.11.1-alpha008" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />
 		<PackageReference Include="System.Reactive" Version="6.0.1" />
