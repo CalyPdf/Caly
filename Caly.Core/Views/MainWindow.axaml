@@ -9,8 +9,10 @@
         Title="Caly Pdf Reader"
         MinWidth="250"
         Width="250"
-        Height="0">
-    <Border DragDrop.AllowDrop="True">
+        Height="0"
+        ExtendClientAreaToDecorationsHint="True">
+    <Border DragDrop.AllowDrop="True"
+            Margin="{Binding $parent[Window].OffScreenMargin}">
         <views:MainView />
     </Border>
 </Window>
