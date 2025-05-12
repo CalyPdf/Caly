@@ -90,6 +90,16 @@ namespace Caly.Core.Controls
                         p.IsAntialias = false;
 
                         canvas.DrawPicture(_picture.Item, p);
+
+#if DEBUG
+                        using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
+                        using (var fontPaint = new SKPaint(skFont))
+                        {
+                            fontPaint.Style = SKPaintStyle.Fill;
+                            fontPaint.Color = SKColors.Blue.WithAlpha(100);
+                            canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
+                        }
+#endif
                     }
                     canvas.Restore();
                 }
