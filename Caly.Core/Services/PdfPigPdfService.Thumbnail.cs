@@ -56,6 +56,16 @@ namespace Caly.Core.Services
                 canvas.Clear(SKColors.White);
                 canvas.DrawPicture(picture, ref scale);
 
+#if DEBUG
+                using (var skFont = SKTypeface.Default.ToFont(tHeight / 5f, 1f))
+                using (var fontPaint = new SKPaint(skFont))
+                {
+                    fontPaint.Style = SKPaintStyle.Fill;
+                    fontPaint.Color = SKColors.Blue.WithAlpha(150);
+                    canvas.DrawText(picture.UniqueId.ToString(), tWidth / 4f, tHeight / 2f, fontPaint);
+                }
+#endif
+
                 using (var image = surface.Snapshot())
                 using (SKData d = image.Encode(SKEncodedImageFormat.Jpeg, 50))
                 await using (Stream stream = d.AsStream())
