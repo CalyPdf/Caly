@@ -53,6 +53,14 @@ namespace Caly.Core.Utilities
             return OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
         }
 
+        /// <summary>
+        /// Get the Viewport Rect to check if elements are visible or not.
+        /// </summary>
+        public static Rect GetViewportRect(this ScrollViewer sv)
+        {
+            return new Rect(sv.Offset.X, sv.Offset.Y, sv.Viewport.Width, sv.Viewport.Height);
+        }
+
         public static T FindFromNameScope<T>(this INameScope e, string name) where T : Control
         {
             var element = e.Find<T>(name);

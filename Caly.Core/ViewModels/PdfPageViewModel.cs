@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
@@ -28,11 +29,11 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using SkiaSharp;
 
 namespace Caly.Core.ViewModels
 {
+    [DebuggerDisplay("Page {_pageNumber}")]
     public sealed partial class PdfPageViewModel : ViewModelBase, IAsyncDisposable
     {
         private readonly IPdfService _pdfService;

@@ -22,7 +22,6 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using Caly.Core.Utilities;
@@ -41,9 +40,8 @@ namespace Caly.Core.Controls
             base.OnApplyTemplate(e);
             
             _listBox = e.NameScope.FindFromNameScope<ListBox>("PART_ListBox");
-            _listBox.PreparingContainer += ListBoxOnPreparingContainer;
-            _listBox.ContainerPrepared += _listBox_ContainerPrepared;
-            _listBox.ContainerClearing += _listBox_ContainerClearing;
+            _listBox.ContainerPrepared += ListBoxContainerPrepared;
+            _listBox.ContainerClearing += ListBoxContainerClearing;
             _listBox.PropertyChanged += ListBoxOnPropertyChanged;
         }
 
@@ -53,22 +51,12 @@ namespace Caly.Core.Controls
 
             if (_listBox is not null)
             {
-                _listBox.PreparingContainer -= ListBoxOnPreparingContainer;
-                _listBox.ContainerPrepared -= _listBox_ContainerPrepared;
-                _listBox.ContainerClearing -= _listBox_ContainerClearing;
+                _listBox.ContainerPrepared -= ListBoxContainerPrepared;
+                _listBox.ContainerClearing -= ListBoxContainerClearing;
                 _listBox.PropertyChanged -= ListBoxOnPropertyChanged;
             }
         }
 
-        private void ListBoxOnPreparingContainer(object? sender, ContainerPreparedEventArgs e)
-        {
-            if (_isScrollingToPage || e.Container is not ListBoxItem container)
-            {
-                return;
-            }
-            
-            container.PropertyChanged += _onContainerPropertyChanged;
-        }
 
         private void ListBoxOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
@@ -83,7 +71,7 @@ namespace Caly.Core.Controls
             }
         }
         
-        private void _listBox_ContainerPrepared(object? sender, ContainerPreparedEventArgs e)
+        private void ListBoxContainerPrepared(object? sender, ContainerPreparedEventArgs e)
         {
             if (_isScrollingToPage || e.Container.DataContext is not PdfPageViewModel vm)
             {
@@ -93,24 +81,27 @@ namespace Caly.Core.Controls
             vm.LoadThumbnail();
         }
 
-        private void _onContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-        {
-            if (e.Property == ContentPresenter.ContentProperty && e.OldValue is PdfPageViewModel vm)
-            {
-                vm.UnloadThumbnail();
-            }
-        }
-
-        private void _listBox_ContainerClearing(object? sender, ContainerClearingEventArgs e)
+        private void ListBoxContainerClearing(object? sender, ContainerClearingEventArgs e)
         {
             if (e.Container is not ListBoxItem container)
             {
                 return;
             }
 
-            container.PropertyChanged -= _onContainerPropertyChanged;
-        }
+            // Check thumbnails visibility
+            if (_listBox?.Parent is not ScrollViewer sv || container.DataContext is not PdfPageViewModel vm)
+            {
+                return;
+            }
 
+            if (!sv.GetViewportRect().Intersects(container.Bounds))
+            {
+                // The container is not visible anymore, we unload the thumbnail
+                System.Diagnostics.Debug.WriteLine($"Page {vm.PageNumber} thumbnail out of sight.");
+                vm.UnloadThumbnail();
+            }
+        }
+        
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
@@ -121,6 +112,7 @@ namespace Caly.Core.Controls
                     // Thumbnails control becomes visible
                     try
                     {
+                        // TODO - Use Post on ui thread?
                         _isScrollingToPage = true;
                         _listBox.ScrollIntoView(_listBox.SelectedIndex);
                     }
@@ -135,7 +127,7 @@ namespace Caly.Core.Controls
                         return;
                     }
 
-                    Rect viewPort = new Rect((Point)sv.Offset, sv.Viewport);
+                    Rect viewPort = sv.GetViewportRect();
                     foreach (ListBoxItem listBoxItem in _listBox.GetRealizedContainers().OfType<ListBoxItem>())
                     {
                         if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
