@@ -467,7 +467,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         double invScale = 1.0 / (LayoutTransformControl.LayoutTransform?.Value.M11 ?? 1.0);
         Matrix fastInverse = Matrix.CreateScale(invScale, invScale);
 
-        Rect viewPort = new Rect((Point)Scroll.Offset, Scroll.Viewport).TransformToAABB(fastInverse);
+        Rect viewPort = Scroll.GetViewportRect().TransformToAABB(fastInverse);
 
         // Use the following: not visible pages cannot be between visible pages
         // We cannot have:
