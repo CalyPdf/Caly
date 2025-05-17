@@ -55,21 +55,21 @@ namespace Caly.Pdf.Models
         /// <summary>
         /// Word index in the page.
         /// </summary>
-        public int IndexInPage { get; internal set; }
+        public ushort IndexInPage { get; internal set; }
 
         /// <summary>
         /// Text line index in the page the word belongs to.
         /// </summary>
-        public int TextLineIndex { get; internal set; }
+        public ushort TextLineIndex { get; internal set; }
 
         /// <summary>
         /// Text block index in the page the word belongs to.
         /// </summary>
-        public int TextBlockIndex { get; internal set; }
+        public ushort TextBlockIndex { get; internal set; }
         
         public ReadOnlyMemory<char> Value { get; }
 
-        public int Count { get; }
+        public ushort Count { get; }
         
         public PdfWord(IReadOnlyList<PdfLetter> letters)
         {
@@ -82,7 +82,7 @@ namespace Caly.Pdf.Models
 
             TextOrientation = PdfTextLayerHelper.GetTextOrientation(letters);
 
-            Count = letters.Count;
+            Count = (ushort)letters.Count;
 
             var firstLetter = letters[0];
             int charsCount = firstLetter.Value.Length;
