@@ -111,7 +111,7 @@ namespace Caly.Pdf.Layout
         /// <para>A positive property value limits the number of concurrent operations to the set value.
         /// If it is -1, there is no limit on the number of concurrently running operations.</para></param>
         private static IEnumerable<PdfWord> GetWords(IReadOnlyList<PdfLetter> letters,
-            Func<PdfLetter, PdfLetter, double> maxDistanceFunction, Func<PdfPoint, PdfPoint, double> distMeasure,
+            Func<PdfLetter, PdfLetter, float> maxDistanceFunction, Func<PdfPoint, PdfPoint, float> distMeasure,
             Func<PdfLetter, bool> filterPivotFunction,
             Func<PdfLetter, PdfLetter, bool> filterFunction, ParallelOptions parallelOptions)
         {
@@ -149,16 +149,16 @@ namespace Caly.Pdf.Layout
             /// <para>If the distance between the two letters is greater than this maximum, they will belong to different words.</para>
             /// <para>Default value is 20% of the Max(Width, PointSize) of both letters. If <see cref="TextOrientation"/> is Other, this distance is doubled.</para>
             /// </summary>
-            public Func<PdfLetter, PdfLetter, double> MaximumDistance { get; init; } = (l1, l2) =>
+            public Func<PdfLetter, PdfLetter, float> MaximumDistance { get; init; } = (l1, l2) =>
             {
-                double maxDist = Math.Max(Math.Max(Math.Max(
-                    Math.Abs(l1.BoundingBox.Width),
-                    Math.Abs(l2.BoundingBox.Width)),
-                    l1.PointSize), l2.PointSize) * 0.2;
+                float maxDist = MathF.Max(MathF.Max(MathF.Max(
+                    MathF.Abs((float)l1.BoundingBox.Width),
+                    MathF.Abs((float)l2.BoundingBox.Width)),
+                    l1.PointSize), l2.PointSize) * 0.2f;
 
                 if (l1.TextOrientation == TextOrientation.Other || l2.TextOrientation == TextOrientation.Other)
                 {
-                    return 2.0 * maxDist;
+                    return 2.0f * maxDist;
                 }
                 return maxDist;
             };
@@ -167,14 +167,14 @@ namespace Caly.Pdf.Layout
             /// The default distance measure used between two letters (start and end base line points).
             /// <para>Default value is the Euclidean distance.</para>
             /// </summary>
-            public Func<PdfPoint, PdfPoint, double> DistanceMeasure { get; init; } = Distances.Euclidean;
+            public Func<PdfPoint, PdfPoint, float> DistanceMeasure { get; init; } = CalyDistances.Euclidean;
 
             /// <summary>
             /// The distance measure used between two letters (start and end base line points) with axis aligned <see cref="TextOrientation"/>.
             /// <para>Only used if <see cref="GroupByOrientation"/> is set to <c>true</c>.</para>
             /// <para>Default value is the Manhattan distance.</para>
             /// </summary>
-            public Func<PdfPoint, PdfPoint, double> DistanceMeasureAA { get; init; } = Distances.Manhattan;
+            public Func<PdfPoint, PdfPoint, float> DistanceMeasureAA { get; init; } = CalyDistances.Manhattan;
 
             /// <summary>
             /// Function used to filter out connection between letters, e.g. check if the letters have the same color.

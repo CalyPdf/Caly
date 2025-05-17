@@ -1,5 +1,4 @@
 ﻿using UglyToad.PdfPig.Core;
-using UglyToad.PdfPig.DocumentLayoutAnalysis;
 
 namespace Caly.Pdf.Layout
 {
@@ -27,8 +26,8 @@ namespace Caly.Pdf.Layout
         /// <param name="parallelOptions">A <see cref="ParallelOptions">ParallelOptions</see>
         /// instance that configures the behavior of this operation.</param>
         public static IEnumerable<IReadOnlyList<T>> NearestNeighbours<T>(IReadOnlyList<T> elements,
-            Func<PdfPoint, PdfPoint, double> distMeasure,
-            Func<T, T, double> maxDistanceFunction,
+            Func<PdfPoint, PdfPoint, float> distMeasure,
+            Func<T, T, float> maxDistanceFunction,
             Func<T, PdfPoint> pivotPoint, Func<T, PdfPoint> candidatesPoint,
             Func<T, bool> filterPivot, Func<T, T, bool> filterFinal,
             ParallelOptions parallelOptions)
@@ -51,7 +50,7 @@ namespace Caly.Pdf.Layout
              *************************************************************************************/
 
             int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
-            KdTree<T> kdTree = new KdTree<T>(elements, candidatesPoint);
+            CalyKdTree<T> calyKdTree = new CalyKdTree<T>(elements, candidatesPoint);
 
             // 1. Find nearest neighbours indexes
             Parallel.For(0, elements.Count, parallelOptions, e =>
@@ -60,7 +59,7 @@ namespace Caly.Pdf.Layout
 
                 if (filterPivot(pivot))
                 {
-                    var paired = kdTree.FindNearestNeighbour(pivot, pivotPoint, distMeasure, out int index, out double dist);
+                    var paired = calyKdTree.FindNearestNeighbour(pivot, pivotPoint, distMeasure, out int index, out float dist);
 
                     if (index != -1 && filterFinal(pivot, paired) && dist < maxDistanceFunction(pivot, paired))
                     {
@@ -92,8 +91,8 @@ namespace Caly.Pdf.Layout
         /// <param name="parallelOptions">A <see cref="ParallelOptions">ParallelOptions</see>
         /// instance that configures the behavior of this operation.</param>
         public static IEnumerable<IReadOnlyList<T>> NearestNeighbours<T>(IReadOnlyList<T> elements, int k,
-            Func<PdfPoint, PdfPoint, double> distMeasure,
-            Func<T, T, double> maxDistanceFunction,
+            Func<PdfPoint, PdfPoint, float> distMeasure,
+            Func<T, T, float> maxDistanceFunction,
             Func<T, PdfPoint> pivotPoint, Func<T, PdfPoint> candidatesPoint,
             Func<T, bool> filterPivot, Func<T, T, bool> filterFinal,
             ParallelOptions parallelOptions)
@@ -116,7 +115,7 @@ namespace Caly.Pdf.Layout
              *************************************************************************************/
 
             int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
-            KdTree<T> kdTree = new KdTree<T>(elements, candidatesPoint);
+            CalyKdTree<T> calyKdTree = new CalyKdTree<T>(elements, candidatesPoint);
 
             // 1. Find nearest neighbours indexes
             Parallel.For(0, elements.Count, parallelOptions, e =>
@@ -125,7 +124,7 @@ namespace Caly.Pdf.Layout
 
                 if (filterPivot(pivot))
                 {
-                    foreach (var c in kdTree.FindNearestNeighbours(pivot, k, pivotPoint, distMeasure))
+                    foreach (var c in calyKdTree.FindNearestNeighbours(pivot, k, pivotPoint, distMeasure))
                     {
                         if (filterFinal(pivot, c.Item1) && c.Item3 < maxDistanceFunction(pivot, c.Item1))
                         {
@@ -157,8 +156,8 @@ namespace Caly.Pdf.Layout
         /// <param name="parallelOptions">A <see cref="ParallelOptions">ParallelOptions</see>
         /// instance that configures the behavior of this operation.</param>
         public static IEnumerable<IReadOnlyList<T>> NearestNeighbours<T>(IReadOnlyList<T> elements,
-            Func<PdfLine, PdfLine, double> distMeasure,
-            Func<T, T, double> maxDistanceFunction,
+            Func<PdfLine, PdfLine, float> distMeasure,
+            Func<T, T, float> maxDistanceFunction,
             Func<T, PdfLine> pivotLine, Func<T, PdfLine> candidatesLine,
             Func<T, bool> filterPivot, Func<T, T, bool> filterFinal,
             ParallelOptions parallelOptions)
@@ -189,7 +188,7 @@ namespace Caly.Pdf.Layout
 
                 if (filterPivot(pivot))
                 {
-                    int index = Distances.FindIndexNearest(pivot, elements, pivotLine, candidatesLine, distMeasure, out double dist);
+                    int index = CalyDistances.FindIndexNearest(pivot, elements, pivotLine, candidatesLine, distMeasure, out float dist);
 
                     if (index != -1)
                     {
