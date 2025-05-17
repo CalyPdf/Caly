@@ -99,7 +99,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         KeyboardNavigation.TabNavigationProperty.OverrideDefaultValue(typeof(PdfPageItemsControl),
             KeyboardNavigationMode.Once);
     }
-
+    
     /// <summary>
     /// Gets the scroll information for the <see cref="ListBox"/>.
     /// </summary>
@@ -180,7 +180,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         ScrollIntoView(pageNumber - 1);
     }
-    
+
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
@@ -193,7 +193,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             return;
         }
 
-        cp.PropertyChanged += _onContainerPropertyChanged;
+        cp.PropertyChanged += OnContainerPropertyChanged;
         vm.VisibleArea = null;
         vm.LoadPage();
     }
@@ -207,7 +207,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             return;
         }
 
-        cp.PropertyChanged -= _onContainerPropertyChanged;
+        cp.PropertyChanged -= OnContainerPropertyChanged;
     }
 
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
@@ -220,7 +220,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         return NeedsContainer<PdfPageItem>(item, out recycleKey);
     }
 
-    private void _onContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    private static void OnContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property == ContentPresenter.ContentProperty &&
             e.OldValue is PdfPageViewModel vm)
@@ -346,10 +346,11 @@ public sealed class PdfPageItemsControl : ItemsControl
         Scroll = e.NameScope.FindFromNameScope<ScrollViewer>("PART_ScrollViewer");
         Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
         Scroll.AddHandler(SizeChangedEvent, (_, _) => SetPagesVisibility(), RoutingStrategies.Direct);
-        Scroll.AddHandler(KeyDownEvent, _onKeyDownHandler);
+        Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
+        Scroll.Focus(); // Make sure the Scroll has focus
 
         LayoutTransformControl = e.NameScope.FindFromNameScope<LayoutTransformControl>("PART_LayoutTransformControl");
-        LayoutTransformControl.AddHandler(PointerWheelChangedEvent, _onPointerWheelChangedHandler);
+        LayoutTransformControl.AddHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
 
         _tabsControl = this.FindAncestorOfType<TabsControl>();
         if (_tabsControl is not null)
@@ -379,7 +380,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         {
             if (cp.DataContext is PdfPageViewModel vm)
             {
-                cp.PropertyChanged += _onContainerPropertyChanged;
+                cp.PropertyChanged += OnContainerPropertyChanged;
                 vm.VisibleArea = null;
                 vm.LoadPage();
             }
@@ -414,8 +415,8 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         Scroll?.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
         Scroll?.RemoveHandler(SizeChangedEvent, (_, _) => SetPagesVisibility());
-        Scroll?.RemoveHandler(KeyDownEvent, _onKeyDownHandler);
-        LayoutTransformControl?.RemoveHandler(PointerWheelChangedEvent, _onPointerWheelChangedHandler);
+        Scroll?.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
+        LayoutTransformControl?.RemoveHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
         ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
 
         if (_tabsControl is not null)
@@ -657,7 +658,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         return !(top1 > bottom2 || bottom1 < top2);
     }
 
-    private void _onKeyDownHandler(object? sender, KeyEventArgs e)
+    private void OnKeyDownHandler(object? sender, KeyEventArgs e)
     {
         switch (e.Key)
         {
@@ -729,7 +730,7 @@ public sealed class PdfPageItemsControl : ItemsControl
     }
     #endregion
 
-    private void _onPointerWheelChangedHandler(object? sender, PointerWheelEventArgs e)
+    private void OnPointerWheelChangedHandler(object? sender, PointerWheelEventArgs e)
     {
         var hotkeys = Application.Current!.PlatformSettings?.HotkeyConfiguration;
         var ctrl = hotkeys is not null && e.KeyModifiers.HasFlag(hotkeys.CommandModifiers);
