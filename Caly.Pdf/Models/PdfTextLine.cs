@@ -34,7 +34,7 @@ namespace Caly.Pdf.Models
         }
 #endif
 
-        internal int WordStartIndex { get; set; }
+        internal ushort WordStartIndex { get; set; }
 
         public TextOrientation TextOrientation { get; }
 
@@ -46,12 +46,12 @@ namespace Caly.Pdf.Models
         /// <summary>
         /// Text line index in the page.
         /// </summary>
-        public int IndexInPage { get; internal set; }
+        public ushort IndexInPage { get; internal set; }
 
         /// <summary>
         /// Text block index in the page the text line belongs to.
         /// </summary>
-        public int TextBlockIndex { get; internal set; }
+        public ushort TextBlockIndex { get; internal set; }
 
         /// <summary>
         /// The words contained in the line.

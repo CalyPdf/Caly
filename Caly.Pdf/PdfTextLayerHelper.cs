@@ -82,17 +82,17 @@ namespace Caly.Pdf
             var words = CalyNNWordExtractor.Instance.GetWords(letters, token);
             var pdfBlocks = CalyDocstrum.Instance.GetBlocks(words, token);
 
-            int wordIndex = 0;
-            int lineIndex = 0;
-            int blockIndex = 0;
+            ushort wordIndex = 0;
+            ushort lineIndex = 0;
+            ushort blockIndex = 0;
 
             foreach (PdfTextBlock block in pdfBlocks)
             {
-                int blockStartIndex = wordIndex;
+                ushort blockStartIndex = wordIndex;
 
                 foreach (PdfTextLine line in block.TextLines)
                 {
-                    int lineStartIndex = wordIndex;
+                    ushort lineStartIndex = wordIndex;
 
                     foreach (PdfWord word in line.Words)
                     {
@@ -114,7 +114,7 @@ namespace Caly.Pdf
 
                 block.IndexInPage = blockIndex++;
                 block.WordStartIndex = blockStartIndex;
-                block.WordEndIndex = wordIndex - 1;
+                block.WordEndIndex = ushort.CreateChecked(wordIndex - 1);
             }
 
             return new PdfTextLayer(pdfBlocks, page.Annotations);

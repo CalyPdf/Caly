@@ -47,14 +47,14 @@ namespace Caly.Pdf.Models
         /// <summary>
         /// The size of the font in points.
         /// </summary>
-        public double PointSize { get; }
+        public float PointSize { get; }
 
         /// <summary>
         /// Sequence number of the ShowText operation that printed this letter.
         /// </summary>
         public int TextSequence { get; }
 
-        public PdfLetter(ReadOnlyMemory<char> value, PdfRectangle boundingBox, double pointSize, int textSequence)
+        public PdfLetter(ReadOnlyMemory<char> value, PdfRectangle boundingBox, float pointSize, int textSequence)
         {
             Value = value;
             BoundingBox = boundingBox;

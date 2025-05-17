@@ -152,7 +152,7 @@ namespace Caly.Pdf.TextLayer
 
             var letter = new PdfLetter(unicode.AsMemory(),
                 transformedPdfBounds,
-                pointSize,
+                (float)pointSize,
                 TextSequence);
 
             _letters.Add(letter);
