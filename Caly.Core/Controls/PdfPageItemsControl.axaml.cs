@@ -394,6 +394,15 @@ public sealed class PdfPageItemsControl : ItemsControl
         ItemsPanelRoot!.DataContextChanged += ItemsPanelRoot_DataContextChanged;
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == DataContextProperty)
+        {
+            Scroll?.Focus();
+        }
+    }
+
     private void ItemsPanelRoot_DataContextChanged(object? sender, EventArgs e)
     {
         LayoutUpdated += OnLayoutUpdatedOnce;
@@ -842,15 +851,4 @@ public sealed class PdfPageItemsControl : ItemsControl
         double s = 1 - scale;
         return new Vector(x * s, y * s);
     }
-    
-#if DEBUG
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-        if (change.Property == DataContextProperty && change.OldValue is PdfDocumentViewModel oldVm)
-        {
-
-        }
-    }
-#endif
 }
