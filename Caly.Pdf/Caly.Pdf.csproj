@@ -7,7 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PdfPig" Version="0.1.11-alpha-20250513-bf7c3" />
+		<PackageReference Include="PdfPig" Version="0.1.11-alpha-20250518-67d3d" />
 	</ItemGroup>
 
 </Project>
