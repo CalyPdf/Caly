@@ -1,5 +1,9 @@
 ﻿namespace Caly.Pdf.Layout
 {
+    /*
+     * From PdfPig - adapted
+     */
+
     /// <summary>
     /// Useful math extensions.
     /// </summary>

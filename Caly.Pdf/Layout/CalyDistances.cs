@@ -1,5 +1,9 @@
 ﻿namespace Caly.Pdf.Layout
 {
+    /*
+     * From PdfPig
+     */
+
     using UglyToad.PdfPig.Core;
     using System;
     using System.Collections.Generic;
