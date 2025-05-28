@@ -183,7 +183,7 @@ namespace Caly.Pdf.Layout
             /// </summary>
             public Func<PdfLetter, PdfLetter, bool> Filter { get; init; } = (_, l2) =>
             {
-                var spanL2 = l2.Value.Span;
+                var spanL2 = l2.Value.AsSpan();
                 return !spanL2.IsWhiteSpace() && !spanL2.IsPunctuation() && !spanL2.IsSeparator();
             };
 
@@ -193,7 +193,7 @@ namespace Caly.Pdf.Layout
             /// </summary>
             public Func<PdfLetter, bool> FilterPivot { get; init; } = l =>
             {
-                var spanL = l.Value.Span;
+                var spanL = l.Value.AsSpan();
                 return !spanL.IsWhiteSpace() && !spanL.IsPunctuation() && !spanL.IsSeparator();
             };
 

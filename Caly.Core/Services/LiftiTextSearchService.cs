@@ -77,7 +77,7 @@ namespace Caly.Core.Services
                                     throw new NullReferenceException("Cannot index search on a null PdfTextLayer.");
                                 }
 
-                                return textLayer.Select(w => w.Value.GetString());
+                                return textLayer.Select(w => w.Value);
                             }, ct);
                         }, tokenizationOptions: builder => builder.WithFactory(o => new CalyIndexTokenizer(o)))
                         .WithField("a", async (p, ct) =>

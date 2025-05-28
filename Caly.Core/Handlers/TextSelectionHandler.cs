@@ -364,7 +364,7 @@ namespace Caly.Core.Handlers
             PdfWord? word = control.PdfTextLayer!.FindWordOver(loc.X, loc.Y);
             if (word is not null)
             {
-                if (UrlMatch().IsMatch(word.Value.Span))
+                if (UrlMatch().IsMatch(word.Value.AsSpan()))
                 {
                     control.SetHandCursor();
                 }
@@ -541,14 +541,14 @@ namespace Caly.Core.Handlers
 
                     if (word is not null)
                     {
-                        foreach (ValueMatch match in UrlMatch().EnumerateMatches(word.Value.Span))
+                        foreach (ValueMatch match in UrlMatch().EnumerateMatches(word.Value.AsSpan()))
                         {
                             if (match.Length == 0)
                             {
                                 continue;
                             }
 
-                            CalyExtensions.OpenBrowser(word.Value.Span.Slice(match.Index, match.Length));
+                            CalyExtensions.OpenBrowser(word.Value.AsSpan().Slice(match.Index, match.Length));
                             break; // Only opens first url matched
                         }
                     }

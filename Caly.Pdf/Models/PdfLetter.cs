@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using CommunityToolkit.HighPerformance.Buffers;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 
@@ -25,7 +26,7 @@ namespace Caly.Pdf.Models
 {
     public sealed class PdfLetter : IPdfTextElement
     {
-        public ReadOnlyMemory<char> Value { get; }
+        public string Value { get; }
 
         public TextOrientation TextOrientation { get; }
 
@@ -54,9 +55,9 @@ namespace Caly.Pdf.Models
         /// </summary>
         public int TextSequence { get; }
 
-        public PdfLetter(ReadOnlyMemory<char> value, PdfRectangle boundingBox, float pointSize, int textSequence)
+        public PdfLetter(string value, PdfRectangle boundingBox, float pointSize, int textSequence)
         {
-            Value = value;
+            Value = StringPool.Shared.GetOrAdd(value);
             BoundingBox = boundingBox;
             PointSize = pointSize;
             TextSequence = textSequence;

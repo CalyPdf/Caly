@@ -115,7 +115,7 @@ namespace Caly.Core.Services
                     {
                         var blob = enumerator.Current;
 
-                        if (blob.Word.IsEmpty)
+                        if (blob.Word.AsSpan().IsEmpty)
                         {
                             continue;
                         }
@@ -126,7 +126,7 @@ namespace Caly.Core.Services
                         {
                             sb.Length--; // Remove hyphen
                         }
-                        else if (ShouldAddWhitespace(in prevLast, CharUnicodeInfo.GetUnicodeCategory(blob.Word.Span[0])))
+                        else if (ShouldAddWhitespace(in prevLast, CharUnicodeInfo.GetUnicodeCategory(blob.Word.AsSpan()[0])))
                         {
                             sb.Append(' '); // TODO - Add condition to check if next word exist
                         }
@@ -167,17 +167,17 @@ namespace Caly.Core.Services
 
         private readonly struct TextBlob
         {
-            public TextBlob(ReadOnlyMemory<char> word, int lineNumber)
+            public TextBlob(string word, int lineNumber)
             {
                 Word = word;
                 LineNumber = lineNumber;
             }
 
-            public ReadOnlyMemory<char> Word { get; }
+            public string Word { get; }
 
             public int LineNumber { get; }
 
-            public bool IsEmpty => Word.IsEmpty;
+            public bool IsEmpty => Word.AsSpan().IsEmpty;
         }
 
         private static TextBlob GetWord(PdfWord word)
@@ -193,9 +193,9 @@ namespace Caly.Core.Services
 
             endIndex = word.GetCharIndexFromBboxIndex(endIndex);
 
-            var span = word.Value.Slice(startIndex, endIndex - startIndex + 1);
+            var span = word.Value.AsSpan().Slice(startIndex, endIndex - startIndex + 1);
 
-            return new TextBlob(span, word.TextLineIndex);
+            return new TextBlob(span.ToString(), word.TextLineIndex);
         }
     }
 }

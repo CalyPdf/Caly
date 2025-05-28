@@ -51,7 +51,7 @@ namespace Caly.Pdf.Layout
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            PdfWord[]? array = words?.Where(w => !w.Value.Span.IsEmpty && !w.Value.Span.IsWhiteSpace()).ToArray();
+            PdfWord[]? array = words?.Where(w => !w.Value.AsSpan().IsEmpty && !w.Value.AsSpan().IsWhiteSpace()).ToArray();
 
             if (array is null || array.Length == 0)
             {

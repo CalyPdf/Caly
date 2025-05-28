@@ -48,7 +48,7 @@ namespace Caly.Pdf.Layout
                                 minY <= l.BoundingBox.BottomLeft.Y &&
                                 maxY >= l.BoundingBox.BottomLeft.Y); // do other checks?
 
-                var duplicatesOverlapping = duplicates.Any(l => l.Value.Span.SequenceEqual(letter.Value.Span));
+                var duplicatesOverlapping = duplicates.Any(l => l.Value.Equals(letter.Value));
 
                 if (!duplicatesOverlapping)
                 {
@@ -98,7 +98,7 @@ namespace Caly.Pdf.Layout
                               maxX >= l.BoundingBox.BottomLeft.X &&
                               minY <= l.BoundingBox.BottomLeft.Y &&
                               maxY >= l.BoundingBox.BottomLeft.Y &&
-                              l.Value.Span.SequenceEqual(letter.Value.Span));
+                              l.Value.Equals(letter.Value));
 
                 if (!duplicatesOverlapping)
                 {

@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using CommunityToolkit.HighPerformance.Buffers;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.DocumentLayoutAnalysis;
@@ -30,16 +31,11 @@ namespace Caly.Pdf.Models
 #if DEBUG
         public override string ToString()
         {
-            if (Value.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            return new string(Value.Span);
+            return Value;
         }
 #endif
 
-        private readonly int[]? _toCharIndex;
+        private readonly ushort[]? _toCharIndex;
 
         private readonly float[]? _letterPositions;
 
@@ -67,7 +63,7 @@ namespace Caly.Pdf.Models
         /// </summary>
         public ushort TextBlockIndex { get; internal set; }
         
-        public ReadOnlyMemory<char> Value { get; }
+        public string Value { get; }
 
         public ushort Count { get; }
         
@@ -124,36 +120,36 @@ namespace Caly.Pdf.Models
                 charsCount += letters[^1].Value.Length;
             }
 
-            char[] chars = new char[charsCount];
+            Span<char> chars = charsCount <= 512 ? stackalloc char[charsCount] : new char[charsCount];
 
             if (chars.Length == letters.Count)
             {
                 for (int l = 0; l < letters.Count; ++l)
                 {
-                    var letter = letters[l];
-                    System.Diagnostics.Debug.Assert(letter.Value.Length == 1);
-                    chars[l] = letter.Value.Span[0];
+                    var letter = letters[l].Value.AsSpan();
+                    System.Diagnostics.Debug.Assert(letter.Length == 1);
+                    chars[l] = letter[0];
                 }
             }
             else
             {
                 // Usually because of ligatures
-                _toCharIndex = new int[letters.Count];
+                _toCharIndex = new ushort[letters.Count];
 
-                int k = 0;
+                ushort k = 0;
                 for (int l = 0; l < letters.Count; ++l)
                 {
-                    var letter = letters[l];
-                    for (int c = 0; c < letter.Value.Length; ++c)
+                    var letter = letters[l].Value.AsSpan();
+                    for (int c = 0; c < letter.Length; ++c)
                     {
-                        chars[k++] = letter.Value.Span[c];
+                        chars[k++] = letter[c];
                     }
 
                     _toCharIndex[l] = k;
                 }
             }
 
-            Value = chars;
+            Value = StringPool.Shared.GetOrAdd(chars);
 
             switch (TextOrientation)
             {

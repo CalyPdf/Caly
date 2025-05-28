@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Runtime.InteropServices;
 using Caly.Pdf.Models;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Annotations;
@@ -125,11 +124,10 @@ namespace Caly.Pdf.TextLayer
                 var attachTo = _letters[^1];
 
                 if (attachTo.TextSequence == TextSequence
-                    && MemoryMarshal.TryGetString(attachTo.Value, out string? text, out _, out _)
-                    && Diacritics.TryCombineDiacriticWithPreviousLetter(unicode, text, out var newLetter))
+                    && Diacritics.TryCombineDiacriticWithPreviousLetter(unicode, attachTo.Value, out var newLetter))
                 {
                     // TODO: union of bounding boxes.
-                    _letters[^1] = new PdfLetter(newLetter.AsMemory(), attachTo.BoundingBox, attachTo.PointSize, attachTo.TextSequence);
+                    _letters[^1] = new PdfLetter(newLetter, attachTo.BoundingBox, attachTo.PointSize, attachTo.TextSequence);
                     return;
                 }
             }
@@ -150,7 +148,7 @@ namespace Caly.Pdf.TextLayer
                 _pageHeight);
 
 
-            var letter = new PdfLetter(unicode.AsMemory(),
+            var letter = new PdfLetter(unicode,
                 transformedPdfBounds,
                 (float)pointSize,
                 TextSequence);
@@ -158,7 +156,7 @@ namespace Caly.Pdf.TextLayer
             _letters.Add(letter);
         }
 
-        #region  BaseStreamProcessor overrides
+        #region BaseStreamProcessor overrides
         public override void BeginInlineImage()
         {
             // No op
