@@ -55,7 +55,7 @@ namespace Caly.Core.Services
         private readonly IDialogService _dialogService;
         private readonly ITextSearchService _textSearchService;
         
-        private MemoryStream? _fileStream;
+        private Stream? _fileStream;
         private PdfDocument? _document;
         private Uri? _filePath;
 
@@ -105,11 +105,14 @@ namespace Caly.Core.Services
                 _filePath = storageFile.Path;
                 System.Diagnostics.Debug.WriteLine($"[INFO] Opening {FileName}...");
 
-                _fileStream = new MemoryStream();
-                await using (var fs = await storageFile.OpenReadAsync())
+                _fileStream = await storageFile.OpenReadAsync();
+                if (!_fileStream.CanSeek)
                 {
-                    await fs.CopyToAsync(_fileStream, token);
-                    _fileStream.Position = 0;
+                    var ms = new MemoryStream((int)_fileStream.Length);
+                    await _fileStream.CopyToAsync(ms, token);
+                    ms.Position = 0;
+                    await _fileStream.DisposeAsync();
+                    _fileStream = ms;
                 }
                 
                 return await Task.Run(() =>
@@ -125,7 +128,7 @@ namespace Caly.Core.Services
                     {
                         pdfParsingOptions.Password = password;
                     }
-
+                    
                     _document = PdfDocument.Open(_fileStream, pdfParsingOptions);
                     _document.AddPageFactory<PdfPageInformation, PageInformationFactory>();
                     _document.AddPageFactory<SKPicture, SkiaPageFactory>();
