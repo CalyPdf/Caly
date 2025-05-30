@@ -167,7 +167,7 @@ namespace Caly.Pdf.TextLayer
             // No op
         }
 
-        public override void EndInlineImage(ReadOnlyMemory<byte> bytes)
+        public override void EndInlineImage(Memory<byte> bytes)
         {
             // No op
         }
