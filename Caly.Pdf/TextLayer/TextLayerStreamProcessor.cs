@@ -167,7 +167,7 @@ namespace Caly.Pdf.TextLayer
             // No op
         }
 
-        public override void EndInlineImage(ReadOnlyMemory<byte> bytes)
+        public override void EndInlineImage(Memory<byte> bytes)
         {
             // No op
         }
@@ -181,7 +181,7 @@ namespace Caly.Pdf.TextLayer
                 return;
             }
 
-            // Only do text related ngs
+            // Only do text related things
 
             if (state.TryGet(NameToken.Font, PdfScanner, out ArrayToken? fontArray) && fontArray.Length == 2
                 && fontArray.Data[0] is IndirectReferenceToken fontReference &&
