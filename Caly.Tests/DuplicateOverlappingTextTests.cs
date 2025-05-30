@@ -62,7 +62,7 @@ namespace Caly.Tests
                         {
                             var expectedWord = expectedLine.Words[w];
                             var actualWord = actualLine.Words[w];
-                            Assert.True(actualWord.Value.Span.SequenceEqual(expectedWord.Value.Span));
+                            Assert.True(actualWord.Value.AsSpan().SequenceEqual(expectedWord.Value.AsSpan()));
                         }
                     }
                 }
