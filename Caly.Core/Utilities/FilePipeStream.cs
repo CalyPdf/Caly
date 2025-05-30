@@ -39,7 +39,7 @@ namespace Caly.Core.Utilities
 
         private static readonly string _pipeName = "caly_pdf_files.pipe";
 
-        private static readonly ReadOnlyMemory<byte> _keyPhrase = "ca1y k3y pa$$"u8.ToArray();
+        private static ReadOnlySpan<byte> _keyPhrase => "ca1y k3y pa$$"u8;
 
         private static readonly TimeSpan _connectTimeout = TimeSpan.FromSeconds(2);
 
@@ -87,7 +87,7 @@ namespace Caly.Core.Utilities
                     }
 
                     // Check key phrase
-                    if (!keyBuffer.Span.SequenceEqual(_keyPhrase.Span))
+                    if (!keyBuffer.Span.SequenceEqual(_keyPhrase))
                     {
                         // TODO - Log
                         continue;
@@ -195,7 +195,7 @@ namespace Caly.Core.Utilities
 
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)1);
                     pipeClient.Write(lengthBytes.Span);
-                    pipeClient.Write(_keyPhrase.Span);
+                    pipeClient.Write(_keyPhrase);
                     pipeClient.WriteByte((byte)PipeMessageType.Command);
                     pipeClient.WriteByte((byte)PipeCommandMessageType.BringToFront);
 
@@ -245,7 +245,7 @@ namespace Caly.Core.Utilities
 
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)pathBytes.Length);
                     pipeClient.Write(lengthBytes.Span);
-                    pipeClient.Write(_keyPhrase.Span);
+                    pipeClient.Write(_keyPhrase);
                     pipeClient.WriteByte((byte)PipeMessageType.FilePath);
                     pipeClient.Write(pathBytes.Span);
 
