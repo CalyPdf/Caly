@@ -32,6 +32,7 @@ using UglyToad.PdfPig.Parser;
 using UglyToad.PdfPig.PdfFonts;
 using UglyToad.PdfPig.Tokenization.Scanner;
 using UglyToad.PdfPig.Tokens;
+using UglyToad.PdfPig.Util;
 
 namespace Caly.Pdf.TextLayer
 {
