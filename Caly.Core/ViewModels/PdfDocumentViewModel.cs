@@ -32,7 +32,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Caly.Core.Handlers;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
@@ -103,10 +102,15 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private string? _fileSize;
 
-        [ObservableProperty] private ITextSelectionHandler _textSelectionHandler;
+        public ITextSelectionHandler? TextSelectionHandler => _pdfService.TextSelectionHandler;
         
         private readonly Lazy<Task> _loadPagesTask;
         public Task LoadPagesTask => _loadPagesTask.Value;
+
+        /// <summary>
+        /// The task that opens the document. Can be awaited to make sure the document is done opening.
+        /// </summary>
+        public Task<int> WaitOpenAsync { get; private set; }
 
         partial void OnPaneSizeChanged(double oldValue, double newValue)
         {
@@ -178,6 +182,11 @@ namespace Caly.Core.ViewModels
                 {
                     try
                     {
+                        if (TextSelectionHandler is null)
+                        {
+                            throw new NullReferenceException("The TextSelectionHandler is null, cannot process search results.");
+                        }
+                        
                         switch (e.Action)
                         {
                             case NotifyCollectionChangedAction.Reset:
@@ -188,8 +197,7 @@ namespace Caly.Core.ViewModels
                                 if (e.NewItems?.Count > 0)
                                 {
                                     var searchResult = e.NewItems.OfType<TextSearchResultViewModel>().ToArray();
-
-                                    var first = e.NewItems.OfType<TextSearchResultViewModel>().FirstOrDefault();
+                                    var first = searchResult.FirstOrDefault();
 
                                     if (first is null || first.PageNumber <= 0)
                                     {
@@ -240,40 +248,43 @@ namespace Caly.Core.ViewModels
                 SearchResultsSource.RowSelection.SelectionChanged += TextSearchSelectionChanged;
             });
         }
-
+        
         /// <summary>
         /// Open the pdf document.
         /// </summary>
         /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
-        public async Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
+        public Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
         {
             var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, token);
 
-            int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
-
-            if (pageCount == 0)
+            WaitOpenAsync = Task.Run(async () =>
             {
+                int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
+
+                if (pageCount == 0)
+                {
+                    return pageCount;
+                }
+
+                PageCount = _pdfService.NumberOfPages;
+                FileName = _pdfService.FileName;
+                LocalPath = _pdfService.LocalPath;
+
+                if (_pdfService.FileSize.HasValue)
+                {
+                    FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
+                }
+
+                if (PageCount > 1)
+                {
+                    // Fire and forget
+                    _processPagesInfoQueueTask = Task.Run(() => ProcessPagesInfoQueue(combinedCts.Token), combinedCts.Token);
+                }
+
                 return pageCount;
-            }
-
-            PageCount = _pdfService.NumberOfPages;
-            FileName = _pdfService.FileName;
-            LocalPath = _pdfService.LocalPath;
-
-            if (_pdfService.FileSize.HasValue)
-            {
-                FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
-            }
-
-            TextSelectionHandler = new TextSelectionHandler(PageCount);
-
-            if (PageCount > 1)
-            {
-                // Fire and forget
-                _processPagesInfoQueueTask = Task.Run(() => ProcessPagesInfoQueue(combinedCts.Token), combinedCts.Token);
-            }
-
-            return pageCount;
+            }, token);
+            
+            return WaitOpenAsync;
         }
 
         public void ClearAllThumbnails()
@@ -288,10 +299,15 @@ namespace Caly.Core.ViewModels
 
         private async Task LoadPages()
         {
+            if (PageCount == 0)
+            {
+                throw new Exception("Cannot load pages because document has 0 pages.");
+            }
+            
             await Task.Run(async () =>
             {
                 // Use 1st page size as default page size
-                var firstPage = new PdfPageViewModel(1, _pdfService, TextSelectionHandler);
+                var firstPage = new PdfPageViewModel(1, _pdfService);
                 await firstPage.LoadPageSize(_cts.Token);
                 double defaultWidth = firstPage.Width;
                 double defaultHeight = firstPage.Height;
@@ -306,7 +322,7 @@ namespace Caly.Core.ViewModels
                 for (int p = 2; p <= PageCount; p++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
-                    var newPage = new PdfPageViewModel(p, _pdfService, TextSelectionHandler)
+                    var newPage = new PdfPageViewModel(p, _pdfService)
                     {
                         Height = defaultHeight,
                         Width = defaultWidth
@@ -350,6 +366,7 @@ namespace Caly.Core.ViewModels
             {
                 return;
             }
+            
             SelectedPageIndex = Math.Min(PageCount, SelectedPageIndex.Value + 1);
         }
 

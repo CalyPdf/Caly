@@ -227,33 +227,42 @@ namespace Caly.Core.Services
                 var scope = App.Current!.Services!.CreateAsyncScope();
 
                 var documentViewModel = scope.ServiceProvider.GetRequiredService<PdfDocumentViewModel>();
+                documentViewModel.FileName = $"Opening '{Path.GetFileNameWithoutExtension(storageFile.Path.LocalPath)}'...";
+                
+                var docRecord = new PdfDocumentRecord()
+                {
+                    Scope = scope,
+                    ViewModel = documentViewModel
+                };
 
-                int pageCount;
-                try
+                if (_openedFiles.TryAdd(storageFile.Path.LocalPath, docRecord))
                 {
-                    pageCount = await documentViewModel.OpenDocument(storageFile, password, cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    // TODO - Log error
-                    await Task.Run(scope.DisposeAsync, CancellationToken.None);
-                    throw;
-                }
+                    // Do not await just yet - We need the WaitOpenAsync() to be created but we also
+                    // want to add the document to PdfDocuments before opening it.
+                    Task<int> openDocTask = documentViewModel.OpenDocument(storageFile, password, cancellationToken);
 
-                if (pageCount > 0)
-                {
-                    var docRecord = new PdfDocumentRecord()
+                    // We need a lock to avoid issues with tabs when opening documents in parallel
+                    _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
+
+                    int pageCount = 0;
+                    try
                     {
-                        Scope = scope,
-                        ViewModel = documentViewModel
-                    };
-
-                    if (_openedFiles.TryAdd(storageFile.Path.LocalPath, docRecord))
+                        pageCount = await openDocTask;
+                    }
+                    catch (Exception ex)
                     {
-                        // We need a lock to avoid issues with tabs when opening documents in parallel
-                        _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
+                        Debug.WriteExceptionToFile(ex);
+                    }
+
+                    if (pageCount > 0)
+                    {
+                        // Document opened successfully
                         return;
                     }
+
+                    // Document is not valid
+                    _mainViewModel.PdfDocuments.RemoveSafely(documentViewModel);
+                    _openedFiles.TryRemove(storageFile.Path.LocalPath, out _);
                 }
 
                 // TODO - Log error

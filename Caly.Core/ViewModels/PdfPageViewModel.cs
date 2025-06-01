@@ -82,8 +82,7 @@ namespace Caly.Core.ViewModels
         [ObservableProperty]
         private bool _selectionChangedFlag;
 
-        [ObservableProperty]
-        private ITextSelectionHandler _textSelectionHandler;
+        public ITextSelectionHandler TextSelectionHandler => _pdfService.TextSelectionHandler!;
 
         public bool IsPageVisible => VisibleArea.HasValue;
 
@@ -118,13 +117,11 @@ namespace Caly.Core.ViewModels
         }
 #endif
 
-        public PdfPageViewModel(int pageNumber, IPdfService pdfService, ITextSelectionHandler textSelectionHandler)
+        public PdfPageViewModel(int pageNumber, IPdfService pdfService)
         {
-            ArgumentNullException.ThrowIfNull(textSelectionHandler, nameof(textSelectionHandler));
-
+            ArgumentNullException.ThrowIfNull(pdfService.TextSelectionHandler, nameof(pdfService.TextSelectionHandler));
             PageNumber = pageNumber;
             _pdfService = pdfService;
-            TextSelectionHandler = textSelectionHandler;
         }
 
         public async Task LoadPageSize(CancellationToken cancellationToken)

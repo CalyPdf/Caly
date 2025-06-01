@@ -27,7 +27,8 @@ namespace Caly.Core.Services
     internal partial class PdfPigPdfService
     {
         // PdfPig only allow to read 1 page at a time for now
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        // NB: Initial count set to 0 to make sure the document is opened before anything else starts.
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
 
         private async Task<T?> ExecuteWithLockAsync<T>(Func<T> action, CancellationToken token)
         {

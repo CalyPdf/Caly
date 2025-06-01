@@ -23,12 +23,15 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Caly.Core.Handlers.Interfaces;
 using Caly.Core.ViewModels;
 
 namespace Caly.Core.Services.Interfaces
 {
     public interface IPdfService : IAsyncDisposable, IDisposable
     {
+        ITextSelectionHandler? TextSelectionHandler { get; }
+        
         int NumberOfPages { get; }
 
         string? FileName { get; }

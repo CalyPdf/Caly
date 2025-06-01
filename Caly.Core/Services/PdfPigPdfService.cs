@@ -29,6 +29,8 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Caly.Core.Handlers;
+using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
@@ -67,6 +69,8 @@ namespace Caly.Core.Services
 
         public int NumberOfPages { get; private set; }
 
+        public ITextSelectionHandler? TextSelectionHandler { get; private set; }
+
         public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
         {
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
@@ -99,7 +103,8 @@ namespace Caly.Core.Services
                 if (Path.GetExtension(storageFile.Path.LocalPath) != ".pdf" && !CalyExtensions.IsMobilePlatform())
                 {
                     // TODO - Need to handle Mobile
-                    throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
+                    throw new ArgumentOutOfRangeException(
+                        $"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
                 }
 
                 _filePath = storageFile.Path;
@@ -114,7 +119,7 @@ namespace Caly.Core.Services
                     await _fileStream.DisposeAsync();
                     _fileStream = ms;
                 }
-                
+
                 return await Task.Run(() =>
                 {
                     var pdfParsingOptions = new ParsingOptions()
@@ -128,13 +133,14 @@ namespace Caly.Core.Services
                     {
                         pdfParsingOptions.Password = password;
                     }
-                    
+
                     _document = PdfDocument.Open(_fileStream, pdfParsingOptions);
                     _document.AddPageFactory<PdfPageInformation, PageInformationFactory>();
                     _document.AddPageFactory<SKPicture, SkiaPageFactory>();
                     _document.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
 
                     NumberOfPages = _document.NumberOfPages;
+                    TextSelectionHandler = new TextSelectionHandler(NumberOfPages);
                     return NumberOfPages;
                 }, token);
             }
@@ -171,6 +177,12 @@ namespace Caly.Core.Services
             catch (OperationCanceledException)
             {
                 return 0;
+            }
+            finally
+            {
+                // The _semaphore starts with initial count set to 0 and maxCount to 1.
+                // By releasing here we allow _semaphore.Wait() in other methods.
+                _semaphore.Release();
             }
         }
 

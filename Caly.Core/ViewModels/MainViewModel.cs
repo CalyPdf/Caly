@@ -70,6 +70,12 @@ namespace Caly.Core.ViewModels
                         {
                             foreach (var newDoc in e.NewItems.OfType<PdfDocumentViewModel>())
                             {
+                                if (newDoc.WaitOpenAsync is null)
+                                {
+                                    throw new Exception("WaitOpenAsync is null");
+                                }
+                                
+                                await newDoc.WaitOpenAsync; // Make sure the doc is open before proceeding
                                 await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask, newDoc.LoadPropertiesTask);
                             }
 
