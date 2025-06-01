@@ -2,9 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:Caly.Core.Controls"
         xmlns:viewModels="clr-namespace:Caly.Core.ViewModels"
+        xmlns:progRing="clr-namespace:AvaloniaProgressRing;assembly=AvaloniaProgressRing"
         xmlns:utilities="clr-namespace:Caly.Core.Utilities">
 
-    <Design.PreviewWith>
+	<Design.PreviewWith>
 		<controls:PdfDocumentControl x:DataType="viewModels:PdfDocumentViewModel" Width="630" Height="1782"/>
 	</Design.PreviewWith>
 
@@ -21,7 +22,7 @@
 
 		<Setter Property="ContextFlyout">
 			<MenuFlyout>
-                <MenuItem Header="{DynamicResource StringTextFlyoutCopyText}"
+				<MenuItem Header="{DynamicResource StringTextFlyoutCopyText}"
                           Command="{Binding CopyTextCommand}"
                           InputGesture="{x:Static utilities:CalyHotkeyConfiguration.CopyGesture}"/>
 
@@ -30,14 +31,27 @@
 
 		<Setter Property="Template">
 			<ControlTemplate>
+				<Grid>
 
-				<controls:PdfPageItemsControl Name="PART_PdfPageItemsControl"
-                                              HorizontalAlignment="Stretch"
-                                              ItemsSource="{TemplateBinding ItemsSource}"
-                                              PageCount="{TemplateBinding PageCount}"
-                                              SelectedPageIndex="{TemplateBinding SelectedPageIndex, Mode=TwoWay}"
-                                              ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"/>
+                    <!-- Progress Ring for when the document is opening -->
+                    <progRing:ProgressRing Width="50"
+                                           Height="50"
+                                           IsActive="{Binding !Pages.Count}"
+                                           IsEnabled="{Binding !Pages.Count}"
+                                           IsVisible="{Binding !Pages.Count}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SystemAccentColor}"/>
 
+					<!-- The pages control -->
+					<controls:PdfPageItemsControl Name="PART_PdfPageItemsControl"
+												  HorizontalAlignment="Stretch"
+												  ItemsSource="{TemplateBinding ItemsSource}"
+												  PageCount="{TemplateBinding PageCount}"
+												  SelectedPageIndex="{TemplateBinding SelectedPageIndex, Mode=TwoWay}"
+												  ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"/>
+
+				</Grid>
 			</ControlTemplate>
 		</Setter>
 	</ControlTheme>
