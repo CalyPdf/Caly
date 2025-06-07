@@ -19,12 +19,13 @@
 	<!--
 	<ItemGroup>
 		<DirectPInvoke Include="libSkiaSharp" />
-		<NativeLibrary Include="$(MSBuildThisFileDirectory)bin\Release\net8.0\win-x64\libSkiaSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
-		<NativeLibrary Include="Dependency.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="..\native\skia.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="..\native\SkiaSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="TBD.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />
 
 		<DirectPInvoke Include="libHarfBuzzSharp" />
-		<NativeLibrary Include="$(MSBuildThisFileDirectory)bin\Release\net8.0\win-x64\libHarfBuzzSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
-		<NativeLibrary Include="Dependency.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="..\native\libHarfBuzzSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
+		<NativeLibrary Include="TBD.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />
 	</ItemGroup>
 	-->
 
