@@ -458,3 +458,4 @@ $RECYCLE.BIN/
 /caly_settings
 /Caly.Core/caly_settings
 *.lib
+*/.avalonia-build-tasks

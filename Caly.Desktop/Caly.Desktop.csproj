@@ -66,6 +66,8 @@
 	<PropertyGroup Label="Avalonia">
 		<AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>..\Caly.Core\Assets\caly-logo.ico</ApplicationIcon>
+		<SignAssembly>True</SignAssembly>
+		<AssemblyOriginatorKeyFile>Caly.Desktop.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
 	<ItemGroup>
