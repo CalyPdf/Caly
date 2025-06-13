@@ -3,7 +3,7 @@
 		<OutputType>WinExe</OutputType>
 		<!--If you are willing to use Windows/MacOS native APIs you will need to create 3 projects.
     One for Windows with net7.0-windows TFM, one for MacOS with net7.0-macos and one with net7.0 TFM for Linux.-->
-		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>net9.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
@@ -16,7 +16,6 @@
 	<!--https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-7-0#trimming-framework-library-features-->
 	<!--https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-8-0-->
 
-	<!--
 	<ItemGroup>
 		<DirectPInvoke Include="libSkiaSharp" />
 		<NativeLibrary Include="..\native\skia.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
@@ -27,8 +26,7 @@
 		<NativeLibrary Include="..\native\libHarfBuzzSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
 		<NativeLibrary Include="TBD.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />
 	</ItemGroup>
-	-->
-
+	
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<!-- Only for Release config to allow Avalonia design mode -->
 		<PublishAot>true</PublishAot>
@@ -49,6 +47,7 @@
 		<MetricsSupport>false</MetricsSupport>
 
 		<!--
+		<XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
 		<UseSystemResourceKeys>true</UseSystemResourceKeys>
 		<DebuggerSupport>false</DebuggerSupport>
 		<TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>

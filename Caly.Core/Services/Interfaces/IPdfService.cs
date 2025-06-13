@@ -57,17 +57,17 @@ namespace Caly.Core.Services.Interfaces
 
         Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token);
 
+        void AskPageSize(PdfPageViewModel page, CancellationToken token);
+        
         void AskPagePicture(PdfPageViewModel page, CancellationToken token);
 
         void AskRemovePagePicture(PdfPageViewModel page);
-
         
         void AskPageThumbnail(PdfPageViewModel page, CancellationToken token);
 
         void AskRemoveThumbnail(PdfPageViewModel page);
 
         void ClearAllThumbnail();
-
         
         void AskPageTextLayer(PdfPageViewModel page, CancellationToken token);
 

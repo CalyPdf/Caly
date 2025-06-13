@@ -70,21 +70,23 @@ namespace Caly.Core.Services
         public int NumberOfPages { get; private set; }
 
         public ITextSelectionHandler? TextSelectionHandler { get; private set; }
-
+        
         public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
         {
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
             _textSearchService = textSearchService;
 
-            // Priority to rendering page
-            _priorityRequests = [_pendingHighPriorityRequests, _pendingOtherRequests];
-
-            var channel = Channel.CreateUnbounded<RenderRequest>();
+            var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
+            {
+                 Comparer = RenderRequestComparer.Instance,
+                 SingleWriter = false,
+                 SingleReader = true
+            });
+            
             _requestsWriter = channel.Writer;
             _requestsReader = channel.Reader;
 
             _processingLoopTask = Task.Run(ProcessingLoop, _mainCts.Token);
-            _enqueuingLoopTask = Task.Run(EnqueuingLoop, _mainCts.Token);
         }
         
         public async Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
@@ -103,8 +105,7 @@ namespace Caly.Core.Services
                 if (Path.GetExtension(storageFile.Path.LocalPath) != ".pdf" && !CalyExtensions.IsMobilePlatform())
                 {
                     // TODO - Need to handle Mobile
-                    throw new ArgumentOutOfRangeException(
-                        $"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
+                    throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
                 }
 
                 _filePath = storageFile.Path;
@@ -397,8 +398,6 @@ namespace Caly.Core.Services
                 AssertTokensCancelled(_textLayerTokens);
                 AssertTokensCancelled(_pictureTokens);
 
-                _pendingOtherRequests.CompleteAdding();
-                _pendingHighPriorityRequests.CompleteAdding();
                 _requestsWriter.Complete();
 
                 _semaphore.Dispose();
@@ -416,11 +415,6 @@ namespace Caly.Core.Services
                 }
 
                 await _processingLoopTask;
-                await _enqueuingLoopTask;
-                
-                _pendingOtherRequests.Dispose();
-                _pendingHighPriorityRequests.Dispose();
-
             }
             catch (Exception ex)
             {
@@ -428,9 +422,9 @@ namespace Caly.Core.Services
             }
         }
 
-        public async void Dispose()
+        public void Dispose()
         {
-            await DisposeAsync();
+            DisposeAsync().GetAwaiter().GetResult();
         }
     }
 }

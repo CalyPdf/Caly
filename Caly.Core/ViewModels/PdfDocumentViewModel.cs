@@ -117,33 +117,6 @@ namespace Caly.Core.ViewModels
             _settingsService.SetProperty(CalySettings.CalySettingsProperty.PaneSize, newValue);
         }
 
-        private async Task ProcessPagesInfoQueue(CancellationToken token)
-        {
-            try
-            {
-                Debug.ThrowOnUiThread();
-
-                if (_channelReader is null)
-                {
-                    throw new NullReferenceException("Channel reader should not be null in ProcessPagesInfoQueue().");
-                }
-
-                await Parallel.ForEachAsync(_channelReader.ReadAllAsync(token), token, async (p, ct) =>
-                {
-                    System.Diagnostics.Debug.WriteLine($"Processing task for page {p.PageNumber}.");
-                    await p.LoadPageSize(ct);
-                });
-            }
-            catch (OperationCanceledException)
-            { }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine($"ERROR in WorkerProc {e}");
-                Debug.WriteExceptionToFile(e);
-                Exception = new ExceptionViewModel(e);
-            }
-        }
-
         private readonly IDisposable _searchResultsDisposable;
 
         public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
@@ -157,19 +130,7 @@ namespace Caly.Core.ViewModels
             _settingsService = settingsService;
 
             _paneSize = _settingsService.GetSettings().PaneSize;
-
-            // We only need the channel if we have more than 1 page in the document?
-            Channel<PdfPageViewModel> pageInfoChannel = Channel.CreateBounded<PdfPageViewModel>(
-                new BoundedChannelOptions(_initialPagesInfoToLoad)
-                {
-                    AllowSynchronousContinuations = false,
-                    FullMode = BoundedChannelFullMode.DropWrite,
-                    SingleReader = false,
-                    SingleWriter = true
-                });
-            _channelWriter = pageInfoChannel.Writer;
-            _channelReader = pageInfoChannel.Reader;
-
+            
             _loadPagesTask = new Lazy<Task>(LoadPages);
             _loadBookmarksTask = new Lazy<Task>(LoadBookmarks);
             _loadPropertiesTask = new Lazy<Task>(LoadProperties);
@@ -275,12 +236,6 @@ namespace Caly.Core.ViewModels
                     FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
                 }
 
-                if (PageCount > 1)
-                {
-                    // Fire and forget
-                    _processPagesInfoQueueTask = Task.Run(() => ProcessPagesInfoQueue(combinedCts.Token), combinedCts.Token);
-                }
-
                 return pageCount;
             }, token);
             
@@ -308,16 +263,14 @@ namespace Caly.Core.ViewModels
             {
                 // Use 1st page size as default page size
                 var firstPage = new PdfPageViewModel(1, _pdfService);
-                await firstPage.LoadPageSize(_cts.Token);
+                await firstPage.LoadPageSizeImmediate(_cts.Token);
+
+                firstPage.LoadPage(); // Enqueue first page full loading
+
                 double defaultWidth = firstPage.Width;
                 double defaultHeight = firstPage.Height;
 
                 Pages.Add(firstPage);
-
-                if (PageCount > 1 && _channelWriter is null)
-                {
-                    throw new NullReferenceException("Document has more than 1 page, the channel writer should not be null.");
-                }
 
                 for (int p = 2; p <= PageCount; p++)
                 {
@@ -327,15 +280,16 @@ namespace Caly.Core.ViewModels
                         Height = defaultHeight,
                         Width = defaultWidth
                     };
-                    Pages.Add(newPage);
 
                     if (p <= _initialPagesInfoToLoad)
                     {
                         // We limit loading page info to n first page
-                        await _channelWriter!.WriteAsync(newPage, _cts.Token);
+                        newPage.LoadPageSize();
+
                     }
+
+                    Pages.Add(newPage);
                 }
-                _channelWriter?.Complete();
             }, _cts.Token);
         }
         

@@ -177,7 +177,7 @@ namespace Caly.Core
         private void Desktop_Exit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
         {
             _listeningToFilesCts.Cancel();
-            GC.KeepAlive(_listeningToFiles);
+            GC.KeepAlive(_listeningToFiles); // TODO - await instead
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
