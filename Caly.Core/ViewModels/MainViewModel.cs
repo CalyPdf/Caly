@@ -208,5 +208,18 @@ namespace Caly.Core.ViewModels
             }
             SelectedDocumentIndex = newIndex;
         }
+
+        [RelayCommand]
+        private void SelectAllText()
+        {
+            PdfDocumentViewModel? vm = GetCurrentPdfDocument();
+
+            if (vm?.TextSelectionHandler is null)
+            {
+                return;
+            }
+
+            throw new NotImplementedException("SelectAllText");
+        }
     }
 }

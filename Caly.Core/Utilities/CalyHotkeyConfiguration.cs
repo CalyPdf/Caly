@@ -44,6 +44,8 @@ namespace Caly.Core.Utilities
         /// </summary>
         public static KeyGesture? CopyGesture => Application.Current?.PlatformSettings?.HotkeyConfiguration.Copy.FirstOrDefault();
 
+        public static KeyGesture SelectAllTextGesture => new KeyGesture(Key.A, _commandModifiers);
+
         public static KeyGesture OpenFileGesture => new KeyGesture(Key.O, _commandModifiers);
 
         public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, _commandModifiers);
