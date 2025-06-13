@@ -725,6 +725,7 @@ namespace Caly.Core.Handlers
             }
 #endif
 
+            // Draw search results first
             if (_searchResults.TryGetValue(control.PageNumber!.Value, out var results))
             {
                 var searchBrush = new ImmutableSolidColorBrush(_searchColor);
@@ -735,12 +736,18 @@ namespace Caly.Core.Handlers
                 }
             }
 
-            var selectionBrush = new ImmutableSolidColorBrush(_selectionColor);
-
-            foreach (var g in Selection.GetPageSelectionAs(control.PageNumber!.Value, PdfWordHelpers.GetGeometry, PdfWordHelpers.GetGeometry))
+            // Draw selected text then
+            if (Selection.IsValid)
             {
-                context.DrawGeometry(selectionBrush, null, g);
+                var selectionBrush = new ImmutableSolidColorBrush(_selectionColor);
+
+                foreach (var g in Selection.GetPageSelectionAs(control.PageNumber!.Value, PdfWordHelpers.GetGeometry, PdfWordHelpers.GetGeometry))
+                {
+                    context.DrawGeometry(selectionBrush, null, g);
+                }
             }
+            
+            // Other possible renders
         }
     }
 }

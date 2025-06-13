@@ -78,8 +78,6 @@ namespace Caly.Core.ViewModels
                                 await newDoc.WaitOpenAsync; // Make sure the doc is open before proceeding
                                 await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask, newDoc.LoadPropertiesTask);
                             }
-
-                            SelectedDocumentIndex = e.NewStartingIndex;
                         }
                     }
                     catch (OperationCanceledException)

@@ -243,6 +243,8 @@ namespace Caly.Core.Services
 
                     // We need a lock to avoid issues with tabs when opening documents in parallel
                     _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
+                    
+                    _mainViewModel.SelectedDocumentIndex = _mainViewModel.PdfDocuments.Count - 1;
 
                     int pageCount = 0;
                     try
@@ -259,7 +261,7 @@ namespace Caly.Core.Services
                         // Document opened successfully
                         return;
                     }
-
+                    
                     // Document is not valid
                     _mainViewModel.PdfDocuments.RemoveSafely(documentViewModel);
                     _openedFiles.TryRemove(storageFile.Path.LocalPath, out _);

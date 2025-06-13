@@ -74,10 +74,13 @@ namespace Caly.Core.Models
             Func<PdfWord, int, int, T> processPartial, PdfPageViewModel page, [EnumeratorCancellation] CancellationToken token)
         {
             // TODO - merge words on same line
+
+            System.Diagnostics.Debug.Assert(IsValid);
+            System.Diagnostics.Debug.Assert(pageNumber == page.PageNumber);
+            
 #if DEBUG
             System.Diagnostics.Debug.Assert(pageNumber >= 1 && pageNumber <= NumberOfPages);
 #endif
-            System.Diagnostics.Debug.Assert(pageNumber == page.PageNumber);
 
             IReadOnlyList<PdfWord>? selectedWords = GetPageSelectedWords(pageNumber);
 
@@ -119,6 +122,8 @@ namespace Caly.Core.Models
             Func<PdfWord, int, int, T> processPartial)
         {
             // TODO - merge words on same line
+            
+            System.Diagnostics.Debug.Assert(IsValid);
 #if DEBUG
             System.Diagnostics.Debug.Assert(pageNumber >= 1 && pageNumber <= NumberOfPages);
 #endif
@@ -139,6 +144,8 @@ namespace Caly.Core.Models
         private IEnumerable<T> GetPageSelectionAs<T>(IReadOnlyList<PdfWord> selectedWords, int pageNumber,
             Func<PdfWord, T> processFull, Func<PdfWord, int, int, T> processPartial)
         {
+            System.Diagnostics.Debug.Assert(IsValid);
+
             if (selectedWords.Count == 0)
             {
                 yield break;
@@ -158,23 +165,13 @@ namespace Caly.Core.Models
                 wordEndIndex = FocusPageIndex == pageNumber ? FocusOffset : -1;
             }
 
-            if (wordStartIndex == -1 && wordEndIndex == -1)
-            {
-                // Only whole words
-                foreach (var word in selectedWords)
-                {
-                    yield return processFull(word); // Return full words
-                }
-
-                yield break; // We are done
-            }
-
             if (selectedWords.Count == 1)
             {
                 // Single word selected
                 var word = selectedWords[0];
                 int lastIndex = word.Count - 1;
-                if ((wordStartIndex == -1 || wordStartIndex == 0) && (wordEndIndex == -1 || wordEndIndex == lastIndex))
+                if ((wordStartIndex == -1 || wordStartIndex == 0) &&
+                    (wordEndIndex == -1 || wordEndIndex == lastIndex))
                 {
                     yield return processFull(word);
                 }
@@ -185,6 +182,16 @@ namespace Caly.Core.Models
                 }
 
                 yield break;
+            }
+
+            if (wordStartIndex == -1 && wordEndIndex == -1)
+            {
+                // Only whole words
+                foreach (var word in selectedWords)
+                {
+                    yield return processFull(word); // Return full words
+                }
+                yield break; // We are done
             }
 
             // Do first word
@@ -235,6 +242,8 @@ namespace Caly.Core.Models
         public async IAsyncEnumerable<T> GetDocumentSelectionAsAsync<T>(Func<PdfWord, T> processFull,
             Func<PdfWord, int, int, T> processPartial, PdfDocumentViewModel document, [EnumeratorCancellation] CancellationToken token)
         {
+            System.Diagnostics.Debug.Assert(IsValid);
+
             foreach (int p in GetSelectedPagesIndexes())
             {
                 await foreach (T b in GetPageSelectionAsAsync(p, processFull, processPartial, document.Pages[p - 1], token))

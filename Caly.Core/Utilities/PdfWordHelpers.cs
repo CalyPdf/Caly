@@ -69,8 +69,12 @@ namespace Caly.Core.Utilities
             {
                 rects[l - startIndex] = word.GetLetterBoundingBox(l);
             }
+            return GetGeometry(rects, word.TextOrientation);
+        }
 
-            PdfRectangle bbox = word.TextOrientation switch
+        public static StreamGeometry GetGeometry(ReadOnlySpan<PdfRectangle> rects, TextOrientation orientation)
+        {
+            PdfRectangle bbox = orientation switch
             {
                 TextOrientation.Horizontal => GetBoundingBoxH(rects),
                 TextOrientation.Rotate180 => GetBoundingBox180(rects),
