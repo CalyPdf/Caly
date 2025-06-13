@@ -61,11 +61,11 @@ namespace Caly.Core.Utilities
         {
             while (true)
             {
-                token.ThrowIfCancellationRequested();
-
                 Memory<byte> pathBuffer = Memory<byte>.Empty;
                 try
                 {
+                    token.ThrowIfCancellationRequested();
+                    
                     // https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-use-named-pipes-for-network-interprocess-communication
                     await _pipeServer.WaitForConnectionAsync(token);
 
@@ -140,7 +140,7 @@ namespace Caly.Core.Utilities
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    Debug.WriteExceptionToFile(e);
                     throw;
                 }
                 finally
