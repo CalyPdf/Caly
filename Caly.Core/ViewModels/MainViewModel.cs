@@ -213,13 +213,7 @@ namespace Caly.Core.ViewModels
         private void SelectAllText()
         {
             PdfDocumentViewModel? vm = GetCurrentPdfDocument();
-
-            if (vm?.TextSelectionHandler is null)
-            {
-                return;
-            }
-
-            throw new NotImplementedException("SelectAllText");
+            vm?.TextSelectionHandler?.SelectAll(vm);
         }
     }
 }

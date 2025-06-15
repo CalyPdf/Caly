@@ -23,10 +23,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Threading;
-using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
-using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Models
 {
@@ -45,6 +43,10 @@ namespace Caly.Core.Models
     /// </summary>
     public sealed partial class PdfTextSelection
     {
+        private readonly IReadOnlyList<PdfWord>?[] _selectedWords;
+
+        private bool _isAllSelected = false;
+
         /*
          * Note: Anchor and focus should not be confused with the start and end positions of a selection.
          * The anchor can be placed before the focus or vice versa, depending on the direction you made your selection.
@@ -127,32 +129,33 @@ namespace Caly.Core.Models
         /// <summary>
         /// Has the selection started.
         /// </summary>
-        public bool HasStarted => AnchorWord is not null;
+        public bool HasStarted => _isAllSelected || AnchorWord is not null;
 
         /// <summary>
         /// Is the selection valid.
         /// </summary>
         /// <returns><c>true</c> if both <see cref="AnchorWord"/> and <see cref="FocusWord"/> are defined. <c>false</c> otherwise.</returns>
-        public bool IsValid => HasStarted && FocusWord is not null;
+        public bool IsValid => HasStarted && (_isAllSelected || FocusWord is not null);
 
-        private readonly IReadOnlyList<PdfWord>?[] _selectedWords;
-
-#if DEBUG
-        public int NumberOfPages;
-#endif
+        public int NumberOfPages { get; }
 
         public PdfTextSelection(int numberOfPages)
         {
+            CalyPageOutOfRangeException.ThrowIfPageOutOfRange(numberOfPages);
+
+            if (numberOfPages <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(numberOfPages), "At least 1 page required.");
+            }
+            
             _selectedWords = new IReadOnlyList<PdfWord>[numberOfPages];
-#if DEBUG
             NumberOfPages = numberOfPages;
-#endif
         }
 
         /// <summary>
         /// Get the index of the last word in a page, taking in account the selection direction.
         /// </summary>
-        internal Index GetLastWordIndex()
+        public Index GetLastWordIndex()
         {
             return new Index(IsBackward ? 0 : 1, !IsBackward);
         }
@@ -160,7 +163,7 @@ namespace Caly.Core.Models
         /// <summary>
         /// Get the index of the first word in a page, taking in account the selection direction.
         /// </summary>
-        internal Index GetFirstWordIndex()
+        public Index GetFirstWordIndex()
         {
             return new Index(IsBackward ? 1 : 0, IsBackward);
         }
@@ -180,7 +183,18 @@ namespace Caly.Core.Models
         {
             return IsForward ? FocusPageIndex : AnchorPageIndex;
         }
-
+        
+        /// <summary>
+        /// Select all text in document.
+        /// </summary>
+        public void SetAllSelected()
+        {
+            ResetSelection();
+            AnchorPageIndex = 1;
+            FocusPageIndex = NumberOfPages;
+            _isAllSelected = true;
+        }
+        
         /// <summary>
         /// Start the selection and set the anchor of the selection to a specified point.
         /// </summary>
@@ -189,15 +203,8 @@ namespace Caly.Core.Models
         /// <param name="location">The location of the anchor. Should NOT be <c>null</c> if 'Allow partial select'. <c>null</c> otherwise.</param>
         public void Start(int pageNumber, PdfWord? word, Point? location = null)
         {
-#if DEBUG
-            System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
-
-            if (pageNumber <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pageNumber), $"The page number of the anchor should be greater or equal to 1. Current value is {pageNumber}");
-            }
-
+            CalyPageOutOfRangeException.ThrowIfPageOutOfRange(pageNumber, NumberOfPages);
+            
             AnchorPageIndex = pageNumber;
             AnchorWord = word;
             AnchorPoint = location;
@@ -229,15 +236,8 @@ namespace Caly.Core.Models
         /// <param name="location">The location of the focus. Should NOT be <c>null</c> if 'Allow partial select'. <c>null</c> otherwise.</param>
         public void Extend(int pageNumber, PdfWord? word, Point? location = null)
         {
-#if DEBUG
-            System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
-
-            if (pageNumber <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pageNumber), $"The page number of the focus should be greater or equal to 1. Current value is {pageNumber}");
-            }
-
+            CalyPageOutOfRangeException.ThrowIfPageOutOfRange(pageNumber, NumberOfPages);
+            
             FocusPageIndex = pageNumber;
             FocusWord = word;
 
@@ -268,9 +268,8 @@ namespace Caly.Core.Models
         /// </summary>
         public void ClearSelectedWordsForPage(int pageNumber)
         {
-#if DEBUG
+            System.Diagnostics.Debug.Assert(pageNumber > 0);
             System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
 
             _selectedWords[pageNumber - 1] = null;
         }
@@ -294,6 +293,8 @@ namespace Caly.Core.Models
         /// </summary>
         public void ResetSelection()
         {
+            _isAllSelected = false;
+
             AnchorOffsetDistance = -1;
             AnchorOffset = -1;
             FocusOffsetDistance = -1;
@@ -309,14 +310,26 @@ namespace Caly.Core.Models
 
         public bool IsPageInSelection(int pageNumber)
         {
+            System.Diagnostics.Debug.Assert(pageNumber > 0);
+            System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
+
+            if (!IsValid)
+            {
+                return false;
+            }
+
+            if (_isAllSelected)
+            {
+                return true;
+            }
+
             return pageNumber >= GetStartPageIndex() && pageNumber <= GetEndPageIndex();
         }
 
         public bool IsWordSelected(int pageNumber, PdfWord word)
         {
-#if DEBUG
+            System.Diagnostics.Debug.Assert(pageNumber > 0);
             System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
 
             // TODO - handle word sub selection
             if (!IsValid)
@@ -324,6 +337,11 @@ namespace Caly.Core.Models
                 return false;
             }
 
+            if (_isAllSelected)
+            {
+                return true;
+            }
+            
             // TODO - Need proper testing
             if (!IsPageInSelection(pageNumber))
             {
@@ -360,6 +378,12 @@ namespace Caly.Core.Models
                 return;
             }
 
+            if (_isAllSelected)
+            {
+                SelectWordsInRange(pdfTextLayer, pageNumber, pdfTextLayer[0], pdfTextLayer[^1]);
+                return;
+            }
+            
             PdfWord? anchor = AnchorPageIndex == pageNumber ? AnchorWord : pdfTextLayer[GetFirstWordIndex()];
             PdfWord? focus = FocusPageIndex == pageNumber ? FocusWord : pdfTextLayer[GetLastWordIndex()];
             SelectWordsInRange(pdfTextLayer, pageNumber, IsBackward ? focus : anchor, IsBackward ? anchor : focus);
@@ -374,9 +398,8 @@ namespace Caly.Core.Models
         /// <param name="selectionEnd">selection end word limit</param>
         private void SelectWordsInRange(PdfTextLayer? control, int pageNumber, PdfWord? selectionStart, PdfWord? selectionEnd)
         {
-#if DEBUG
+            System.Diagnostics.Debug.Assert(pageNumber > 0);
             System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
 
             if (control is null || selectionStart is null)
             {
@@ -395,9 +418,8 @@ namespace Caly.Core.Models
         /// <param name="words">The words in the selection.</param>
         public void SetSelectedWordsForPage(int pageNumber, IReadOnlyList<PdfWord> words)
         {
-#if DEBUG
+            System.Diagnostics.Debug.Assert(pageNumber > 0);
             System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
 
             _selectedWords[pageNumber - 1] = words;
         }
@@ -433,7 +455,7 @@ namespace Caly.Core.Models
         /// If the location is below the word line then set the selection to the end.<br/>
         /// If the location is to the right of the word then set the selection to the end.<br/>
         /// If the offset is to the left of the word set the selection to the beginning.<br/>
-        /// Otherwise calculate the width of each substring to find the char the location is on.
+        /// Otherwise, calculate the width of each substring to find the char the location is on.
         /// </summary>
         /// <param name="word">the word to calculate its index and offset</param>
         /// <param name="loc">the location to calculate for</param>

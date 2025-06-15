@@ -43,6 +43,11 @@ namespace Caly.Core.Handlers.Interfaces
         void AddTextSearchResults(PdfDocumentViewModel documentViewModel, IReadOnlyCollection<TextSearchResultViewModel> searchResults);
 
         /// <summary>
+        /// Select all text in document.
+        /// </summary>
+        void SelectAll(PdfDocumentViewModel vm);
+        
+        /// <summary>
         /// Clear current results.
         /// </summary>
         void ClearTextSearchResults(PdfDocumentViewModel documentViewModel);

@@ -74,6 +74,21 @@ namespace Caly.Core.Handlers
             Selection = new PdfTextSelection(numberOfPages);
         }
 
+        public void SelectAll(PdfDocumentViewModel docVm)
+        {
+            Selection.SetAllSelected();
+   
+            int start = Selection.GetStartPageIndex();
+            int end = Selection.GetEndPageIndex();
+
+            for (int pageNumber = start; pageNumber <= end; ++pageNumber)
+            {
+                var vm = docVm.Pages[pageNumber - 1];
+                Selection.SelectWordsInRange(vm);
+                vm.FlagSelectionChanged();
+            }
+        }
+
         public void ClearSelection(PdfDocumentControl pdfDocumentControl)
         {
             Debug.ThrowNotOnUiThread();
