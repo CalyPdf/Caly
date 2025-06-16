@@ -236,6 +236,11 @@ namespace Caly.Core.Models
         /// <param name="location">The location of the focus. Should NOT be <c>null</c> if 'Allow partial select'. <c>null</c> otherwise.</param>
         public void Extend(int pageNumber, PdfWord? word, Point? location = null)
         {
+            if (!HasStarted)
+            {
+                throw new Exception("Cannot extend text selection if it has started.");
+            }
+            
             CalyPageOutOfRangeException.ThrowIfPageOutOfRange(pageNumber, NumberOfPages);
             
             FocusPageIndex = pageNumber;
