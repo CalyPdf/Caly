@@ -130,7 +130,7 @@ namespace Caly.Core.Services
         #endregion
 
         #region Picture
-        private readonly ConcurrentDictionary<int, CancellationTokenSource> _pictureTokens = new();
+        private readonly ConcurrentDictionary<PdfPageViewModel, CancellationTokenSource> _pictureTokens = new();
 
         private async Task ProcessPictureRequest(RenderRequest renderRequest)
         {
@@ -163,7 +163,7 @@ namespace Caly.Core.Services
             }
             finally
             {
-                if (_pictureTokens.TryRemove(renderRequest.Page.PageNumber, out var cts))
+                if (_pictureTokens.TryRemove(renderRequest.Page, out var cts))
                 {
                     cts.Dispose();
                 }
@@ -199,7 +199,7 @@ namespace Caly.Core.Services
 
             var pageCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token);
 
-            if (_pictureTokens.TryAdd(page.PageNumber, pageCts))
+            if (_pictureTokens.TryAdd(page, pageCts))
             {
                 if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.Picture, pageCts.Token)))
                 {
@@ -215,7 +215,7 @@ namespace Caly.Core.Services
             var picture = page.PdfPicture;
 
             page.PdfPicture = null;
-            if (_pictureTokens.TryRemove(page.PageNumber, out var cts))
+            if (_pictureTokens.TryRemove(page, out var cts))
             {
                 cts.Cancel();
                 cts.Dispose();
@@ -228,7 +228,7 @@ namespace Caly.Core.Services
         #endregion
 
         #region Text layer
-        private readonly ConcurrentDictionary<int, CancellationTokenSource> _textLayerTokens = new();
+        private readonly ConcurrentDictionary<PdfPageViewModel, CancellationTokenSource> _textLayerTokens = new();
 
         private async Task ProcessPageSizeRequest(RenderRequest renderRequest)
         {
@@ -255,7 +255,7 @@ namespace Caly.Core.Services
             }
             finally
             {
-                if (_textLayerTokens.TryRemove(renderRequest.Page.PageNumber, out var cts))
+                if (_textLayerTokens.TryRemove(renderRequest.Page, out var cts))
                 {
                     cts.Dispose();
                 }
@@ -286,7 +286,7 @@ namespace Caly.Core.Services
             }
             finally
             {
-                if (_textLayerTokens.TryRemove(renderRequest.Page.PageNumber, out var cts))
+                if (_textLayerTokens.TryRemove(renderRequest.Page, out var cts))
                 {
                     cts.Dispose();
                 }
@@ -305,7 +305,7 @@ namespace Caly.Core.Services
 
             var pageCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token);
 
-            if (_textLayerTokens.TryAdd(page.PageNumber, pageCts))
+            if (_textLayerTokens.TryAdd(page, pageCts))
             {
                 if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.TextLayer, pageCts.Token)))
                 {
@@ -318,7 +318,7 @@ namespace Caly.Core.Services
         {
             System.Diagnostics.Debug.WriteLine($"[RENDER] AskRemovePageTextLayer {page.PageNumber}");
 
-            if (_textLayerTokens.TryRemove(page.PageNumber, out var cts))
+            if (_textLayerTokens.TryRemove(page, out var cts))
             {
                 cts.Cancel();
                 cts.Dispose();
@@ -327,7 +327,7 @@ namespace Caly.Core.Services
         #endregion
 
         #region Thumbnail
-        private readonly ConcurrentDictionary<int, CancellationTokenSource> _thumbnailTokens = new();
+        private readonly ConcurrentDictionary<PdfPageViewModel, CancellationTokenSource> _thumbnailTokens = new();
 
         private async Task ProcessThumbnailRequest(RenderRequest renderRequest)
         {
@@ -371,7 +371,7 @@ namespace Caly.Core.Services
             }
             finally
             {
-                if (_thumbnailTokens.TryRemove(renderRequest.Page.PageNumber, out var cts))
+                if (_thumbnailTokens.TryRemove(renderRequest.Page, out var cts))
                 {
                     cts.Dispose();
                 }
@@ -393,7 +393,7 @@ namespace Caly.Core.Services
             
             //pageCts.Cancel();
 
-            if (_thumbnailTokens.TryAdd(page.PageNumber, pageCts))
+            if (_thumbnailTokens.TryAdd(page, pageCts))
             {
                 if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.Thumbnail, pageCts.Token)))
                 {
@@ -411,7 +411,7 @@ namespace Caly.Core.Services
             var thumbnail = page.Thumbnail;
             page.Thumbnail = null;
 
-            if (_thumbnailTokens.TryRemove(page.PageNumber, out var cts))
+            if (_thumbnailTokens.TryRemove(page, out var cts))
             {
                 System.Diagnostics.Debug.WriteLine($"[RENDER] REMOVED {page.PageNumber}");
                 cts.Cancel();

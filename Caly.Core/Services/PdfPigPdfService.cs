@@ -368,7 +368,7 @@ namespace Caly.Core.Services
         private long _isDisposed;
 
         [Conditional("DEBUG")]
-        private static void AssertTokensCancelled(ConcurrentDictionary<int, CancellationTokenSource> tokens)
+        private static void AssertTokensCancelled(ConcurrentDictionary<PdfPageViewModel, CancellationTokenSource> tokens)
         {
             foreach (var kvp in tokens)
             {
