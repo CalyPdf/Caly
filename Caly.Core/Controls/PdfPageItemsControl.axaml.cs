@@ -392,6 +392,15 @@ public sealed class PdfPageItemsControl : ItemsControl
     {
         base.OnLoaded(e);
         ItemsPanelRoot!.DataContextChanged += ItemsPanelRoot_DataContextChanged;
+        ItemsPanelRoot.PropertyChanged += ItemsPanelRoot_PropertyChanged;
+    }
+
+    private void ItemsPanelRoot_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == BoundsProperty)
+        {
+            SetPagesVisibility();
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -427,6 +436,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         Scroll?.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
         LayoutTransformControl?.RemoveHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
         ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
+        ItemsPanelRoot.PropertyChanged -= ItemsPanelRoot_PropertyChanged;
 
         if (_tabsControl is not null)
         {

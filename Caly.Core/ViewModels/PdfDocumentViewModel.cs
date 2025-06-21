@@ -285,7 +285,6 @@ namespace Caly.Core.ViewModels
                     {
                         // We limit loading page info to n first page
                         newPage.LoadPageSize();
-
                     }
 
                     Pages.Add(newPage);
