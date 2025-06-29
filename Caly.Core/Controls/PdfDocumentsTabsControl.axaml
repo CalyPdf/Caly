@@ -169,6 +169,11 @@
 							   CompactPaneLength="0"
 							   DisplayMode="CompactInline">
 
+                        <!-- Document control -->
+                        <SplitView.Content>
+                            <controls:PdfDocumentControl />
+                        </SplitView.Content>
+
 						<!-- Left navigation bar -->
 						<SplitView.Pane>
 
@@ -261,13 +266,9 @@
                                                Fill="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"/>
                                 </Grid>
 							</Grid>
-						</SplitView.Pane>
 
-						<!-- Document control -->
-						<SplitView.Content>
-							<controls:PdfDocumentControl />
-						</SplitView.Content>
-
+                        </SplitView.Pane>
+						
 					</SplitView>
 
 				</Grid>

@@ -19,10 +19,10 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
@@ -193,23 +193,10 @@ public sealed class PdfPageItemsControl : ItemsControl
             return;
         }
 
-        cp.PropertyChanged += OnContainerPropertyChanged;
         vm.VisibleArea = null;
         vm.LoadPage();
     }
-
-    protected override void ClearContainerForItemOverride(Control container)
-    {
-        base.ClearContainerForItemOverride(container);
-
-        if (container is not PdfPageItem cp)
-        {
-            return;
-        }
-
-        cp.PropertyChanged -= OnContainerPropertyChanged;
-    }
-
+    
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
     {
         return new PdfPageItem();
@@ -218,16 +205,6 @@ public sealed class PdfPageItemsControl : ItemsControl
     protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey)
     {
         return NeedsContainer<PdfPageItem>(item, out recycleKey);
-    }
-
-    private static void OnContainerPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        if (e.Property == ContentPresenter.ContentProperty &&
-            e.OldValue is PdfPageViewModel vm)
-        {
-            vm.VisibleArea = null;
-            vm.UnloadPage();
-        }
     }
 
     /// <summary>
@@ -376,11 +353,11 @@ public sealed class PdfPageItemsControl : ItemsControl
     private void TabControlOnTabDragCompleted(object? sender, Tabalonia.Events.DragTabDragCompletedEventArgs e)
     {
         _isTabDragging = false;
-        foreach (Control cp in this.GetRealizedContainers())
+        foreach (Control cp in GetRealizedContainers())
         {
             if (cp.DataContext is PdfPageViewModel vm)
             {
-                cp.PropertyChanged += OnContainerPropertyChanged;
+                //cp.PropertyChanged += OnContainerPropertyChanged;
                 vm.VisibleArea = null;
                 vm.LoadPage();
             }
@@ -397,7 +374,18 @@ public sealed class PdfPageItemsControl : ItemsControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == DataContextProperty)
+        if (change.Property == ItemsSourceProperty)
+        {
+            if (change.OldValue is IEnumerable<PdfPageViewModel> items)
+            {
+                foreach (var vm in items)
+                {
+                    vm.VisibleArea = null;
+                    vm.UnloadPage();
+                }
+            }
+        }
+        else if (change.Property == DataContextProperty)
         {
             Scroll?.Focus();
         }
