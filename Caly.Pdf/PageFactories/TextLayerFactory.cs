@@ -36,12 +36,17 @@ namespace Caly.Pdf.PageFactories
 {
     public sealed class TextLayerFactory : BasePageFactory<PageTextLayerContent>
     {
-        public TextLayerFactory(IPdfTokenScanner pdfScanner, IResourceStore resourceStore,
-            ILookupFilterProvider filterProvider, IPageContentParser pageContentParser, ParsingOptions parsingOptions)
-            : base(pdfScanner, resourceStore, filterProvider, pageContentParser,
+        public TextLayerFactory(IPdfTokenScanner pdfScanner,
+            IResourceStore resourceStore,
+            ILookupFilterProvider filterProvider,
+            IPageContentParser _,
+            ParsingOptions parsingOptions)
+            : base(pdfScanner,
+                resourceStore,
+                filterProvider,
+                new TextOnlyPageContentParser(TextOnlyGraphicsStateOperationFactory.Instance, parsingOptions.UseLenientParsing),
                 parsingOptions)
-        {
-        }
+        { }
 
         protected override PageTextLayerContent ProcessPage(int pageNumber, DictionaryToken dictionary,
             NamedDestinations namedDestinations, MediaBox mediaBox,
