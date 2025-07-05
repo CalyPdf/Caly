@@ -22,6 +22,7 @@ using Caly.Core.ViewModels;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -116,7 +117,7 @@ namespace Caly.Core.Services
                     }
                     catch (OperationCanceledException)
                     {
-                        System.Diagnostics.Debug.WriteLine($"CANCELED: Page {r.Page.PageNumber}, type {r.Type}.");
+                        System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] CANCELED: Page {r.Page.PageNumber}, type {r.Type}.");
                     }
                     catch (Exception e)
                     {
@@ -132,9 +133,27 @@ namespace Caly.Core.Services
         #region Picture
         private readonly ConcurrentDictionary<int, CancellationTokenSource> _pictureTokens = new();
 
+        public string GetLogFileName()
+        {
+            int length = 10;
+            string v = FileName;
+            
+            if (v.Length == length)
+            {
+                return v;
+            }
+
+            if (v.Length > length)
+            {
+                return v[..length];
+            }
+
+            return v + string.Concat(Enumerable.Repeat(" ", length - v.Length));
+        }
+
         private async Task ProcessPictureRequest(RenderRequest renderRequest)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [PICTURE] Start process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [PICTURE] Start process {renderRequest.Page.PageNumber}");
 
             try
             {
@@ -147,7 +166,7 @@ namespace Caly.Core.Services
 
                 if (renderRequest.Page.PdfPicture is not null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RENDER] [PICTURE] No need process {renderRequest.Page.PageNumber}");
+                    System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [PICTURE] No need process {renderRequest.Page.PageNumber}");
                     return;
                 }
 
@@ -169,12 +188,12 @@ namespace Caly.Core.Services
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [PICTURE] End process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [PICTURE] End process {renderRequest.Page.PageNumber}");
         }
 
         public void AskPageSize(PdfPageViewModel page, CancellationToken token)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskPageSize {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPageSize {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -190,7 +209,7 @@ namespace Caly.Core.Services
 
         public void AskPagePicture(PdfPageViewModel page, CancellationToken token)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskPagePicture {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPagePicture {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -210,7 +229,7 @@ namespace Caly.Core.Services
 
         public void AskRemovePagePicture(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskRemovePagePicture {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskRemovePagePicture {page.PageNumber}");
 
             var picture = page.PdfPicture;
 
@@ -232,7 +251,7 @@ namespace Caly.Core.Services
 
         private async Task ProcessPageSizeRequest(RenderRequest renderRequest)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [SIZE] Start process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [SIZE] Start process {renderRequest.Page.PageNumber}");
 
             // No cancel possible
             
@@ -247,7 +266,7 @@ namespace Caly.Core.Services
 
                 if (renderRequest.Page is { Height: > 0, Width: > 0 })
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RENDER] [SIZE] No need process {renderRequest.Page.PageNumber}");
+                    System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [SIZE] No need process {renderRequest.Page.PageNumber}");
                     return;
                 }
 
@@ -260,12 +279,12 @@ namespace Caly.Core.Services
                     cts.Dispose();
                 }
             }
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [SIZE] End process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [SIZE] End process {renderRequest.Page.PageNumber}");
         }
 
         private async Task ProcessTextLayerRequest(RenderRequest renderRequest)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [TEXT] Start process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [TEXT] Start process {renderRequest.Page.PageNumber}");
 
             try
             {
@@ -278,7 +297,7 @@ namespace Caly.Core.Services
 
                 if (renderRequest.Page.PdfTextLayer is not null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RENDER] [TEXT] No need process {renderRequest.Page.PageNumber}");
+                    System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [TEXT] No need process {renderRequest.Page.PageNumber}");
                     return;
                 }
 
@@ -291,12 +310,12 @@ namespace Caly.Core.Services
                     cts.Dispose();
                 }
             }
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [TEXT] End process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [TEXT] End process {renderRequest.Page.PageNumber}");
         }
         
         public void AskPageTextLayer(PdfPageViewModel page, CancellationToken token)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskPageTextLayer {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPageTextLayer {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -316,7 +335,7 @@ namespace Caly.Core.Services
 
         public void AskRemovePageTextLayer(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskRemovePageTextLayer {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskRemovePageTextLayer {page.PageNumber}");
 
             if (_textLayerTokens.TryRemove(page.PageNumber, out var cts))
             {
@@ -331,7 +350,7 @@ namespace Caly.Core.Services
 
         private async Task ProcessThumbnailRequest(RenderRequest renderRequest)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [THUMBNAIL] Start process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [THUMBNAIL] Start process {renderRequest.Page.PageNumber}");
 
             try
             {
@@ -344,7 +363,7 @@ namespace Caly.Core.Services
 
                 if (renderRequest.Page.Thumbnail is not null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[RENDER] [THUMBNAIL] No need process {renderRequest.Page.PageNumber}");
+                    System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [THUMBNAIL] No need process {renderRequest.Page.PageNumber}");
                     return;
                 }
 
@@ -377,12 +396,12 @@ namespace Caly.Core.Services
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[RENDER] [THUMBNAIL] End process {renderRequest.Page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [THUMBNAIL] End process {renderRequest.Page.PageNumber}");
         }
 
         public void AskPageThumbnail(PdfPageViewModel page, CancellationToken token)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskPageThumbnail {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPageThumbnail {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -401,19 +420,19 @@ namespace Caly.Core.Services
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[RENDER] Thumbnail Count {_bitmaps.Count}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
         }
 
         public void AskRemoveThumbnail(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[RENDER] AskRemoveThumbnail {page.PageNumber}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskRemoveThumbnail {page.PageNumber}");
 
             var thumbnail = page.Thumbnail;
             page.Thumbnail = null;
 
             if (_thumbnailTokens.TryRemove(page.PageNumber, out var cts))
             {
-                System.Diagnostics.Debug.WriteLine($"[RENDER] REMOVED {page.PageNumber}");
+                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] REMOVED {page.PageNumber}");
                 cts.Cancel();
                 cts.Dispose();
             }
@@ -426,7 +445,7 @@ namespace Caly.Core.Services
 
             thumbnail?.Dispose();
 
-            System.Diagnostics.Debug.WriteLine($"[RENDER] Thumbnail Count {_bitmaps.Count}");
+            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
         }
         #endregion
     }
