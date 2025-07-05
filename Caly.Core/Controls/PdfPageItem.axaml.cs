@@ -63,9 +63,7 @@ namespace Caly.Core.Controls
         /// </summary>
         public static readonly DirectProperty<PdfPageItem, PdfPageTextLayerControl?> TextLayerProperty =
             AvaloniaProperty.RegisterDirect<PdfPageItem, PdfPageTextLayerControl?>(nameof(LayoutTransformControl), o => o.TextLayer);
-
-        private PdfPageTextLayerControl? _textLayer;
-
+        
         static PdfPageItem()
         {
             AffectsRender<PdfPageItem>(PictureProperty, IsPageVisibleProperty);
@@ -101,6 +99,8 @@ namespace Caly.Core.Controls
             set => SetValue(ExceptionProperty, value);
         }
 
+        private PdfPageTextLayerControl? _textLayer;
+
         /// <summary>
         /// Gets the text layer.
         /// </summary>
@@ -131,8 +131,6 @@ namespace Caly.Core.Controls
         {
             base.OnDetachedFromLogicalTree(e);
             Picture?.Dispose();
-
-            System.Diagnostics.Debug.Assert((Picture?.RefCount ?? 0) == 0);
         }
     }
 }

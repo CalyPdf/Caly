@@ -24,8 +24,10 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
+using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace Caly.Core.Controls
 {
@@ -77,8 +79,8 @@ namespace Caly.Core.Controls
             {
                 return;
             }
-            
-            vm.LoadThumbnail();
+
+            WeakReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm));
         }
 
         private void ListBoxContainerClearing(object? sender, ContainerClearingEventArgs e)
@@ -98,7 +100,7 @@ namespace Caly.Core.Controls
             {
                 // The container is not visible anymore, we unload the thumbnail
                 System.Diagnostics.Debug.WriteLine($"Page {vm.PageNumber} thumbnail out of sight.");
-                vm.UnloadThumbnail();
+                WeakReferenceMessenger.Default.Send(new UnloadThumbnailMessage(vm));
             }
         }
         
@@ -132,7 +134,7 @@ namespace Caly.Core.Controls
                     {
                         if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
                         {
-                            vm.LoadThumbnail(); // Load image
+                            WeakReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm)); // Load image
                         }
                     }
                 }

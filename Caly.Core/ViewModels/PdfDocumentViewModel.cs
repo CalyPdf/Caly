@@ -18,15 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
@@ -38,18 +29,32 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using System;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Caly.Core.Services;
 
 namespace Caly.Core.ViewModels
 {
+    [DebuggerDisplay("[{_pdfService?.FileName}]")]
     public sealed partial class PdfDocumentViewModel : ViewModelBase
     {
+        public override string ToString()
+        {
+            return _pdfService?.FileName ?? "FileName NOT SET";
+        }
+
         private const int _initialPagesInfoToLoad = 25;
 
         private readonly IPdfService _pdfService;
         private readonly ISettingsService _settingsService;
-
-        private readonly ChannelWriter<PdfPageViewModel>? _channelWriter;
-        private readonly ChannelReader<PdfPageViewModel>? _channelReader;
 
         private readonly CancellationTokenSource _cts = new();
 
@@ -209,7 +214,17 @@ namespace Caly.Core.ViewModels
                 SearchResultsSource.RowSelection.SelectionChanged += TextSearchSelectionChanged;
             });
         }
-        
+
+        public void SetActive()
+        {
+            _pdfService.IsActive = true;
+        }
+
+        public void SetInactive()
+        {
+            _pdfService.IsActive = false;
+        }
+
         /// <summary>
         /// Open the pdf document.
         /// </summary>
@@ -265,7 +280,7 @@ namespace Caly.Core.ViewModels
                 var firstPage = new PdfPageViewModel(1, _pdfService);
                 await firstPage.LoadPageSizeImmediate(_cts.Token);
 
-                firstPage.LoadPage(); // Enqueue first page full loading
+                WeakReferenceMessenger.Default.Send(new LoadPageMessage(firstPage));// Enqueue first page full loading
 
                 double defaultWidth = firstPage.Width;
                 double defaultHeight = firstPage.Height;
@@ -284,8 +299,7 @@ namespace Caly.Core.ViewModels
                     if (p <= _initialPagesInfoToLoad)
                     {
                         // We limit loading page info to n first page
-                        newPage.LoadPageSize();
-
+                        WeakReferenceMessenger.Default.Send(new LoadPageSizeMessage(newPage));
                     }
 
                     Pages.Add(newPage);

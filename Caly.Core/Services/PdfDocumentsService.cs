@@ -31,11 +31,12 @@ using Avalonia.Platform.Storage;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core.Services
 {
-    internal sealed class PdfDocumentsService : IPdfDocumentsService
+    internal sealed class PdfDocumentsService : IPdfDocumentsService, IDisposable
     {
         private sealed class PdfDocumentRecord
         {
@@ -109,7 +110,55 @@ namespace Caly.Core.Services
             _channelWriter = _fileChannel.Writer;
             _channelReader = _fileChannel.Reader;
 
+            WeakReferenceMessenger.Default.Register<SelectedDocumentChangedMessage>(this, HandleSelectedDocumentChangedMessage);
+            WeakReferenceMessenger.Default.Register<LoadPageSizeMessage>(this, HandleLoadPageSizeMessage);
+            WeakReferenceMessenger.Default.Register<LoadPageMessage>(this, HandleLoadPageMessage);
+            WeakReferenceMessenger.Default.Register<UnloadPageMessage>(this, HandleUnloadPageMessage);
+            WeakReferenceMessenger.Default.Register<LoadThumbnailMessage>(this, HandleLoadThumbnailMessage);
+            WeakReferenceMessenger.Default.Register<UnloadThumbnailMessage>(this, HandleUnloadThumbnailMessage);
+            
             _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
+        }
+
+        private void HandleSelectedDocumentChangedMessage(object r, SelectedDocumentChangedMessage m)
+        {
+            foreach (var openedFile in _openedFiles)
+            {
+                if (openedFile.Value.ViewModel.Equals(m.Value))
+                {
+                    openedFile.Value.ViewModel.SetActive();
+                    continue;
+                }
+
+                openedFile.Value.ViewModel.SetInactive();
+            }
+        }
+
+        private static void HandleLoadPageSizeMessage(object r, LoadPageSizeMessage m)
+        {
+            m.Value.PdfService.EnqueueRequestPageSize(m.Value);
+        }
+        
+        private static void HandleLoadPageMessage(object r, LoadPageMessage m)
+        {
+            m.Value.PdfService.EnqueueRequestPicture(m.Value);
+            m.Value.PdfService.EnqueueRequestTextLayer(m.Value);
+        }
+
+        private static void HandleUnloadPageMessage(object r, UnloadPageMessage m)
+        {
+            m.Value.PdfService.EnqueueRemovePicture(m.Value);
+            m.Value.PdfService.EnqueueRemoveTextLayer(m.Value);
+        }
+
+        private static void HandleLoadThumbnailMessage(object r, LoadThumbnailMessage m)
+        {
+            m.Value.PdfService.EnqueueRequestThumbnail(m.Value);
+        }
+
+        private static void HandleUnloadThumbnailMessage(object r, UnloadThumbnailMessage m)
+        {
+            m.Value.PdfService.EnqueueRemoveThumbnail(m.Value);
         }
 
         public async Task OpenLoadDocument(CancellationToken cancellationToken)
@@ -276,6 +325,12 @@ namespace Caly.Core.Services
         {
             // The backslash character (\) is reserved for mutex names
             return Convert.ToBase64String(Encoding.UTF8.GetBytes(path)).Replace('\\', '#');
+        }
+
+        public void Dispose()
+        {
+            // https://formatexception.com/2024/03/using-messenger-in-the-communitytoolkit-mvvm/
+            WeakReferenceMessenger.Default.UnregisterAll(this);
         }
     }
 }

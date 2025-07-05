@@ -20,6 +20,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -31,8 +33,10 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
+using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
 using Tabalonia.Controls;
 
 namespace Caly.Core.Controls;
@@ -186,7 +190,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         base.PrepareContainerForItemOverride(container, item, index);
 
         if (_isTabDragging ||
-            container is not PdfPageItem cp ||
+            container is not PdfPageItem ||
             item is not PdfPageViewModel vm)
         {
             System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
@@ -194,7 +198,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         }
 
         vm.VisibleArea = null;
-        vm.LoadPage();
+        WeakReferenceMessenger.Default.Send(new LoadPageMessage(vm));
     }
 
     protected override void ClearContainerForItemOverride(Control container)
@@ -208,11 +212,46 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         if (cp.DataContext is PdfPageViewModel vm)
         {
-            vm.VisibleArea = null;
-            vm.UnloadPage();
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: doc vm: {this.DataContext}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: page vm: {vm}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: isTabDragging: {_isTabDragging}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: HasRealisedItems: {HasRealisedItems()}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: IsPageRealised: {IsPageRealised(vm)}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsView?.Count: {ItemsView?.Count}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsSource: {(ItemsSource as ObservableCollection<PdfPageViewModel>)?.Count}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride:  vm.VisibleArea: {vm.VisibleArea}");
+
+            if (vm.VisibleArea.HasValue)
+            {
+                vm.VisibleArea = null;
+                WeakReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
+            }
+            else
+            {
+                // This is a sign that the page won't load properly.
+                // We are trying to cancel a page that needs to be
+                // rendered. The page picture, text and visibility
+                // will not be correct. To fix that, we do that once
+                // when the layout is updated.
+                cp.LayoutUpdated += PdfPageItemLayoutUpdated;
+            }
         }
     }
-    
+
+    private void PdfPageItemLayoutUpdated(object? sender, EventArgs e)
+    {
+        if (sender is not PdfPageItem cp)
+        {
+            return;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"PdfPageItemLayoutUpdated: {cp.DataContext}");
+
+        cp.LayoutUpdated -= PdfPageItemLayoutUpdated; // Only once
+
+        SetPagesVisibility();
+    }
+
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
     {
         return new PdfPageItem();
@@ -374,7 +413,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             if (cp.DataContext is PdfPageViewModel vm)
             {
                 vm.VisibleArea = null;
-                vm.LoadPage();
+                WeakReferenceMessenger.Default.Send(new LoadPageMessage(vm));
             }
         }
         SetPagesVisibility();
@@ -393,10 +432,14 @@ public sealed class PdfPageItemsControl : ItemsControl
         {
             if (change.OldValue is IEnumerable<PdfPageViewModel> items)
             {
+                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: doc vm: {this.DataContext}");
+                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: OldValue: {items.FirstOrDefault()}");
+                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: NewValue: {(change.NewValue as IEnumerable<PdfPageViewModel>).FirstOrDefault()}");
+
                 foreach (var vm in items)
                 {
                     vm.VisibleArea = null;
-                    vm.UnloadPage();
+                    WeakReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
                 }
             }
         }
@@ -456,8 +499,21 @@ public sealed class PdfPageItemsControl : ItemsControl
         return false;
     }
 
+    private bool IsPageRealised(PdfPageViewModel vm)
+    {
+        var index = ItemsView.IndexOf(vm);
+        if (index >= 0 && ItemsPanelRoot is VirtualizingStackPanel vsp)
+        {
+            return index >= vsp.FirstRealizedIndex && index <= vsp.LastRealizedIndex;
+        }
+
+        return false;
+    }
+
     private void SetPagesVisibility()
     {
+        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {(DataContext as PdfDocumentViewModel)}");
+
         if (_isSettingPageVisibility || _isTabDragging)
         {
             return;

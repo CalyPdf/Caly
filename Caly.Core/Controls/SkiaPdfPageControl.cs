@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -41,9 +42,11 @@ namespace Caly.Core.Controls
             private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
 
+            private readonly object _lock = new object();
+
             public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality)
             {
-                _picture = picture?.Clone();
+                _picture = picture;
                 _visibleArea = visibleArea;
                 _filterQuality = filterQuality;
                 Bounds = bounds;
@@ -51,7 +54,10 @@ namespace Caly.Core.Controls
 
             public void Dispose()
             {
-                _picture?.Dispose();
+                lock (_lock)
+                {
+                    _picture?.Dispose();
+                }
             }
 
             public Rect Bounds { get; }
@@ -67,41 +73,46 @@ namespace Caly.Core.Controls
             {
                 Debug.ThrowOnUiThread();
 
-                if (_picture?.Item is null || !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
+                lock (_lock)
                 {
-                    return;
-                }
-
-                using (ISkiaSharpApiLease lease = leaseFeature.Lease())
-                {
-                    var canvas = lease?.SkCanvas;
-                    if (canvas is null)
+                    if (_picture?.Item is null || _picture.Item.Handle == IntPtr.Zero ||
+                        !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
                     {
                         return;
                     }
 
-                    canvas.Save();
-                    canvas.ClipRect(_visibleArea);
-                    using (var p = new SKPaint())
+                    using (ISkiaSharpApiLease lease = leaseFeature.Lease())
                     {
-                        p.FilterQuality = _filterQuality;
-                        p.IsDither = false;
-                        p.FakeBoldText = false;
-                        p.IsAntialias = false;
+                        var canvas = lease?.SkCanvas;
+                        if (canvas is null)
+                        {
+                            return;
+                        }
 
-                        canvas.DrawPicture(_picture.Item, p);
+                        canvas.Save();
+                        canvas.ClipRect(_visibleArea);
+
+                        using (var p = new SKPaint())
+                        {
+                            p.FilterQuality = _filterQuality;
+                            p.IsDither = false;
+                            p.FakeBoldText = false;
+                            p.IsAntialias = false;
+
+                            canvas.DrawPicture(_picture.Item, p);
 
 #if DEBUG
-                        using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
-                        using (var fontPaint = new SKPaint(skFont))
-                        {
-                            fontPaint.Style = SKPaintStyle.Fill;
-                            fontPaint.Color = SKColors.Blue.WithAlpha(100);
-                            canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
-                        }
+                            using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
+                            using (var fontPaint = new SKPaint(skFont))
+                            {
+                                fontPaint.Style = SKPaintStyle.Fill;
+                                fontPaint.Color = SKColors.Blue.WithAlpha(100);
+                                canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
+                            }
 #endif
+                        }
+                        canvas.Restore();
                     }
-                    canvas.Restore();
                 }
             }
         }
@@ -163,7 +174,7 @@ namespace Caly.Core.Controls
                 return;
             }
 
-            var picture = Picture;
+            var picture = Picture?.Clone();
             if (picture?.Item is null || picture.Item.CullRect.IsEmpty)
             {
                 base.Render(context);
@@ -174,16 +185,7 @@ namespace Caly.Core.Controls
 
             var filter = RenderOptions.GetBitmapInterpolationMode(this);
 
-            /*
-            context.PushRenderOptions(new RenderOptions()
-            {
-                BitmapInterpolationMode = filter
-            });
-            */
-
             context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality()));
-
-            base.Render(context);
         }
     }
 }
