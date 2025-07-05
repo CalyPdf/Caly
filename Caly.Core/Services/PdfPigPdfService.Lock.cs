@@ -60,6 +60,5 @@ namespace Caly.Core.Services
                 }
             }
         }
-
     }
 }

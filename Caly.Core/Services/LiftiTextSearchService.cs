@@ -67,7 +67,7 @@ namespace Caly.Core.Services
                                 var textLayer = p.PdfTextLayer;
                                 if (textLayer is null)
                                 {
-                                    await p.SetPageTextLayer(ct);
+                                    await p.SetPageTextLayerImmediate(ct);
                                     textLayer = p.PdfTextLayer;
                                 }
 
@@ -87,7 +87,7 @@ namespace Caly.Core.Services
                                 var textLayer = p.PdfTextLayer;
                                 if (textLayer is null)
                                 {
-                                    await p.SetPageTextLayer(ct);
+                                    await p.SetPageTextLayerImmediate(ct);
                                     textLayer = p.PdfTextLayer;
                                 }
 

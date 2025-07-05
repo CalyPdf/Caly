@@ -18,6 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Collections;
+using Caly.Core.Services.Interfaces;
+using Caly.Core.Utilities;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -26,12 +33,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Collections;
-using Caly.Core.Services.Interfaces;
-using Caly.Core.Utilities;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
+using Caly.Core.Services;
 using Tabalonia.Controls;
 
 namespace Caly.Core.ViewModels
@@ -48,12 +50,17 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private string _version = CalyExtensions.GetCalyVersion();
 
-#if DEBUG
         partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
         {
             System.Diagnostics.Debug.WriteLine($"Selected Document Index changed from {oldValue} to {newValue}.");
+            var currentDoc = GetCurrentPdfDocument();
+            if (currentDoc is null)
+            {
+                return;
+            }
+            
+            WeakReferenceMessenger.Default.Send(new SelectedDocumentChangedMessage(currentDoc));
         }
-#endif
 
         public MainViewModel()
         {

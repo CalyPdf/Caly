@@ -30,6 +30,8 @@ namespace Caly.Core.Services.Interfaces
 {
     public interface IPdfService : IAsyncDisposable, IDisposable
     {
+        bool IsActive { get; internal set; }
+
         ITextSelectionHandler? TextSelectionHandler { get; }
         
         int NumberOfPages { get; }
@@ -54,25 +56,24 @@ namespace Caly.Core.Services.Interfaces
 
         Task<IEnumerable<TextSearchResultViewModel>> SearchText(PdfDocumentViewModel pdfDocument, string query, CancellationToken token);
 
-
         Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token);
 
-        void AskPageSize(PdfPageViewModel page, CancellationToken token);
-        
-        void AskPagePicture(PdfPageViewModel page, CancellationToken token);
+        Task SetPageTextLayerAsync(PdfPageViewModel page, CancellationToken token);
 
-        void AskRemovePagePicture(PdfPageViewModel page);
+        void EnqueueRequestPageSize(PdfPageViewModel page);
         
-        void AskPageThumbnail(PdfPageViewModel page, CancellationToken token);
+        void EnqueueRequestPicture(PdfPageViewModel page);
 
-        void AskRemoveThumbnail(PdfPageViewModel page);
+        void EnqueueRemovePicture(PdfPageViewModel page);
+        
+        void EnqueueRequestThumbnail(PdfPageViewModel page);
+
+        void EnqueueRemoveThumbnail(PdfPageViewModel page);
 
         void ClearAllThumbnail();
         
-        void AskPageTextLayer(PdfPageViewModel page, CancellationToken token);
+        void EnqueueRequestTextLayer(PdfPageViewModel page);
 
-        void AskRemovePageTextLayer(PdfPageViewModel page);
-
-        Task SetPageTextLayer(PdfPageViewModel page, CancellationToken token);
+        void EnqueueRemoveTextLayer(PdfPageViewModel page);
     }
 }

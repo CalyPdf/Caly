@@ -18,10 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Caly.Core.Handlers.Interfaces;
@@ -29,17 +25,26 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
+using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using Caly.Core.Services;
 
 namespace Caly.Core.ViewModels
 {
-    [DebuggerDisplay("Page {_pageNumber}")]
+    [DebuggerDisplay("[{PdfService?.FileName}] Page {_pageNumber}")]
     public sealed partial class PdfPageViewModel : ViewModelBase, IAsyncDisposable
     {
-        private readonly IPdfService _pdfService;
+        public override string ToString()
+        {
+            return $"[{PdfService.FileName}] Page {_pageNumber}";
+        }
 
-        private CancellationTokenSource? _cts = new();
-
+        internal readonly IPdfService PdfService;
+        
         [ObservableProperty]
         private PdfTextLayer? _pdfTextLayer;
 
@@ -82,7 +87,7 @@ namespace Caly.Core.ViewModels
         [ObservableProperty]
         private bool _selectionChangedFlag;
 
-        public ITextSelectionHandler TextSelectionHandler => _pdfService.TextSelectionHandler!;
+        public ITextSelectionHandler TextSelectionHandler => PdfService.TextSelectionHandler!;
 
         public bool IsPageVisible => VisibleArea.HasValue;
 
@@ -108,7 +113,7 @@ namespace Caly.Core.ViewModels
         {
             if (Avalonia.Controls.Design.IsDesignMode)
             {
-                //_pdfService = DummyPdfPageService.Instance; // TODO
+                //PdfService = DummyPdfPageService.Instance; // TODO
             }
             else
             {
@@ -119,98 +124,25 @@ namespace Caly.Core.ViewModels
 
         public PdfPageViewModel(int pageNumber, IPdfService pdfService)
         {
-            ArgumentNullException.ThrowIfNull(pdfService.TextSelectionHandler, nameof(pdfService.TextSelectionHandler));
+            ArgumentNullException.ThrowIfNull(pdfService?.TextSelectionHandler, nameof(pdfService.TextSelectionHandler));
             PageNumber = pageNumber;
-            _pdfService = pdfService;
+            PdfService = pdfService;
         }
 
         public async Task LoadPageSizeImmediate(CancellationToken cancellationToken)
         {
-            await _pdfService.SetPageSizeAsync(this, cancellationToken);
+            await PdfService.SetPageSizeAsync(this, cancellationToken);
         }
 
-        public void LoadPageSize()
+        public async Task SetPageTextLayerImmediate(CancellationToken token)
         {
-            _pdfService.AskPageSize(this, _cts.Token);
+            await PdfService.SetPageTextLayerAsync(this, token);
         }
 
         public void FlagSelectionChanged()
         {
             Debug.ThrowNotOnUiThread();
             SelectionChangedFlag = !SelectionChangedFlag;
-        }
-
-        public void LoadPage()
-        {
-            if (_cts is null)
-            {
-                return;
-            }
-
-            try
-            {
-                LoadPagePicture();
-                LoadInteractiveLayer(_cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                UnloadPagePicture();
-            }
-            catch (Exception e)
-            {
-                UnloadPagePicture();
-                Exception = new ExceptionViewModel(e);
-            }
-        }
-
-        private void LoadPagePicture()
-        {
-            if (PdfPicture?.Item is not null)
-            {
-                return;
-            }
-            _pdfService.AskPagePicture(this, _cts.Token);
-        }
-
-        public void UnloadPage()
-        {
-            UnloadPagePicture();
-            CancelLoadInteractiveLayer();
-        }
-
-        private void UnloadPagePicture()
-        {
-            _pdfService.AskRemovePagePicture(this);
-        }
-
-        public void LoadThumbnail()
-        {
-            if (_cts is null)
-            {
-                return;
-            }
-
-            _pdfService.AskPageThumbnail(this, _cts.Token);
-        }
-
-        public void UnloadThumbnail()
-        {
-            _pdfService.AskRemoveThumbnail(this);
-        }
-
-        public void LoadInteractiveLayer(CancellationToken cancellationToken)
-        {
-            _pdfService.AskPageTextLayer(this, cancellationToken);
-        }
-
-        private void CancelLoadInteractiveLayer()
-        {
-            _pdfService.AskRemovePageTextLayer(this);
-        }
-
-        public async Task SetPageTextLayer(CancellationToken token)
-        {
-            await _pdfService.SetPageTextLayer(this, token);
         }
 
         internal void RotateClockwise()
@@ -225,10 +157,7 @@ namespace Caly.Core.ViewModels
 
         public ValueTask DisposeAsync()
         {
-            UnloadThumbnail();
-            UnloadPage();
-            _cts?.Dispose();
-            _cts = null;
+            WeakReferenceMessenger.Default.Send(new UnloadThumbnailMessage(this));
             return ValueTask.CompletedTask;
         }
     }

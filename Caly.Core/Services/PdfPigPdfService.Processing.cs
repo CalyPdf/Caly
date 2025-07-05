@@ -20,9 +20,7 @@
 
 using Caly.Core.ViewModels;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -80,8 +78,7 @@ namespace Caly.Core.Services
         private readonly CancellationTokenSource _mainCts = new();
 
         private readonly Task _processingLoopTask;
-
-        #region Loops
+        
         private async Task ProcessingLoop()
         {
             Debug.ThrowOnUiThread();
@@ -128,28 +125,7 @@ namespace Caly.Core.Services
             }
             catch (OperationCanceledException) { }
         }
-        #endregion
 
-        #region Picture
-        private readonly ConcurrentDictionary<int, CancellationTokenSource> _pictureTokens = new();
-
-        public string GetLogFileName()
-        {
-            int length = 10;
-            string v = FileName;
-            
-            if (v.Length == length)
-            {
-                return v;
-            }
-
-            if (v.Length > length)
-            {
-                return v[..length];
-            }
-
-            return v + string.Concat(Enumerable.Repeat(" ", length - v.Length));
-        }
 
         private async Task ProcessPictureRequest(RenderRequest renderRequest)
         {
@@ -190,64 +166,6 @@ namespace Caly.Core.Services
 
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [PICTURE] End process {renderRequest.Page.PageNumber}");
         }
-
-        public void AskPageSize(PdfPageViewModel page, CancellationToken token)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPageSize {page.PageNumber}");
-
-            if (IsDisposed())
-            {
-                return;
-            }
-            
-            // No cancel possible
-            if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.PageSize, CancellationToken.None)))
-            {
-                throw new Exception("Could not write request to channel."); // Should never happen as unbounded channel
-            }
-        }
-
-        public void AskPagePicture(PdfPageViewModel page, CancellationToken token)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPagePicture {page.PageNumber}");
-
-            if (IsDisposed())
-            {
-                return;
-            }
-
-            var pageCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token);
-
-            if (_pictureTokens.TryAdd(page.PageNumber, pageCts))
-            {
-                if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.Picture, pageCts.Token)))
-                {
-                    throw new Exception("Could not write request to channel."); // Should never happen as unbounded channel
-                }
-            }
-        }
-
-        public void AskRemovePagePicture(PdfPageViewModel page)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskRemovePagePicture {page.PageNumber}");
-
-            var picture = page.PdfPicture;
-
-            page.PdfPicture = null;
-            if (_pictureTokens.TryRemove(page.PageNumber, out var cts))
-            {
-                cts.Cancel();
-                cts.Dispose();
-            }
-
-            picture?.Dispose();
-
-            //System.Diagnostics.Debug.Assert((picture?.RefCount ?? 0) == 0);
-        }
-        #endregion
-
-        #region Text layer
-        private readonly ConcurrentDictionary<int, CancellationTokenSource> _textLayerTokens = new();
 
         private async Task ProcessPageSizeRequest(RenderRequest renderRequest)
         {
@@ -301,7 +219,7 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                await SetPageTextLayer(renderRequest.Page, renderRequest.Token);
+                await SetPageTextLayerAsync(renderRequest.Page, renderRequest.Token);
             }
             finally
             {
@@ -312,41 +230,6 @@ namespace Caly.Core.Services
             }
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [TEXT] End process {renderRequest.Page.PageNumber}");
         }
-        
-        public void AskPageTextLayer(PdfPageViewModel page, CancellationToken token)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPageTextLayer {page.PageNumber}");
-
-            if (IsDisposed())
-            {
-                return;
-            }
-
-            var pageCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token);
-
-            if (_textLayerTokens.TryAdd(page.PageNumber, pageCts))
-            {
-                if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.TextLayer, pageCts.Token)))
-                {
-                    throw new Exception("Could not write request to channel."); // Should never happen as unbounded channel
-                }
-            }
-        }
-
-        public void AskRemovePageTextLayer(PdfPageViewModel page)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskRemovePageTextLayer {page.PageNumber}");
-
-            if (_textLayerTokens.TryRemove(page.PageNumber, out var cts))
-            {
-                cts.Cancel();
-                cts.Dispose();
-            }
-        }
-        #endregion
-
-        #region Thumbnail
-        private readonly ConcurrentDictionary<int, CancellationTokenSource> _thumbnailTokens = new();
 
         private async Task ProcessThumbnailRequest(RenderRequest renderRequest)
         {
@@ -398,55 +281,5 @@ namespace Caly.Core.Services
 
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [THUMBNAIL] End process {renderRequest.Page.PageNumber}");
         }
-
-        public void AskPageThumbnail(PdfPageViewModel page, CancellationToken token)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskPageThumbnail {page.PageNumber}");
-
-            if (IsDisposed())
-            {
-                return;
-            }
-
-            var pageCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token);
-            
-            //pageCts.Cancel();
-
-            if (_thumbnailTokens.TryAdd(page.PageNumber, pageCts))
-            {
-                if (!_requestsWriter.TryWrite(new RenderRequest(page, RenderRequestTypes.Thumbnail, pageCts.Token)))
-                {
-                    throw new Exception("Could not write request to channel."); // Should never happen as unbounded channel
-                }
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
-        }
-
-        public void AskRemoveThumbnail(PdfPageViewModel page)
-        {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] AskRemoveThumbnail {page.PageNumber}");
-
-            var thumbnail = page.Thumbnail;
-            page.Thumbnail = null;
-
-            if (_thumbnailTokens.TryRemove(page.PageNumber, out var cts))
-            {
-                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] REMOVED {page.PageNumber}");
-                cts.Cancel();
-                cts.Dispose();
-            }
-
-            if (_bitmaps.TryRemove(page.PageNumber, out var vm))
-            {
-                // Should always be null
-                //System.Diagnostics.Debug.Assert(vm.Thumbnail is null);
-            }
-
-            thumbnail?.Dispose();
-
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
-        }
-        #endregion
     }
 }

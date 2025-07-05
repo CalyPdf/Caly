@@ -70,6 +70,14 @@ namespace Caly.Core.Services
         public int NumberOfPages { get; private set; }
 
         public ITextSelectionHandler? TextSelectionHandler { get; private set; }
+
+        private long _isActive = 0;
+        public bool IsActive
+        {
+            // https://makolyte.com/csharp-thread-safe-primitive-properties-using-lock-vs-interlocked/
+            get => Interlocked.Read(ref _isActive) == 1;
+            set => Interlocked.Exchange(ref _isActive, Convert.ToInt64(value));
+        }
         
         public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
         {
@@ -202,7 +210,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public async Task SetPageTextLayer(PdfPageViewModel page, CancellationToken token)
+        public async Task SetPageTextLayerAsync(PdfPageViewModel page, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
@@ -259,6 +267,29 @@ namespace Caly.Core.Services
             };
 
             return ValueTask.CompletedTask;
+        }
+
+        public string? GetLogFileName()
+        {
+            const int length = 15;
+
+            string? v = FileName;
+            if (string.IsNullOrEmpty(v))
+            {
+                return v;
+            }
+
+            if (v.Length == length)
+            {
+                return v;
+            }
+
+            if (v.Length > length)
+            {
+                return v[..length];
+            }
+
+            return v + string.Concat(Enumerable.Repeat(" ", length - v.Length));
         }
 
         private static string? FormatPdfDate(string? rawDate)
