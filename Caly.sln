@@ -62,6 +62,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PdfPig.Filters.Dct.JpegLibr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UglyToad.PdfPig.Filters.Dct.JpegLibrary", "external\UglyToad.PdfPig.Filters.Dct.JpegLibrary\UglyToad.PdfPig.Filters.Dct.JpegLibrary\UglyToad.PdfPig.Filters.Dct.JpegLibrary.csproj", "{49AF46EF-1FDE-46EB-A3C4-E2EDDBAB5D15}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PdfPig.Filters.Jpx.OpenJpeg", "PdfPig.Filters.Jpx.OpenJpeg", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UglyToad.PdfPig.Filters.Jpx.OpenJpeg", "external\UglyToad.PdfPig.Filters.Jpx.OpenJpeg\UglyToad.PdfPig.Filters.Jpx.OpenJpeg\UglyToad.PdfPig.Filters.Jpx.OpenJpeg.csproj", "{54DC2BCB-B88D-D1DF-50AE-CB88C40F3264}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OpenJPEG.net", "OpenJPEG.net", "{20535F34-48E1-4F04-964F-1A2319DA81E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenJpeg.net", "external\UglyToad.PdfPig.Filters.Jpx.OpenJpeg\external\OpenJPEG.net\OpenJpeg.net.csproj", "{27A5C7FF-4728-C34E-4688-6C206C94BAAB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -152,6 +160,14 @@ Global
 		{49AF46EF-1FDE-46EB-A3C4-E2EDDBAB5D15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49AF46EF-1FDE-46EB-A3C4-E2EDDBAB5D15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49AF46EF-1FDE-46EB-A3C4-E2EDDBAB5D15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54DC2BCB-B88D-D1DF-50AE-CB88C40F3264}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54DC2BCB-B88D-D1DF-50AE-CB88C40F3264}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54DC2BCB-B88D-D1DF-50AE-CB88C40F3264}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54DC2BCB-B88D-D1DF-50AE-CB88C40F3264}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27A5C7FF-4728-C34E-4688-6C206C94BAAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27A5C7FF-4728-C34E-4688-6C206C94BAAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27A5C7FF-4728-C34E-4688-6C206C94BAAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27A5C7FF-4728-C34E-4688-6C206C94BAAB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -176,6 +192,10 @@ Global
 		{E1791AE7-EC16-4355-B3B8-6C74F623B904} = {606A4D17-0AAD-4722-BA0F-1EF4B6FFB31C}
 		{FFBCB784-6C08-41B7-A6BD-CF8AA17556B6} = {729644E9-1B3D-4BE2-90F4-D31B9A431DF6}
 		{49AF46EF-1FDE-46EB-A3C4-E2EDDBAB5D15} = {FFBCB784-6C08-41B7-A6BD-CF8AA17556B6}
+		{02EA681E-C7D8-13C7-8484-4AC65E1B71E8} = {729644E9-1B3D-4BE2-90F4-D31B9A431DF6}
+		{54DC2BCB-B88D-D1DF-50AE-CB88C40F3264} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{20535F34-48E1-4F04-964F-1A2319DA81E3} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{27A5C7FF-4728-C34E-4688-6C206C94BAAB} = {20535F34-48E1-4F04-964F-1A2319DA81E3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E4266927-3627-47FF-B829-F45BBA8830F9}
