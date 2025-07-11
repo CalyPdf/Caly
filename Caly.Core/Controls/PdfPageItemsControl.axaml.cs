@@ -433,8 +433,8 @@ public sealed class PdfPageItemsControl : ItemsControl
             if (change.OldValue is IEnumerable<PdfPageViewModel> items)
             {
                 System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: doc vm: {this.DataContext}");
-                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: OldValue: {items.FirstOrDefault()}");
-                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: NewValue: {(change.NewValue as IEnumerable<PdfPageViewModel>).FirstOrDefault()}");
+                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: OldValue: {items?.FirstOrDefault()}");
+                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: NewValue: {(change.NewValue as IEnumerable<PdfPageViewModel>)?.FirstOrDefault()}");
 
                 foreach (var vm in items)
                 {
