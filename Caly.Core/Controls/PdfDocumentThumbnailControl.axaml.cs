@@ -80,7 +80,7 @@ namespace Caly.Core.Controls
                 return;
             }
 
-            WeakReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm));
+            StrongReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm));
         }
 
         private void ListBoxContainerClearing(object? sender, ContainerClearingEventArgs e)
@@ -100,7 +100,7 @@ namespace Caly.Core.Controls
             {
                 // The container is not visible anymore, we unload the thumbnail
                 System.Diagnostics.Debug.WriteLine($"Page {vm.PageNumber} thumbnail out of sight.");
-                WeakReferenceMessenger.Default.Send(new UnloadThumbnailMessage(vm));
+                StrongReferenceMessenger.Default.Send(new UnloadThumbnailMessage(vm));
             }
         }
         
@@ -134,7 +134,7 @@ namespace Caly.Core.Controls
                     {
                         if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
                         {
-                            WeakReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm)); // Load image
+                            StrongReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm)); // Load image
                         }
                     }
                 }
