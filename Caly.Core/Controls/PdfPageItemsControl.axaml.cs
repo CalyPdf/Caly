@@ -198,7 +198,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         }
 
         vm.VisibleArea = null;
-        WeakReferenceMessenger.Default.Send(new LoadPageMessage(vm));
+        StrongReferenceMessenger.Default.Send(new LoadPageMessage(vm));
     }
 
     protected override void ClearContainerForItemOverride(Control container)
@@ -224,7 +224,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             if (vm.VisibleArea.HasValue)
             {
                 vm.VisibleArea = null;
-                WeakReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
+                StrongReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
             }
             else
             {
@@ -413,7 +413,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             if (cp.DataContext is PdfPageViewModel vm)
             {
                 vm.VisibleArea = null;
-                WeakReferenceMessenger.Default.Send(new LoadPageMessage(vm));
+                StrongReferenceMessenger.Default.Send(new LoadPageMessage(vm));
             }
         }
         SetPagesVisibility();
@@ -438,8 +438,13 @@ public sealed class PdfPageItemsControl : ItemsControl
 
                 foreach (var vm in items)
                 {
-                    vm.VisibleArea = null;
-                    WeakReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
+                    System.Diagnostics.Debug.Assert(!vm.VisibleArea.HasValue);
+
+                    if (vm.PdfPicture is not null)
+                    {
+                        // TODO - Check why this happens
+                        StrongReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
+                    }
                 }
             }
         }

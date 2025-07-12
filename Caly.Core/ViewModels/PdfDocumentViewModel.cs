@@ -280,7 +280,7 @@ namespace Caly.Core.ViewModels
                 var firstPage = new PdfPageViewModel(1, _pdfService);
                 await firstPage.LoadPageSizeImmediate(_cts.Token);
 
-                WeakReferenceMessenger.Default.Send(new LoadPageMessage(firstPage));// Enqueue first page full loading
+                StrongReferenceMessenger.Default.Send(new LoadPageMessage(firstPage));// Enqueue first page full loading
 
                 double defaultWidth = firstPage.Width;
                 double defaultHeight = firstPage.Height;
@@ -299,7 +299,7 @@ namespace Caly.Core.ViewModels
                     if (p <= _initialPagesInfoToLoad)
                     {
                         // We limit loading page info to n first page
-                        WeakReferenceMessenger.Default.Send(new LoadPageSizeMessage(newPage));
+                        StrongReferenceMessenger.Default.Send(new LoadPageSizeMessage(newPage));
                     }
 
                     Pages.Add(newPage);

@@ -110,12 +110,12 @@ namespace Caly.Core.Services
             _channelWriter = _fileChannel.Writer;
             _channelReader = _fileChannel.Reader;
 
-            WeakReferenceMessenger.Default.Register<SelectedDocumentChangedMessage>(this, HandleSelectedDocumentChangedMessage);
-            WeakReferenceMessenger.Default.Register<LoadPageSizeMessage>(this, HandleLoadPageSizeMessage);
-            WeakReferenceMessenger.Default.Register<LoadPageMessage>(this, HandleLoadPageMessage);
-            WeakReferenceMessenger.Default.Register<UnloadPageMessage>(this, HandleUnloadPageMessage);
-            WeakReferenceMessenger.Default.Register<LoadThumbnailMessage>(this, HandleLoadThumbnailMessage);
-            WeakReferenceMessenger.Default.Register<UnloadThumbnailMessage>(this, HandleUnloadThumbnailMessage);
+            StrongReferenceMessenger.Default.Register<SelectedDocumentChangedMessage>(this, HandleSelectedDocumentChangedMessage);
+            StrongReferenceMessenger.Default.Register<LoadPageSizeMessage>(this, HandleLoadPageSizeMessage);
+            StrongReferenceMessenger.Default.Register<LoadPageMessage>(this, HandleLoadPageMessage);
+            StrongReferenceMessenger.Default.Register<UnloadPageMessage>(this, HandleUnloadPageMessage);
+            StrongReferenceMessenger.Default.Register<LoadThumbnailMessage>(this, HandleLoadThumbnailMessage);
+            StrongReferenceMessenger.Default.Register<UnloadThumbnailMessage>(this, HandleUnloadThumbnailMessage);
             
             _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
         }
@@ -330,7 +330,7 @@ namespace Caly.Core.Services
         public void Dispose()
         {
             // https://formatexception.com/2024/03/using-messenger-in-the-communitytoolkit-mvvm/
-            WeakReferenceMessenger.Default.UnregisterAll(this);
+            StrongReferenceMessenger.Default.UnregisterAll(this);
         }
     }
 }

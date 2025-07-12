@@ -59,7 +59,7 @@ namespace Caly.Core.ViewModels
                 return;
             }
             
-            WeakReferenceMessenger.Default.Send(new SelectedDocumentChangedMessage(currentDoc));
+            StrongReferenceMessenger.Default.Send(new SelectedDocumentChangedMessage(currentDoc));
         }
 
         public MainViewModel()
