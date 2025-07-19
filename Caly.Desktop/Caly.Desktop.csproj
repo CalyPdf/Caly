@@ -46,6 +46,8 @@
 		<DebugSymbols>false</DebugSymbols>
 		<MetricsSupport>false</MetricsSupport>
 
+		<StripSymbols>true</StripSymbols>
+
 		<!--
 		<XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
 		<UseSystemResourceKeys>true</UseSystemResourceKeys>
