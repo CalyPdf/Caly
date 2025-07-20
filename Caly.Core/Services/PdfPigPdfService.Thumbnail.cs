@@ -35,6 +35,11 @@ namespace Caly.Core.Services
         
         private async Task SetThumbnail(PdfPageViewModel vm, SKPicture picture, CancellationToken token)
         {
+            if (IsDisposed())
+            {
+                return;
+            }
+
             token.ThrowIfCancellationRequested();
 
             int tWidth = (int)(vm.ThumbnailWidth / 1.5);

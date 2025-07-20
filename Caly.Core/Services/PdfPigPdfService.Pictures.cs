@@ -34,6 +34,11 @@ namespace Caly.Core.Services
         {
             Debug.ThrowOnUiThread();
 
+            if (IsDisposed())
+            {
+                return null;
+            }
+
             SKPicture? pic = await ExecuteWithLockAsync(() =>
                 {
                     try
@@ -103,7 +108,6 @@ namespace Caly.Core.Services
 
                 return recorder.EndRecording();
             }
-
         }
     }
 }
