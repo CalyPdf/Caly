@@ -55,7 +55,8 @@ namespace Caly.Core.Services
                         return GetErrorPicture(pageNumber, e, token);
                     }
                 },
-                token);
+                token)
+                .ConfigureAwait(false);
 
             return pic is null ? null : RefCountable.Create(pic);
         }

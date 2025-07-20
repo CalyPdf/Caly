@@ -29,6 +29,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Caly.Core.Handlers;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
@@ -218,14 +219,17 @@ namespace Caly.Core.Services
             {
                 var pageTextLayer = await ExecuteWithLockAsync(
                     () => _document?.GetPage<PageTextLayerContent>(page.PageNumber),
-                    token);
+                    token)
+                    .ConfigureAwait(false);
 
                 if (pageTextLayer is null)
                 {
                     return;
                 }
 
-                page.PdfTextLayer = PdfTextLayerHelper.GetTextLayer(pageTextLayer, token);
+                var textLayer = PdfTextLayerHelper.GetTextLayer(pageTextLayer, token);
+
+                Dispatcher.UIThread.Post(() => page.PdfTextLayer = textLayer);
             }
 
             if (page.PdfTextLayer is not null)
@@ -252,7 +256,7 @@ namespace Caly.Core.Services
                     .ToDictionary(x => x.Key,
                         x => x.Value.ToString()!);
 
-            document.Properties = new PdfDocumentProperties()
+            var pdfProperties = new PdfDocumentProperties()
             {
                 PdfVersion = _document.Version.ToString(PdfVersionFormat),
                 Title = info.Title,
@@ -265,6 +269,8 @@ namespace Caly.Core.Services
                 Subject = info.Subject,
                 Others = others
             };
+
+            Dispatcher.UIThread.Post(() => document.Properties = pdfProperties);
 
             return ValueTask.CompletedTask;
         }
@@ -334,17 +340,17 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                var children = new ObservableCollection<PdfBookmarkNode>();
+                var bookmarksItems = new ObservableCollection<PdfBookmarkNode>();
                 foreach (BookmarkNode node in bookmarks.Roots)
                 {
                     var n = BuildPdfBookmarkNode(node, token);
                     if (n is not null)
                     {
-                        children.Add(n);
+                        bookmarksItems.Add(n);
                     }
                 }
 
-                pdfDocument.Bookmarks = children;
+                Dispatcher.UIThread.Post(() => pdfDocument.Bookmarks = bookmarksItems);
             }
             catch (OperationCanceledException) { }
         }

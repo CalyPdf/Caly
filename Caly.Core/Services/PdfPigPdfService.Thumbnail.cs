@@ -24,6 +24,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Caly.Core.ViewModels;
 using SkiaSharp;
 
@@ -35,6 +36,8 @@ namespace Caly.Core.Services
         
         private async Task SetThumbnail(PdfPageViewModel vm, SKPicture picture, CancellationToken token)
         {
+            Debug.ThrowOnUiThread();
+            
             if (IsDisposed())
             {
                 return;
@@ -75,8 +78,9 @@ namespace Caly.Core.Services
                 using (SKData d = image.Encode(SKEncodedImageFormat.Jpeg, 50))
                 await using (Stream stream = d.AsStream())
                 {
-                    vm.Thumbnail = Bitmap.DecodeToWidth(stream, vm.ThumbnailWidth,
-                        BitmapInterpolationMode.LowQuality);
+                    var thumbnail = Bitmap.DecodeToWidth(stream, vm.ThumbnailWidth, BitmapInterpolationMode.LowQuality);
+
+                    Dispatcher.UIThread.Post(() => vm.Thumbnail = thumbnail);
 
                     if (!_bitmaps.TryAdd(vm.PageNumber, vm))
                     {
