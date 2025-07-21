@@ -22,6 +22,7 @@ using System;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -30,22 +31,25 @@ namespace Caly.Core.Utilities
 {
     internal static class CalyExtensions
     {
-        private static readonly int[] _versionParts = new int[4];
-
+        public static readonly string CalyVersion;
+        
         static CalyExtensions()
         {
-            var assemblyName = Process.GetCurrentProcess().MainModule.FileName;
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assemblyName);
+            var assembly = Assembly.GetEntryAssembly();
+            if (assembly is null)
+            {
+                assembly = Assembly.GetExecutingAssembly();
+            }
 
-            _versionParts[0] = fvi.ProductMajorPart;
-            _versionParts[1] = fvi.ProductMinorPart;
-            _versionParts[2] = fvi.ProductBuildPart;
-            _versionParts[3] = fvi.ProductPrivatePart;
-        }
-
-        public static string GetCalyVersion()
-        {
-            return string.Join('.', _versionParts);
+            string? version = assembly.GetName().Version?.ToString().Trim();
+            if (!string.IsNullOrEmpty(version))
+            {
+                CalyVersion = version;
+            }
+            else
+            {
+                CalyVersion = @"n/a";
+            }
         }
 
         public static bool IsMobilePlatform()
