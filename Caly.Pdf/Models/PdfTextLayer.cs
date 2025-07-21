@@ -105,6 +105,13 @@ namespace Caly.Pdf.Models
             return null;
         }
 
+        public PdfTextLine? GetLine(PdfWord word)
+        {
+            var block = TextBlocks[word.TextBlockIndex];
+            int lineStartIndex = block.TextLines[0].IndexInPage;
+            return block.TextLines[word.TextLineIndex - lineStartIndex];
+        }
+
         public IEnumerable<PdfWord> GetWords(PdfWord start, PdfWord end)
         {
             System.Diagnostics.Debug.Assert(start.IndexInPage <= end.IndexInPage);
