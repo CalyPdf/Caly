@@ -25,7 +25,7 @@
 		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.2" />
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.2" />
 		<PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.1.1" />
-		<PackageReference Include="Caly.Tabalonia" Version="11.2.4.1" />
+		<PackageReference Include="Caly.Tabalonia" Version="11.3.2.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Lifti.Core" Version="6.4.0" />

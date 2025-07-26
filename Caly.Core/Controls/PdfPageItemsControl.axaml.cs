@@ -387,8 +387,8 @@ public sealed class PdfPageItemsControl : ItemsControl
         _tabsControl = this.FindAncestorOfType<TabsControl>();
         if (_tabsControl is not null)
         {
-            _tabsControl.OnTabDragStarted += TabControlOnTabDragStarted;
-            _tabsControl.OnTabDragCompleted += TabControlOnTabDragCompleted;
+            _tabsControl.TabDragStarted += TabControlOnTabDragStarted;
+            _tabsControl.TabDragCompleted += TabControlOnTabDragCompleted;
         }
 
         if (CalyExtensions.IsMobilePlatform())
@@ -481,8 +481,8 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         if (_tabsControl is not null)
         {
-            _tabsControl.OnTabDragStarted -= TabControlOnTabDragStarted;
-            _tabsControl.OnTabDragCompleted -= TabControlOnTabDragCompleted;
+            _tabsControl.TabDragStarted -= TabControlOnTabDragStarted;
+            _tabsControl.TabDragCompleted -= TabControlOnTabDragCompleted;
         }
 
         if (CalyExtensions.IsMobilePlatform() && LayoutTransformControl is not null)
