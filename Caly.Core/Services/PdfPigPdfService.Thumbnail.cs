@@ -94,6 +94,8 @@ namespace Caly.Core.Services
 
         public void ClearAllThumbnail()
         {
+            // WARNING / TODO - Currently runs on UI thread
+            
             foreach (var p in _bitmaps.Keys.ToArray())
             {
                 if (_bitmaps.TryRemove(p, out var vm))

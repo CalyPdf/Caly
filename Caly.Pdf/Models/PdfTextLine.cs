@@ -33,6 +33,7 @@ namespace Caly.Pdf.Models
             return string.Join(' ', Words.Select(l => l.ToString()));
         }
 #endif
+        // TODO - IsInteractive, i.e. can it be clicked
 
         internal ushort WordStartIndex { get; set; }
 
