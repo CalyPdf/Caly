@@ -221,6 +221,11 @@ namespace Caly.Core.Services
 
                 await SetPageTextLayerAsync(renderRequest.Page, renderRequest.Token);
             }
+            catch (Exception ex)
+            {
+                Debug.WriteExceptionToFile(ex);
+                throw;
+            }
             finally
             {
                 if (_textLayerTokens.TryRemove(renderRequest.Page.PageNumber, out var cts))

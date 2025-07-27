@@ -37,7 +37,7 @@ namespace Caly.Pdf
                 return PdfTextRegexHelper.UrlMatch().IsMatch(words[0].Value.AsSpan());
             }
 
-            int length = words.Sum(w => w.Count);
+            int length = words.Sum(w => w.Value.Length);
 
             char[]? pooled = null;
             try
