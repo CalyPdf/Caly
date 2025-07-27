@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Buffers;
 using Caly.Pdf.Layout;
 using Caly.Pdf.Models;
 using UglyToad.PdfPig.Content;
@@ -27,6 +28,91 @@ namespace Caly.Pdf
 {
     public static class PdfTextLayerHelper
     {
+        public static bool IsInteractive(PdfTextLine textLine)
+        {
+            var words = textLine.Words;
+
+            if (words.Count == 1)
+            {
+                return PdfTextRegexHelper.UrlMatch().IsMatch(words[0].Value.AsSpan());
+            }
+
+            int length = words.Sum(w => w.Count);
+
+            char[]? pooled = null;
+            try
+            {
+                Span<char> span = length <= 512 ?
+                    stackalloc char[length] :
+                    pooled = ArrayPool<char>.Shared.Rent(length);
+
+                int i = 0;
+                foreach (var w in words)
+                {
+                    w.Value.CopyTo(span.Slice(i));
+                    i += w.Count;
+                }
+
+                return PdfTextRegexHelper.UrlMatch().IsMatch(span.Slice(0, length));
+            }
+            finally
+            {
+                if (pooled is not null)
+                {
+                    ArrayPool<char>.Shared.Return(pooled);
+                }
+            }
+        }
+
+        // https://source.dot.net/System.Text.RegularExpressions/System/Text/RegularExpressions/Regex.EnumerateMatches.cs.html#5d2974897ba7a25d
+
+        public static ReadOnlySpan<char> GetInteractiveMatch(PdfTextLine textLine)
+        {
+            var words = textLine.Words;
+
+            if (words.Count == 1)
+            {
+                var word = words[0];
+                foreach (var match in PdfTextRegexHelper.UrlMatch().EnumerateMatches(word.Value.AsSpan()))
+                {
+                    return word.Value.AsSpan().Slice(match.Index, match.Length);
+                }
+            }
+
+            int length = words.Sum(w => w.Count);
+
+            char[]? pooled = null;
+            try
+            {
+                Span<char> span = length <= 512 ?
+                    stackalloc char[length] :
+                    pooled = ArrayPool<char>.Shared.Rent(length);
+
+                int i = 0;
+                foreach (var w in words)
+                {
+                    w.Value.CopyTo(span.Slice(i));
+                    i += w.Count;
+                }
+
+                foreach (var match in PdfTextRegexHelper.UrlMatch().EnumerateMatches(span.Slice(0, length)))
+                {
+                    Span<char> output = new char[match.Length];
+                    span.Slice(match.Index, match.Length).CopyTo(output);
+                    return output;
+                }
+            }
+            finally
+            {
+                if (pooled is not null)
+                {
+                    ArrayPool<char>.Shared.Return(pooled);
+                }
+            }
+
+            return [];
+        }
+
         public static bool IsStroke(this TextRenderingMode textRenderingMode)
         {
             switch (textRenderingMode)
@@ -92,6 +178,8 @@ namespace Caly.Pdf
 
                 foreach (PdfTextLine line in block.TextLines)
                 {
+                    line.IsInteractive = IsInteractive(line);
+
                     ushort lineStartIndex = wordIndex;
 
                     foreach (PdfWord word in line.Words)

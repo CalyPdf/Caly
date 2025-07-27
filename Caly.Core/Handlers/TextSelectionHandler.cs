@@ -21,7 +21,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -49,7 +48,7 @@ namespace Caly.Core.Handlers
     // See https://github.com/AvaloniaUI/Avalonia/pull/13107/files#diff-f183b476e3366d748fd935e515bf1c8d8845525dcb130aae00ebd70422cd453e
     // See https://github.com/AvaloniaUI/AvaloniaEdit/blob/master/src/AvaloniaEdit/Editing/SelectionLayer.cs
 
-    public sealed partial class TextSelectionHandler : ITextSelectionHandler
+    public sealed class TextSelectionHandler : ITextSelectionHandler
     {
         private static readonly Color _selectionColor = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
 
@@ -332,10 +331,7 @@ namespace Caly.Core.Handlers
                            (Selection.AnchorWord != Selection.FocusWord || // Multiple words selected
                             (Selection.AnchorOffset != -1 && Selection.FocusOffset != -1)); // Selection within same word
         }
-
-        [GeneratedRegex(@"(?i)(http(s)?:\/\/)?(\w{2,25}\.)+\w{3}([a-z0-9\-?=$-_.+!*()]+)(?i)")]
-        private static partial Regex UrlMatch();
-
+        
         /// <summary>
         /// Handle mouse hover over words, links or others
         /// </summary>
@@ -364,7 +360,7 @@ namespace Caly.Core.Handlers
             PdfWord? word = control.PdfTextLayer!.FindWordOver(loc.X, loc.Y);
             if (word is not null)
             {
-                if (UrlMatch().IsMatch(word.Value.AsSpan()))
+                if (control.PdfTextLayer.GetLine(word)?.IsInteractive == true)
                 {
                     control.SetHandCursor();
                 }
@@ -538,18 +534,20 @@ namespace Caly.Core.Handlers
 
                     // Words
                     PdfWord? word = control.PdfTextLayer.FindWordOver(point.X, point.Y);
-
-                    if (word is not null)
+                    if (word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
                     {
-                        foreach (ValueMatch match in UrlMatch().EnumerateMatches(word.Value.AsSpan()))
-                        {
-                            if (match.Length == 0)
-                            {
-                                continue;
-                            }
+                        /*
+                         * TODO - Use TopLevel.GetTopLevel(source)?.Launcher
+                         *  if (e.Source is Control source && TopLevel.GetTopLevel(source)?.Launcher is {}
+                         *  launcher && word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
+                         *  ...
+                         *  launcher.LaunchUriAsync(new Uri(match.ToString()))
+                         */
 
-                            CalyExtensions.OpenBrowser(word.Value.AsSpan().Slice(match.Index, match.Length));
-                            break; // Only opens first url matched
+                        var match = PdfTextLayerHelper.GetInteractiveMatch(line);
+                        if (!match.IsEmpty)
+                        {
+                            CalyExtensions.OpenBrowser(match);
                         }
                     }
                 }

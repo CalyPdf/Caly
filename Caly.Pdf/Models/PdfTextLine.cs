@@ -35,6 +35,8 @@ namespace Caly.Pdf.Models
 #endif
         // TODO - IsInteractive, i.e. can it be clicked
 
+        public bool IsInteractive { get; internal set; }
+
         internal ushort WordStartIndex { get; set; }
 
         public TextOrientation TextOrientation { get; }
