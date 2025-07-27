@@ -229,7 +229,8 @@ namespace Caly.Core.Services
 
                 var textLayer = PdfTextLayerHelper.GetTextLayer(pageTextLayer, token);
 
-                Dispatcher.UIThread.Post(() => page.PdfTextLayer = textLayer);
+                // This need to be done sync for SetPageTextLayerImmediate()
+                Dispatcher.UIThread.Invoke(() => page.PdfTextLayer = textLayer);
             }
 
             if (page.PdfTextLayer is not null)
