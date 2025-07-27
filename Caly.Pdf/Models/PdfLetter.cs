@@ -18,13 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.HighPerformance.Buffers;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 
 namespace Caly.Pdf.Models
 {
-    public sealed class PdfLetter : IPdfTextElement
+    public readonly struct PdfLetter : IPdfTextElement, IEquatable<PdfLetter>
     {
         public string Value { get; }
 
@@ -63,6 +64,25 @@ namespace Caly.Pdf.Models
             TextSequence = textSequence;
 
             TextOrientation = GetTextOrientation();
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            return obj is PdfLetter other && Equals(other);
+        }
+
+        public bool Equals(PdfLetter other)
+        {
+            return TextOrientation == other.TextOrientation &&
+                   TextSequence == other.TextSequence &&
+                   PointSize.Equals(other.PointSize) &&
+                   Value == other.Value &&
+                   BoundingBox.Equals(other.BoundingBox);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Value, (byte)TextOrientation, BoundingBox, PointSize, TextSequence);
         }
 
         private TextOrientation GetTextOrientation()

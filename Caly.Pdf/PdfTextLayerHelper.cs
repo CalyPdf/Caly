@@ -244,5 +244,28 @@ namespace Caly.Pdf
             }
             return tempTextOrientation;
         }
+
+        internal static TextOrientation GetTextOrientation(IReadOnlyList<PdfLetter> letters)
+        {
+            if (letters.Count == 1)
+            {
+                return letters[0].TextOrientation;
+            }
+
+            TextOrientation tempTextOrientation = letters[0].TextOrientation;
+            if (tempTextOrientation == TextOrientation.Other)
+            {
+                return tempTextOrientation;
+            }
+
+            foreach (PdfLetter letter in letters)
+            {
+                if (letter.TextOrientation != tempTextOrientation)
+                {
+                    return TextOrientation.Other;
+                }
+            }
+            return tempTextOrientation;
+        }
     }
 }
