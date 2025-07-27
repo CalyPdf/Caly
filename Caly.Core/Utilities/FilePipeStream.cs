@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
@@ -35,6 +36,8 @@ namespace Caly.Core.Utilities
     /// </summary>
     public sealed class FilePipeStream : IDisposable, IAsyncDisposable
     {
+        private static readonly MemoryPool<byte> _memoryPool = MemoryPool<byte>.Shared;
+
         // https://googleprojectzero.blogspot.com/2019/09/windows-exploitation-tricks-spoofing.html
 
         private static readonly string _pipeName = "caly_pdf_files.pipe";
@@ -56,12 +59,13 @@ namespace Caly.Core.Utilities
 #endif
             _pipeServer = new(_pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
         }
-
+        
         public async IAsyncEnumerable<string?> ReceivePathAsync([EnumeratorCancellation] CancellationToken token)
         {
             while (true)
             {
-                Memory<byte> pathBuffer = Memory<byte>.Empty;
+                string? path = null;
+                
                 try
                 {
                     token.ThrowIfCancellationRequested();
@@ -69,69 +73,84 @@ namespace Caly.Core.Utilities
                     // https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-use-named-pipes-for-network-interprocess-communication
                     await _pipeServer.WaitForConnectionAsync(token);
 
-                    Memory<byte> lengthBuffer = new byte[2];
-                    if (await _pipeServer.ReadAsync(lengthBuffer, token) != 2)
+                    ushort len = 0;
+                    using (var lengthMemoryOwner = _memoryPool.Rent(Math.Max(_keyPhrase.Length, len)))
                     {
-                        // TODO - Log
-                        continue;
-                    }
-
-                    var len = BitConverter.ToUInt16(lengthBuffer.Span);
-
-                    // Read key phrase
-                    Memory<byte> keyBuffer = new byte[_keyPhrase.Length];
-                    if (await _pipeServer.ReadAsync(keyBuffer, token) != _keyPhrase.Length)
-                    {
-                        // TODO - Log
-                        continue;
-                    }
-
-                    // Check key phrase
-                    if (!keyBuffer.Span.SequenceEqual(_keyPhrase))
-                    {
-                        // TODO - Log
-                        continue;
-                    }
-
-                    // Read message type
-                    Memory<byte> byteBuffer = new byte[1];
-                    if (await _pipeServer.ReadAsync(byteBuffer, token) != 1)
-                    {
-                        // TODO - Log
-                        continue;
-                    }
-
-                    switch ((PipeMessageType)byteBuffer.Span[0])
-                    {
-                        case PipeMessageType.FilePath:
-                            {
-                                // Read file path
-                                pathBuffer = new byte[len];
-
-                                if (await _pipeServer.ReadAsync(pathBuffer, token) != len)
-                                {
-                                    // TODO - Log
-                                    continue;
-                                }
-                            }
-                            break;
-
-                        case PipeMessageType.Command:
-                            {
-                                byteBuffer.Span.Clear();
-                                if (await _pipeServer.ReadAsync(byteBuffer, token) != 1)
-                                {
-                                    // TODO - Log
-                                    continue;
-                                }
-
-                                ProcessMessageCommand((PipeCommandMessageType)byteBuffer.Span[0]);
-                            }
-                            break;
-
-                        default:
+                        Memory<byte> lengthBuffer = lengthMemoryOwner.Memory;
+                        if (await _pipeServer.ReadAsync(lengthBuffer, token) != 2)
+                        {
                             // TODO - Log
-                            break;
+                            continue;
+                        }
+
+                        len = BitConverter.ToUInt16(lengthBuffer.Span);
+                    }
+
+                    if (len == 0)
+                    {
+                        // TODO - Log
+                        continue;
+                    }
+
+                    using (var memoryOwner = _memoryPool.Rent(Math.Max(_keyPhrase.Length, len)))
+                    {
+                        Memory<byte> buffer = memoryOwner.Memory;
+
+                        // Read key phrase
+                        if (await _pipeServer.ReadAsync(buffer.Slice(0, _keyPhrase.Length), token) != _keyPhrase.Length)
+                        {
+                            // TODO - Log
+                            continue;
+                        }
+
+                        // Check key phrase
+                        if (!buffer.Span.Slice(0, _keyPhrase.Length).SequenceEqual(_keyPhrase))
+                        {
+                            // TODO - Log
+                            continue;
+                        }
+
+                        // Read message type
+                        if (await _pipeServer.ReadAsync(buffer.Slice(0, 1), token) != 1)
+                        {
+                            // TODO - Log
+                            continue;
+                        }
+
+                        PipeMessageType messageType = (PipeMessageType)buffer.Span[0];
+                        switch (messageType)
+                        {
+                            case PipeMessageType.FilePath:
+                                {
+                                    // Read file path
+                                    if (await _pipeServer.ReadAsync(buffer.Slice(0, len), token) != len)
+                                    {
+                                        // TODO - Log
+                                        continue;
+                                    }
+                                }
+                                break;
+
+                            case PipeMessageType.Command:
+                                {
+                                    if (await _pipeServer.ReadAsync(buffer.Slice(0, 1), token) != 1)
+                                    {
+                                        // TODO - Log
+                                        continue;
+                                    }
+
+                                    ProcessMessageCommand((PipeCommandMessageType)buffer.Span[0]);
+                                }
+                                break;
+
+                            default:
+                                // TODO - Log
+                                break;
+                        }
+
+                        path = messageType == PipeMessageType.FilePath
+                            ? Encoding.UTF8.GetString(buffer.Span.Slice(0, len))
+                            : null;
                     }
                 }
                 catch (OperationCanceledException)
@@ -152,9 +171,9 @@ namespace Caly.Core.Utilities
                     }
                 }
 
-                if (pathBuffer.Length > 0)
+                if (!string.IsNullOrEmpty(path))
                 {
-                    yield return Encoding.UTF8.GetString(pathBuffer.Span);
+                    yield return path;
                 }
             }
         }
