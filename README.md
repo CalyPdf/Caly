@@ -4,7 +4,7 @@
   <img src="https://github.com/user-attachments/assets/604c1d8a-5cdf-49c6-8be3-d85bfb680a99" />
 </p>
 
-**Caly Pdf Reader** is a free, cross-platform and open-source Pdf reader built with performance and efficiency in mind. Written in C# (net8.0 with AOT), it's designed to be lightweight, fast, and consume minimal memory.
+**Caly Pdf Reader** is a free, cross-platform and open-source Pdf reader built with performance and efficiency in mind. Written in C# (net9.0 with AOT), it's designed to be lightweight, fast, and consume minimal memory.
 
 > [!IMPORTANT]
 > The development is currently in alpha.
@@ -67,9 +67,9 @@ git submodule update --init --recursive
 > If the submodule branches appear as 'detached', you can re-link each of them to their respective `develop-caly` branches.
 
 ### Publishing
-Caly Pdf Reader is a net8.0 application with Native AOT (ahead of time compilation) enabled. To publish the application, run the following (example for Windows):
+Caly Pdf Reader is a net9.0 application with Native AOT (ahead of time compilation) enabled. To publish the application, run the following (example for Windows):
 ```
-dotnet publish -r win-x64 -c Release -f net8.0
+dotnet publish -r win-x64 -c Release -f net9.0
 ```
 
 ## Contributing
