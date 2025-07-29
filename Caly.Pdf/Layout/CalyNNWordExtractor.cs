@@ -65,12 +65,12 @@ namespace Caly.Pdf.Layout
                 var lo = letters.ToLookup(x => x.TextOrientation);
 
                 var horizontal = GetWords(lo[TextOrientation.Horizontal].ToArray(),
-                     options.MaximumDistance, options.DistanceMeasureAA, options.FilterPivot,
-                     options.Filter, parallelOptions);
+                    options.MaximumDistance, options.DistanceMeasureAA, options.FilterPivot,
+                    options.Filter, parallelOptions);
 
                 var rotate270 = GetWords(lo[TextOrientation.Rotate270].ToArray(),
-                     options.MaximumDistance, options.DistanceMeasureAA, options.FilterPivot,
-                     options.Filter, parallelOptions);
+                    options.MaximumDistance, options.DistanceMeasureAA, options.FilterPivot,
+                    options.Filter, parallelOptions);
 
                 var rotate180 = GetWords(lo[TextOrientation.Rotate180].ToArray(),
                     options.MaximumDistance, options.DistanceMeasureAA, options.FilterPivot,
@@ -87,12 +87,10 @@ namespace Caly.Pdf.Layout
 
                 return horizontal.Concat(rotate270).Concat(rotate180).Concat(rotate90).Concat(other);
             }
-            else
-            {
-                return GetWords(letters,
-                    options.MaximumDistance, options.DistanceMeasure, options.FilterPivot,
-                    options.Filter, parallelOptions);
-            }
+
+            return GetWords(letters,
+                options.MaximumDistance, options.DistanceMeasure, options.FilterPivot,
+                options.Filter, parallelOptions);
         }
 
         /// <summary>
@@ -129,7 +127,7 @@ namespace Caly.Pdf.Layout
 
             foreach (var g in groupedLetters)
             {
-                yield return new PdfWord(g);
+                yield return new PdfWord(g.Span);
             }
         }
 

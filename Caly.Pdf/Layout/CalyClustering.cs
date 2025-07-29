@@ -25,7 +25,7 @@ namespace Caly.Pdf.Layout
         /// <param name="filterFinal">Filter to apply to both the pivot and the paired point. If false, point will not be paired at all, e.g. pivot and paired point have same font.</param>
         /// <param name="parallelOptions">A <see cref="ParallelOptions">ParallelOptions</see>
         /// instance that configures the behavior of this operation.</param>
-        public static IEnumerable<IReadOnlyList<T>> NearestNeighbours<T>(IReadOnlyList<T> elements,
+        public static IEnumerable<Memory<T>> NearestNeighbours<T>(IReadOnlyList<T> elements,
             Func<PdfPoint, PdfPoint, float> distMeasure,
             Func<T, T, float> maxDistanceFunction,
             Func<T, PdfPoint> pivotPoint, Func<T, PdfPoint> candidatesPoint,

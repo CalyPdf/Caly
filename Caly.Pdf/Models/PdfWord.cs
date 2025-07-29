@@ -67,18 +67,21 @@ namespace Caly.Pdf.Models
 
         public ushort Count { get; }
         
-        public PdfWord(IReadOnlyList<PdfLetter> letters)
+        public PdfWord(ReadOnlySpan<PdfLetter> letters)
         {
-            ArgumentNullException.ThrowIfNull(letters, nameof(letters));
+            if (letters.IsEmpty)
+            {
+                throw new ArgumentException("Cannot create a word with not letter.", nameof(letters));
+            }
 
-            if (letters.Count == 0)
+            if (letters.Length == 0)
             {
                 throw new ArgumentException("Cannot construct word if no letters provided.", nameof(letters));
             }
 
             TextOrientation = PdfTextLayerHelper.GetTextOrientation(letters);
 
-            Count = (ushort)letters.Count;
+            Count = (ushort)letters.Length;
 
             var firstLetter = letters[0];
             int charsCount = firstLetter.Value.Length;
@@ -90,10 +93,10 @@ namespace Caly.Pdf.Models
             else if (TextOrientation == TextOrientation.Other)
             {
                 // We keep all bounding boxes
-                _lettersBoundingBoxes = new PdfRectangle[letters.Count];
+                _lettersBoundingBoxes = new PdfRectangle[letters.Length];
                 _lettersBoundingBoxes[0] = firstLetter.BoundingBox;
 
-                for (int i = 1; i < letters.Count; ++i)
+                for (int i = 1; i < letters.Length; ++i)
                 {
                     var letter = letters[i];
 
@@ -104,11 +107,11 @@ namespace Caly.Pdf.Models
             else
             {
                 // Only keep positions
-                _letterPositions = new float[letters.Count - 1];
+                _letterPositions = new float[letters.Length - 1];
                 double position = firstLetter.BoundingBox.Width;
                 _letterPositions[0] = (float)position;
 
-                for (int i = 1; i < letters.Count - 1; ++i)
+                for (int i = 1; i < letters.Length - 1; ++i)
                 {
                     var letter = letters[i];
 
@@ -122,9 +125,9 @@ namespace Caly.Pdf.Models
 
             Span<char> chars = charsCount <= 512 ? stackalloc char[charsCount] : new char[charsCount];
 
-            if (chars.Length == letters.Count)
+            if (chars.Length == letters.Length)
             {
-                for (int l = 0; l < letters.Count; ++l)
+                for (int l = 0; l < letters.Length; ++l)
                 {
                     var letter = letters[l].Value.AsSpan();
                     System.Diagnostics.Debug.Assert(letter.Length == 1);
@@ -134,10 +137,10 @@ namespace Caly.Pdf.Models
             else
             {
                 // Usually because of ligatures
-                _toCharIndex = new ushort[letters.Count];
+                _toCharIndex = new ushort[letters.Length];
 
                 ushort k = 0;
-                for (int l = 0; l < letters.Count; ++l)
+                for (int l = 0; l < letters.Length; ++l)
                 {
                     var letter = letters[l].Value.AsSpan();
                     for (int c = 0; c < letter.Length; ++c)
@@ -383,7 +386,7 @@ namespace Caly.Pdf.Models
         }
 
         #region Bounding box
-        private static PdfRectangle GetBoundingBoxH(IReadOnlyList<PdfLetter> letters)
+        private static PdfRectangle GetBoundingBoxH(ReadOnlySpan<PdfLetter> letters)
         {
             var blX = double.MaxValue;
             var trX = double.MinValue;
@@ -392,7 +395,7 @@ namespace Caly.Pdf.Models
             var blY = double.MinValue;
             var trY = double.MaxValue;
 
-            for (var i = 0; i < letters.Count; i++)
+            for (var i = 0; i < letters.Length; i++)
             {
                 var letter = letters[i];
 
@@ -421,7 +424,7 @@ namespace Caly.Pdf.Models
             return new PdfRectangle(blX, blY, trX, trY);
         }
 
-        private static PdfRectangle GetBoundingBox180(IReadOnlyList<PdfLetter> letters)
+        private static PdfRectangle GetBoundingBox180(ReadOnlySpan<PdfLetter> letters)
         {
             var blX = double.MinValue;
             var trX = double.MaxValue;
@@ -430,7 +433,7 @@ namespace Caly.Pdf.Models
             var blY = double.MaxValue;
             var trY = double.MinValue;
 
-            for (var i = 0; i < letters.Count; i++)
+            for (var i = 0; i < letters.Length; i++)
             {
                 var letter = letters[i];
 
@@ -459,7 +462,7 @@ namespace Caly.Pdf.Models
             return new PdfRectangle(blX, blY, trX, trY);
         }
 
-        private static PdfRectangle GetBoundingBox90(IReadOnlyList<PdfLetter> letters)
+        private static PdfRectangle GetBoundingBox90(ReadOnlySpan<PdfLetter> letters)
         {
             var t = double.MinValue;
             var b = double.MaxValue;
@@ -467,7 +470,7 @@ namespace Caly.Pdf.Models
             var r = double.MaxValue;
             var l = double.MinValue;
 
-            for (var i = 0; i < letters.Count; ++i)
+            for (var i = 0; i < letters.Length; ++i)
             {
                 var letter = letters[i];
 
@@ -497,14 +500,14 @@ namespace Caly.Pdf.Models
                 new PdfPoint(b, l), new PdfPoint(b, r));
         }
 
-        private static PdfRectangle GetBoundingBox270(IReadOnlyList<PdfLetter> letters)
+        private static PdfRectangle GetBoundingBox270(ReadOnlySpan<PdfLetter> letters)
         {
             var t = double.MaxValue;
             var b = double.MinValue;
             var l = double.MaxValue;
             var r = double.MinValue;
 
-            for (var i = 0; i < letters.Count; i++)
+            for (var i = 0; i < letters.Length; i++)
             {
                 var letter = letters[i];
 
@@ -534,14 +537,15 @@ namespace Caly.Pdf.Models
                 new PdfPoint(b, l), new PdfPoint(b, r));
         }
 
-        private static PdfRectangle GetBoundingBoxOther(IReadOnlyList<PdfLetter> letters)
+        private static PdfRectangle GetBoundingBoxOther(ReadOnlySpan<PdfLetter> letters)
         {
-            if (letters.Count == 1)
+            if (letters.Length == 1)
             {
                 return letters[0].BoundingBox;
             }
 
-            var baseLinePoints = letters.SelectMany(r => new[]
+            var lettersArray = letters.ToArray();
+            var baseLinePoints = lettersArray.SelectMany(r => new[]
             {
                 r.StartBaseLine,
                 r.EndBaseLine,
@@ -579,7 +583,7 @@ namespace Caly.Pdf.Models
                 sin, cos, 0,
                 0, 0, 1);
 
-            var transformedPoints = letters.SelectMany(r => new[]
+            var transformedPoints = lettersArray.SelectMany(r => new[]
             {
                 r.StartBaseLine,
                 r.EndBaseLine,
@@ -608,7 +612,7 @@ namespace Caly.Pdf.Models
             // Find the orientation of the OBB, using the baseline angle
             // Assumes word order is correct
             var firstLetter = letters[0];
-            var lastLetter = letters[letters.Count - 1];
+            var lastLetter = letters[letters.Length - 1];
 
             var baseLineAngle = Math.Atan2(
                 lastLetter.EndBaseLine.Y - firstLetter.StartBaseLine.Y,

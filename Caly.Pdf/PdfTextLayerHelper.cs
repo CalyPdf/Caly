@@ -245,9 +245,9 @@ namespace Caly.Pdf
             return tempTextOrientation;
         }
 
-        internal static TextOrientation GetTextOrientation(IReadOnlyList<PdfLetter> letters)
+        internal static TextOrientation GetTextOrientation(ReadOnlySpan<PdfLetter> letters)
         {
-            if (letters.Count == 1)
+            if (letters.Length == 1)
             {
                 return letters[0].TextOrientation;
             }
