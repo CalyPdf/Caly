@@ -22,7 +22,7 @@ namespace Caly.Pdf.Layout
         /// <summary>
         /// Create an instance of Docstrum for bounding boxes page segmenter, <see cref="CalyDocstrum"/>.
         /// </summary>
-        public static CalyDocstrum Instance { get; } = new CalyDocstrum();
+        public static readonly CalyDocstrum Instance = new CalyDocstrum();
 
         /// <summary>
         /// Create an instance of Docstrum for bounding boxes page segmenter using default options values.
@@ -157,7 +157,7 @@ namespace Caly.Pdf.Layout
                 foreach (var n in calyKdTreeBottomLeft.FindNearestNeighbours(word, 2, w => w.BoundingBox.BottomRight, CalyDistances.Euclidean))
                 {
                     // 1.1.2 Check if the neighbour word is within the angle of the candidate 
-                    if (wlBounds.Contains(AngleWL(in word, in n.Item1)))
+                    if (wlBounds.Contains(AngleWL(word, n.Item1)))
                     {
                         withinLineDistList.Enqueue(CalyDistances.Euclidean(word.BoundingBox.BottomRight, n.Item1.BoundingBox.BottomLeft));
                     }
@@ -168,7 +168,7 @@ namespace Caly.Pdf.Layout
                 foreach (var n in calyKdTreeBottomLeft.FindNearestNeighbours(word, 2, w => w.BoundingBox.TopLeft, CalyDistances.Euclidean))
                 {
                     // 1.2.2 Check if the candidate words is within the angle
-                    var angle = AngleBL(in word, in n.Item1);
+                    var angle = AngleBL(word, n.Item1);
                     if (blBounds.Contains(angle))
                     {
                         // 1.2.3 Compute the vertical (between-line) distance between the candidate
@@ -285,7 +285,7 @@ namespace Caly.Pdf.Layout
                 pivot => pivot.BoundingBox.BottomRight,
                 candidate => candidate.BoundingBox.BottomLeft,
                 _ => true,
-                (pivot, candidate) => wlBounds.Contains(AngleWL(in pivot, in candidate)),
+                (pivot, candidate) => wlBounds.Contains(AngleWL(pivot, candidate)),
                 parallelOptions);
 
             foreach (var gr in groupedWords)
@@ -299,9 +299,17 @@ namespace Caly.Pdf.Layout
         /// right and the candidate's bottom left points, taking in account the pivot's rotation.
         /// <para>-90 ≤ θ ≤ 90.</para>
         /// </summary>
-        private static float AngleWL(in PdfWord pivot, in PdfWord candidate)
+        private static float AngleWL(PdfWord pivot, PdfWord candidate)
         {
-            float angle = CalyDistances.BoundAngle180(CalyDistances.Angle(pivot.BoundingBox.BottomRight, candidate.BoundingBox.BottomLeft) - (float)pivot.BoundingBox.Rotation);
+            PdfPoint pivotBottomRight = pivot.BoundingBox.BottomRight;
+            PdfPoint candidateBottomLeft = candidate.BoundingBox.BottomLeft;
+
+            if (pivotBottomRight.Equals(candidateBottomLeft))
+            {
+                return 0;
+            }
+            
+            float angle = CalyDistances.BoundAngle180(CalyDistances.Angle(in pivotBottomRight, in candidateBottomLeft) - (float)pivot.BoundingBox.Rotation);
 
             // Angle is kept within [-90;90] degree to handle overlapping words
             if (angle > 90)
@@ -574,7 +582,7 @@ namespace Caly.Pdf.Layout
         /// and the candidate's centroid points, taking in account the pivot's rotation.
         /// <para>0 ≤ θ ≤ 180.</para>
         /// </summary>
-        private static float AngleBL(in PdfWord pivot, in PdfWord candidate)
+        private static float AngleBL(PdfWord pivot, PdfWord candidate)
         {
             var angle = CalyDistances.BoundAngle180(CalyDistances.Angle(pivot.BoundingBox.Centroid, candidate.BoundingBox.Centroid) - (float)pivot.BoundingBox.Rotation);
 

@@ -57,7 +57,7 @@
         /// </summary>
         /// <param name="startPoint">The first point.</param>
         /// <param name="endPoint">The second point.</param>
-        public static float Angle(PdfPoint startPoint, PdfPoint endPoint)
+        public static float Angle(in PdfPoint startPoint, in PdfPoint endPoint)
         {
             return MathF.Atan2((float)(endPoint.Y - startPoint.Y), (float)(endPoint.X - startPoint.X)) * 180 / MathF.PI;
         }
