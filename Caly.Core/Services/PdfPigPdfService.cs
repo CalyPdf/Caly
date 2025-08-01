@@ -271,7 +271,7 @@ namespace Caly.Core.Services
                 Others = others
             };
 
-            Dispatcher.UIThread.Post(() => document.Properties = pdfProperties);
+            Dispatcher.UIThread.Invoke(() => document.Properties = pdfProperties);
 
             return ValueTask.CompletedTask;
         }
@@ -351,7 +351,7 @@ namespace Caly.Core.Services
                     }
                 }
 
-                Dispatcher.UIThread.Post(() => pdfDocument.Bookmarks = bookmarksItems);
+                Dispatcher.UIThread.Invoke(() => pdfDocument.Bookmarks = bookmarksItems);
             }
             catch (OperationCanceledException) { }
         }

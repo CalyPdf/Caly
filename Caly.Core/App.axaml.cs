@@ -140,7 +140,7 @@ namespace Caly.Core
             {
                 desktop.MainWindow.Activate(); // Bring window to front
 
-                Dispatcher.UIThread.Post(() =>
+                Dispatcher.UIThread.Invoke(() =>
                 {
                     // Popup from taskbar
                     if (desktop.MainWindow.WindowState == WindowState.Minimized)

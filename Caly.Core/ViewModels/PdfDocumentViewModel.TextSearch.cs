@@ -128,7 +128,7 @@ namespace Caly.Core.ViewModels
 
         internal void SetSearchStatus(string status)
         {
-            Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Invoke(() =>
             {
                 SearchStatus = status;
             });

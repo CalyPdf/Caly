@@ -80,7 +80,7 @@ namespace Caly.Core.Services
                 {
                     var thumbnail = Bitmap.DecodeToWidth(stream, vm.ThumbnailWidth, BitmapInterpolationMode.LowQuality);
 
-                    Dispatcher.UIThread.Post(() => vm.Thumbnail = thumbnail);
+                    Dispatcher.UIThread.Invoke(() => vm.Thumbnail = thumbnail);
 
                     if (!_bitmaps.TryAdd(vm.PageNumber, vm))
                     {

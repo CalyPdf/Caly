@@ -208,7 +208,7 @@ namespace Caly.Core.ViewModels
                 }
             };
             
-            Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Invoke(() =>
             {
                 SearchResultsSource.RowSelection!.SingleSelect = true;
                 SearchResultsSource.RowSelection.SelectionChanged += TextSearchSelectionChanged;

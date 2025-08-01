@@ -63,7 +63,7 @@ namespace Caly.Core.ViewModels
                     }
                 };
 
-                Dispatcher.UIThread.Post(() =>
+                Dispatcher.UIThread.Invoke(() =>
                 {
                     BookmarksSource.RowSelection!.SingleSelect = true;
                     BookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;

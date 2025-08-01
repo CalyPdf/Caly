@@ -346,7 +346,7 @@ namespace Caly.Core.Models
             }
 
             SelectWordsInRange(pageViewModel.PdfTextLayer, pageViewModel.PageNumber);
-            Dispatcher.UIThread.Post(pageViewModel.FlagSelectionChanged);
+            Dispatcher.UIThread.Invoke(pageViewModel.FlagSelectionChanged);
         }
 
         /// <summary>
