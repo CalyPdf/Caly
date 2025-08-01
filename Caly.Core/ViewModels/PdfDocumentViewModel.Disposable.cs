@@ -42,6 +42,16 @@ namespace Caly.Core.ViewModels
             {
                 await _processPagesInfoQueueTask;
             }
+
+            if (SearchResultsSource?.RowSelection is not null)
+            {
+                SearchResultsSource.RowSelection.SelectionChanged -= TextSearchSelectionChanged;
+            }
+
+            if (BookmarksSource?.RowSelection is not null)
+            {
+                BookmarksSource.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
+            }
         }
 
         public async void Dispose()
