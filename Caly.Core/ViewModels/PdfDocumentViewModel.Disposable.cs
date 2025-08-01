@@ -54,9 +54,9 @@ namespace Caly.Core.ViewModels
             }
         }
 
-        public async void Dispose()
+        public void Dispose()
         {
-            await DisposeAsync();
+            DisposeAsync().GetAwaiter().GetResult();
         }
     }
 }
