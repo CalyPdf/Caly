@@ -407,6 +407,11 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void TabControlOnTabDragCompleted(object? sender, Tabalonia.Events.DragTabDragCompletedEventArgs e)
     {
+        if (!_isTabDragging)
+        {
+            return;
+        }
+        
         _isTabDragging = false;
         foreach (Control cp in GetRealizedContainers())
         {
