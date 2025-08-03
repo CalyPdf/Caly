@@ -26,6 +26,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Caly.Core.Handlers.Interfaces;
+using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 
 namespace Caly.Core.Controls
@@ -52,6 +53,12 @@ namespace Caly.Core.Controls
         public static readonly StyledProperty<bool> SelectionChangedFlagProperty =
             AvaloniaProperty.Register<PdfPageTextLayerControl, bool>(nameof(SelectionChangedFlag));
 
+        /// <summary>
+        /// Defines the <see cref="VisibleArea"/> property.
+        /// </summary>
+        public static readonly StyledProperty<Rect?> VisibleAreaProperty =
+            AvaloniaProperty.Register<SkiaPdfPageControl, Rect?>(nameof(VisibleArea));
+        
         public PdfTextLayer? PdfTextLayer
         {
             get => GetValue(PdfTextLayerProperty);
@@ -76,9 +83,15 @@ namespace Caly.Core.Controls
             set => SetValue(SelectionChangedFlagProperty, value);
         }
 
+        public Rect? VisibleArea
+        {
+            get => GetValue(VisibleAreaProperty);
+            set => SetValue(VisibleAreaProperty, value);
+        }
+
         static PdfPageTextLayerControl()
         {
-            AffectsRender<PdfPageTextLayerControl>(PdfTextLayerProperty, SelectionChangedFlagProperty);
+            AffectsRender<PdfPageTextLayerControl>(PdfTextLayerProperty, SelectionChangedFlagProperty, VisibleAreaProperty);
         }
 
         internal void SetIbeamCursor()
@@ -113,9 +126,12 @@ namespace Caly.Core.Controls
 
         public override void Render(DrawingContext context)
         {
-            base.Render(context);
-
             if (Bounds.Width <= 0 || Bounds.Height <= 0)
+            {
+                return;
+            }
+
+            if (!VisibleArea.HasValue || VisibleArea.Value.IsEmpty())
             {
                 return;
             }
@@ -123,7 +139,7 @@ namespace Caly.Core.Controls
             // We need to fill to get Pointer events
             context.FillRectangle(Brushes.Transparent, Bounds);
 
-            TextSelectionHandler?.RenderPage(this, context);
+            TextSelectionHandler?.RenderPage(this, context, VisibleArea.Value);
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

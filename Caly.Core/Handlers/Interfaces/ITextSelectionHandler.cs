@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System.Collections.Generic;
+using Avalonia;
 using Avalonia.Input;
 using Avalonia.Media;
 using Caly.Core.Controls;
@@ -50,7 +51,7 @@ namespace Caly.Core.Handlers.Interfaces
         /// <summary>
         /// TODO - Should not be in selection handler.
         /// </summary>
-        void RenderPage(PdfPageTextLayerControl control, DrawingContext context);
+        void RenderPage(PdfPageTextLayerControl control, DrawingContext context, Rect visibleArea);
 
         /// <summary>
         /// Clear the current selection.

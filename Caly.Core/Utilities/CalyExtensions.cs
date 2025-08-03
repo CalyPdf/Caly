@@ -26,6 +26,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Utilities
 {
@@ -79,6 +80,11 @@ namespace Caly.Core.Utilities
         public static bool IsEmpty(this Size size)
         {
             return size.Height <= float.Epsilon || size.Width <= float.Epsilon;
+        }
+
+        public static PdfRectangle ToPdfRectangle(this Rect rect)
+        {
+            return new PdfRectangle(rect.Left, rect.Bottom, rect.Right, rect.Top);
         }
 
         /// <summary>
