@@ -96,7 +96,9 @@ namespace Caly.Desktop
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
                 TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-                return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+                return BuildAvaloniaApp()
+                    //.WithDeveloperTools()
+                    .StartWithClassicDesktopLifetime(args);
             }
             catch (Exception ex)
             {
