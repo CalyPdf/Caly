@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using Avalonia.Collections;
+using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -33,7 +34,6 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.Services;
 using Tabalonia.Controls;
 
 namespace Caly.Core.ViewModels
@@ -86,6 +86,16 @@ namespace Caly.Core.ViewModels
                                 await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask, newDoc.LoadPropertiesTask);
                             }
                         }
+                        else if (e.Action == NotifyCollectionChangedAction.Remove)
+                        {
+                            if (PdfDocuments.Count == 0)
+                            {
+                                // We want to clear any possible reference to the last PdfDocumentViewModel.
+                                // The collection keeps a reference of the last document in e.OldItems
+                                // We trigger a NotifyCollectionChangedAction.Reset to flush
+                                PdfDocuments.Clear();
+                            }
+                        }
                     }
                     catch (OperationCanceledException)
                     {
@@ -135,7 +145,7 @@ namespace Caly.Core.ViewModels
                 Exception = new ExceptionViewModel(e);
             }
         }
-
+        
         [RelayCommand]
         private async Task CloseTab(object tabItem)
         {
