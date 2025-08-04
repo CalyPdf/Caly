@@ -34,28 +34,28 @@ namespace Caly.Core.Services
         {
             Debug.ThrowOnUiThread();
 
-            if (IsDisposed())
-            {
-                return null;
-            }
+            SKPicture? pic = await ExecuteWithLockAsync(() => 
+                    {
+                        try
+                        {
+                            if (IsDisposed())
+                            {
+                                return null;
+                            }
 
-            SKPicture? pic = await ExecuteWithLockAsync(() =>
-                {
-                    try
-                    {
-                        return _document?.GetPage<SKPicture>(pageNumber);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw; // No error picture to generate
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteExceptionToFile(e);
-                        return GetErrorPicture(pageNumber, e, token);
-                    }
-                },
-                token)
+                            return _document?.GetPage<SKPicture>(pageNumber);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw; // No error picture to generate
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.WriteExceptionToFile(e);
+                            return GetErrorPicture(pageNumber, e, token);
+                        }
+                    },
+                    token)
                 .ConfigureAwait(false);
 
             return pic is null ? null : RefCountable.Create(pic);
@@ -63,6 +63,11 @@ namespace Caly.Core.Services
 
         private SKPicture? GetErrorPicture(int pageNumber, Exception ex, CancellationToken cancellationToken)
         {
+            if (IsDisposed())
+            {
+                return null;
+            }
+
             // Try get page size
             PdfPageInformation info;
 
