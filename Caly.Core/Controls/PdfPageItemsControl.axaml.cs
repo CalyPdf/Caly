@@ -383,7 +383,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         LayoutTransformControl = e.NameScope.FindFromNameScope<LayoutTransformControl>("PART_LayoutTransformControl");
         LayoutTransformControl.AddHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
-
+        
         _tabsControl = this.FindAncestorOfType<TabsControl>();
         if (_tabsControl is not null)
         {
@@ -428,6 +428,13 @@ public sealed class PdfPageItemsControl : ItemsControl
     {
         base.OnLoaded(e);
         ItemsPanelRoot!.DataContextChanged += ItemsPanelRoot_DataContextChanged;
+        ItemsPanelRoot.Loaded += ItemsPanelRoot_Loaded;
+    }
+
+    private void ItemsPanelRoot_Loaded(object? sender, RoutedEventArgs e)
+    {
+        ItemsPanelRoot!.Loaded -= ItemsPanelRoot_Loaded;
+        SetPagesVisibility();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
