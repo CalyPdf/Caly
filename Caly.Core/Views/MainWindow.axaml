@@ -9,8 +9,9 @@
         Title="Caly Pdf Reader"
         MinWidth="250"
         Width="250"
-        Height="0"
-        ExtendClientAreaToDecorationsHint="True">
+        Height="150"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowStartupLocation="CenterScreen">
     <Border DragDrop.AllowDrop="True"
             Margin="{Binding $parent[Window].OffScreenMargin}">
         <views:MainView />
