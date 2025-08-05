@@ -87,10 +87,18 @@ namespace Caly.Core.Services
 
             if (sender is MainWindow mw)
             {
-                if (_current is not null)
+                if (_current is null)
                 {
-                    mw.Width = _current.Width;
-                    mw.Height = _current.Height;
+                    return;
+                }
+                
+                mw.Width = _current.Width;
+                mw.Height = _current.Height;
+
+                if (mw.WindowStartupLocation == WindowStartupLocation.CenterScreen)
+                {
+                    // Adjust window position as it looks like the top left corner is at screen center, not the center of window
+                    mw.Position -= PixelPoint.FromPoint(new Point(mw.Width / 2.0, mw.Height / 2.0), mw.Screens.ScreenFromWindow(mw)?.Scaling ?? 1);
                 }
             }
             else
