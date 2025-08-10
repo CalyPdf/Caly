@@ -40,7 +40,7 @@ namespace Caly.Core.ViewModels
     {
         public override string ToString()
         {
-            return $"[{PdfService.FileName}] Page {_pageNumber}";
+            return $"[{PdfService.FileName}] Page {PageNumber}";
         }
 
         internal readonly IPdfService PdfService;

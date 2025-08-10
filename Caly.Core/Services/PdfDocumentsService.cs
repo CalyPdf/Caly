@@ -306,7 +306,6 @@ namespace Caly.Core.Services
                         Debug.WriteExceptionToFile(ex);
                         Dispatcher.UIThread.Post(() => _mainViewModel.PdfDocuments.RemoveSafely(documentViewModel));
                         _openedFiles.TryRemove(storageFile.Path.LocalPath, out _);
-                        throw;
                     }
 
                     if (pageCount > 0)

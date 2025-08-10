@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using Avalonia.Controls.Notifications;
 using Caly.Core.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,7 +44,8 @@ namespace Caly.Core.ViewModels
                 throw new NullReferenceException($"Missing {nameof(IDialogService)} instance.");
             }
 
-            dialogService.ShowExceptionWindow(value);
+            //dialogService.ShowExceptionWindow(value);
+            dialogService.ShowNotification("Critical error", value.Message, NotificationType.Error);
         }
     }
 }
