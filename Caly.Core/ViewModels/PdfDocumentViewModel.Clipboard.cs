@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels
 {
@@ -34,7 +35,7 @@ namespace Caly.Core.ViewModels
         {
             try
             {
-                if (!TextSelectionHandler.Selection.IsValid)
+                if (TextSelectionHandler?.Selection.IsValid != true)
                 {
                     return;
                 }
@@ -44,16 +45,16 @@ namespace Caly.Core.ViewModels
 
                 await clipboardService.SetAsync(this, token);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                System.Diagnostics.Debug.Write(e.ToString());
-                Exception = new ExceptionViewModel(e);
+                Debug.WriteExceptionToFile(ex);
+                Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
             }
         }
         
         private bool CanCopyText()
         {
-            return TextSelectionHandler.Selection.IsValid;
+            return TextSelectionHandler?.Selection.IsValid == true;
         }
     }
 }

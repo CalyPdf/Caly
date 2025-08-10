@@ -28,6 +28,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
@@ -292,8 +293,8 @@ namespace Caly.Core.Services
 
                     // We need a lock to avoid issues with tabs when opening documents in parallel
                     _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
-                    
-                    _mainViewModel.SelectedDocumentIndex = _mainViewModel.PdfDocuments.Count - 1;
+
+                    _mainViewModel.SelectedDocumentIndex = Math.Max(0, _mainViewModel.PdfDocuments.Count - 1);
 
                     int pageCount = 0;
                     try
@@ -303,6 +304,9 @@ namespace Caly.Core.Services
                     catch (Exception ex)
                     {
                         Debug.WriteExceptionToFile(ex);
+                        Dispatcher.UIThread.Post(() => _mainViewModel.PdfDocuments.RemoveSafely(documentViewModel));
+                        _openedFiles.TryRemove(storageFile.Path.LocalPath, out _);
+                        throw;
                     }
 
                     if (pageCount > 0)
@@ -310,9 +314,9 @@ namespace Caly.Core.Services
                         // Document opened successfully
                         return;
                     }
-                    
+
                     // Document is not valid
-                    _mainViewModel.PdfDocuments.RemoveSafely(documentViewModel);
+                    Dispatcher.UIThread.Post(() => _mainViewModel.PdfDocuments.RemoveSafely(documentViewModel));
                     _openedFiles.TryRemove(storageFile.Path.LocalPath, out _);
                 }
 

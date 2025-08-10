@@ -34,6 +34,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using Tabalonia.Controls;
 
 namespace Caly.Core.ViewModels
@@ -70,6 +71,8 @@ namespace Caly.Core.ViewModels
                 .ObserveOn(Scheduler.Default)
                 .Subscribe(async e =>
                 {
+                    Debug.ThrowOnUiThread();
+
                     // NB: Tabalonia uses a Remove + Add when moving tabs
                     try
                     {
@@ -81,7 +84,7 @@ namespace Caly.Core.ViewModels
                                 {
                                     throw new Exception("WaitOpenAsync is null");
                                 }
-                                
+
                                 await newDoc.WaitOpenAsync; // Make sure the doc is open before proceeding
                                 await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask, newDoc.LoadPropertiesTask);
                             }
@@ -104,7 +107,7 @@ namespace Caly.Core.ViewModels
                     catch (Exception ex)
                     {
                         Debug.WriteExceptionToFile(ex);
-                        Exception = new ExceptionViewModel(ex);
+                        Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
                     }
                 });
         }
@@ -139,10 +142,10 @@ namespace Caly.Core.ViewModels
             {
                 // No op
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Debug.WriteExceptionToFile(e);
-                Exception = new ExceptionViewModel(e);
+                Debug.WriteExceptionToFile(ex);
+                Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
             }
         }
         

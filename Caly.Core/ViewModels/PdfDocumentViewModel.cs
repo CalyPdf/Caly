@@ -194,7 +194,7 @@ namespace Caly.Core.ViewModels
                     catch (Exception ex)
                     {
                         Debug.WriteExceptionToFile(ex);
-                        Exception = new ExceptionViewModel(ex);
+                        Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
                     }
                 });
 

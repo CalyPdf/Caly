@@ -237,10 +237,10 @@ namespace Caly.Core.ViewModels
                 _isSearchQueryError = true;
                 SetSearchStatus(qpe.Message);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                System.Diagnostics.Debug.Write(e.ToString());
-                Exception = new ExceptionViewModel(e);
+                Debug.WriteExceptionToFile(ex);
+                Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
             }
         }
 
