@@ -98,7 +98,19 @@ namespace Caly.Core.Services
                 if (mw.WindowStartupLocation == WindowStartupLocation.CenterScreen)
                 {
                     // Adjust window position as it looks like the top left corner is at screen center, not the center of window
-                    mw.Position -= PixelPoint.FromPoint(new Point(mw.Width / 2.0, mw.Height / 2.0), mw.Screens.ScreenFromWindow(mw)?.Scaling ?? 1);
+                    var screen = mw.Screens.ScreenFromWindow(mw);
+                    if (screen is null || mw.Width > screen.WorkingArea.Width || mw.Height > screen.WorkingArea.Height)
+                    {
+                        // Could not find screen or the window size is bigger than screen size
+                        // We set the window in to left corner
+                        mw.Position = PixelPoint.FromPoint(new Point(0, 0), screen?.Scaling ?? 1);
+                        return;
+                    }
+
+                    // Center window
+                    double x = (screen.WorkingArea.Width - mw.Width) / 2.0;
+                    double y = (screen.WorkingArea.Height - mw.Height) / 2.0;
+                    mw.Position = PixelPoint.FromPoint(new Point(x, y), screen.Scaling);
                 }
             }
             else
