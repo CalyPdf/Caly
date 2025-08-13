@@ -154,6 +154,7 @@ namespace Caly.Core.Services
                 {
                     renderRequest.Page.Width = renderRequest.Page.PdfPicture.Item.CullRect.Width;
                     renderRequest.Page.Height = renderRequest.Page.PdfPicture.Item.CullRect.Height;
+                    renderRequest.Page.SetSizeSet();
                 }
             }
             finally
@@ -182,13 +183,14 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                if (renderRequest.Page is { Height: > 0, Width: > 0 })
+                if (renderRequest.Page.IsSizeSet())
                 {
                     System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [SIZE] No need process {renderRequest.Page.PageNumber}");
                     return;
                 }
 
                 await SetPageSizeAsync(renderRequest.Page, renderRequest.Token);
+                renderRequest.Page.SetSizeSet();
             }
             finally
             {
@@ -271,6 +273,7 @@ namespace Caly.Core.Services
                         // This is the first we load the page, width and height are not set yet
                         renderRequest.Page.Width = picture.Item.CullRect.Width;
                         renderRequest.Page.Height = picture.Item.CullRect.Height;
+                        renderRequest.Page.SetSizeSet();
 
                         await SetThumbnail(renderRequest.Page, picture.Item, renderRequest.Token);
                     }

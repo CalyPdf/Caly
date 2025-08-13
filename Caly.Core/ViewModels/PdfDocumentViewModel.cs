@@ -51,8 +51,6 @@ namespace Caly.Core.ViewModels
             return _pdfService?.FileName ?? "FileName NOT SET";
         }
 
-        private const int _initialPagesInfoToLoad = 25;
-
         private readonly IPdfService _pdfService;
         private readonly ISettingsService _settingsService;
 
@@ -296,12 +294,7 @@ namespace Caly.Core.ViewModels
                         Width = defaultWidth
                     };
 
-                    if (p <= _initialPagesInfoToLoad)
-                    {
-                        // We limit loading page info to n first page
-                        StrongReferenceMessenger.Default.Send(new LoadPageSizeMessage(newPage));
-                    }
-
+                    StrongReferenceMessenger.Default.Send(new LoadPageSizeMessage(newPage));
                     Pages.Add(newPage);
                 }
             }, _cts.Token);

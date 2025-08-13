@@ -105,6 +105,17 @@ namespace Caly.Core.ViewModels
 
         public bool IsPortrait => Rotation == 0 || Rotation == 180;
 
+        private long _isSizeSet;
+        public bool IsSizeSet()
+        {
+            return Interlocked.Read(ref _isSizeSet) == 1;
+        }
+
+        public void SetSizeSet()
+        {
+            Interlocked.Exchange(ref _isSizeSet, 1);
+        }
+
 #if DEBUG
         /// <summary>
         /// Design mode constructor.
