@@ -204,7 +204,7 @@ public sealed class PdfPageItemsControl : ItemsControl
     protected override void ClearContainerForItemOverride(Control container)
     {
         base.ClearContainerForItemOverride(container);
-
+        
         if (container is not PdfPageItem cp)
         {
             return;
@@ -463,9 +463,23 @@ public sealed class PdfPageItemsControl : ItemsControl
         else if (change.Property == DataContextProperty)
         {
             Scroll?.Focus();
+
+            if (ItemsPanelRoot is VirtualizingStackPanel panel)
+            {
+                // This is a hack to ensure PdfPageItem that belongs to not Active documents are not visible
+                // See https://github.com/CalyPdf/Caly/issues/11
+                var children = panel.Children.OfType<PdfPageItem>().ToArray();
+                foreach (var child in children)
+                {
+                    if (child is { IsVisible: true, DataContext: PdfPageViewModel { PdfService.IsActive: false } })
+                    {
+                        child.SetCurrentValue(Visual.IsVisibleProperty, false);
+                    }
+                }
+            }
         }
     }
-
+    
     private void ItemsPanelRoot_DataContextChanged(object? sender, EventArgs e)
     {
         LayoutUpdated += OnLayoutUpdatedOnce;
