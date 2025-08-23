@@ -40,7 +40,7 @@ public sealed class PdfSearchPanelControl : TemplatedControl
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            DataContext = new PdfDocumentViewModel(null, null);
+            DataContext = new PdfDocumentViewModel(null, null, null);
         }
 #endif
     }

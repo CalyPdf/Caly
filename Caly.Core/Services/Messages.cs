@@ -9,4 +9,6 @@ namespace Caly.Core.Services
     internal sealed class SelectedDocumentChangedMessage(PdfDocumentViewModel value) : ValueChangedMessage<PdfDocumentViewModel>(value);
     internal sealed class UnloadPageMessage(PdfPageViewModel value) : ValueChangedMessage<PdfPageViewModel>(value);
     internal sealed class UnloadThumbnailMessage(PdfPageViewModel value) : ValueChangedMessage<PdfPageViewModel>(value);
+
+    internal sealed class ShowPrintersWindowMessage(bool value) : ValueChangedMessage<bool>(value);
 }

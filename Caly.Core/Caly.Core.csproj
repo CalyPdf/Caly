@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net9.0</TargetFrameworks>
+		<TargetFrameworks>net9.0;net9.0-windows</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
@@ -38,6 +38,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Caly.Pdf\Caly.Pdf.csproj" />
+		<ProjectReference Include="..\Caly.Printing\Caly.Printing.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows'">
+		<ProjectReference Include="..\Caly.Printing.Windows\Caly.Printing.Windows.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
