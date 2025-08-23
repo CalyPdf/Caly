@@ -24,6 +24,7 @@
                 <ResourceInclude Source="avares://Caly.Core/Controls/VerticalSeparator.axaml"/>
                 <ResourceInclude Source="avares://Caly.Core/Controls/CalySettingsControl.axaml"/>
                 <ResourceInclude Source="avares://Caly.Core/Controls/CalyLicenseControl.axaml"/>
+                <ResourceInclude Source="avares://Caly.Core/Controls/PrintingControl.axaml"/>
 			</ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
 	</Application.Resources>

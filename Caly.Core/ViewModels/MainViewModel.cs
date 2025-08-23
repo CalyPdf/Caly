@@ -51,6 +51,8 @@ namespace Caly.Core.ViewModels
 
         public string Version => CalyExtensions.CalyVersion;
 
+        public PrintersViewModel Printers { get; } = new();
+
         partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
         {
             System.Diagnostics.Debug.WriteLine($"Selected Document Index changed from {oldValue} to {newValue}.");

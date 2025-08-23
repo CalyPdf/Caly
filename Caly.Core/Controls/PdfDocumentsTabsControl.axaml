@@ -5,6 +5,7 @@
              xmlns:vm="clr-namespace:Caly.Core.ViewModels"
              xmlns:controls="clr-namespace:Caly.Core.Controls"
              xmlns:controls1="clr-namespace:Tabalonia.Controls;assembly=Tabalonia"
+             xmlns:views="clr-namespace:Caly.Core.Views"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Caly.Core.Controls.PdfDocumentsTabsControl"
              x:DataType="vm:MainViewModel"
@@ -242,8 +243,31 @@
 											</TabItem.Header>
 
 											<controls:PdfDocumentPropertiesControl/>
-
 										</TabItem>
+
+										<!-- Print document -->
+                                        <OnPlatform>
+											<!-- https://docs.avaloniaui.net/docs/guides/platforms/platform-specific-code/xaml -->
+
+                                            <OnPlatform.Default>
+                                                
+                                            </OnPlatform.Default>
+
+											<OnPlatform.Windows>
+                                                <TabItem MinHeight="40">
+                                                    <TabItem.Header>
+                                                        <PathIcon Width="17"
+                                                                  Height="17"
+                                                                  Data="{StaticResource print_regular}">
+                                                            <ToolTip.Tip>Print</ToolTip.Tip>
+                                                        </PathIcon>
+                                                    </TabItem.Header>
+
+                                                    <controls:PrintingControl DataContext="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).Printers}"/>
+                                                </TabItem>
+											</OnPlatform.Windows>
+										</OnPlatform>
+
 
 									</TabControl>
 								</Border>

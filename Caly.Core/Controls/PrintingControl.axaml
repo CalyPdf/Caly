@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Caly.Core.Controls"
+                    xmlns:viewModels="clr-namespace:Caly.Core.ViewModels">
+
+    <Design.PreviewWith>
+        <StackPanel Width="400" Spacing="10">
+            <StackPanel Background="{DynamicResource SystemRegionBrush}">
+                <controls:PrintingControl />
+            </StackPanel>
+        </StackPanel>
+    </Design.PreviewWith>
+
+    <ControlTheme x:Key="{x:Type controls:PrintingControl}"
+                  TargetType="controls:PrintingControl"
+                  x:DataType="viewModels:PrintersViewModel">
+
+        <Setter Property="Template">
+
+            <ControlTemplate>
+
+                <DockPanel>
+
+                    <Label DockPanel.Dock="Top" Content="Printers"/>
+                    <ComboBox DockPanel.Dock="Top"
+                              ItemsSource="{Binding Printers}"
+                              SelectedIndex="{Binding SelectedPrinterIndex}"
+                              HorizontalAlignment="Stretch"/>
+
+                    <Label DockPanel.Dock="Top" Content="Copies"/>
+                    <NumericUpDown DockPanel.Dock="Top"
+                                   Text="{Binding CopiesCountText}"
+                                   Value="1"
+                                   Increment="1"
+                                   FormatString="0"
+                                   Minimum="1"
+                                   Maximum="{Binding MaxCopies, Mode=OneTime}"
+                                   ParsingNumberStyle="Integer"/>
+
+                    <Label DockPanel.Dock="Top" Content="Pages"/>
+                    <ComboBox DockPanel.Dock="Top"
+                              ItemsSource="{Binding PagesToPrintChoices}"
+                              SelectedIndex="{Binding SelectedPagesIndex}">
+                    </ComboBox>
+                    <TextBox DockPanel.Dock="Top"
+                             Watermark="e.g. 1-5, 15, 17, 25-30"
+                             IsVisible="{Binding DisplayCustomPages}"
+                             Text="{Binding CustomPages}">
+                    </TextBox>
+
+                    <Button DockPanel.Dock="Top" Content="Print" Command="{Binding PrintCommand}"/>
+
+                </DockPanel>
+
+            </ControlTemplate>
+
+        </Setter>
+
+    </ControlTheme>
+
+</ResourceDictionary>
