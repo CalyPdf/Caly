@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="using:Caly.Core.Controls">
+                    xmlns:controls="using:Caly.Core.Controls"
+                    xmlns:vm="clr-namespace:Caly.Core.ViewModels">
 
     <Design.PreviewWith>
         <StackPanel Width="300" Height="500" Spacing="10">
@@ -11,13 +12,27 @@
     </Design.PreviewWith>
 
     <ControlTheme x:Key="{x:Type controls:CalyLicenseControl}"
+                  x:DataType="vm:MainViewModel"
                   TargetType="controls:CalyLicenseControl">
 
-        <Setter Property="MinWidth" Value="290"/>
+        <Setter Property="MinWidth" Value="300"/>
         <Setter Property="Template">
             <ControlTemplate>
-                <DockPanel>
+
+                <DockPanel Margin="5">
+
                     <TextBlock DockPanel.Dock="Top"
+                               Text="Caly Pdf Reader"
+                               HorizontalAlignment="Left" />
+
+                    <TextBlock DockPanel.Dock="Top">
+                        <Run Text="Version "/>
+                        <Run Text="{Binding Version}"/>
+                    </TextBlock>
+
+                    <Separator DockPanel.Dock="Top"/>
+
+					<TextBlock DockPanel.Dock="Top"
                                TextAlignment="Center"
                                Text="MIT License"/>
 
@@ -43,8 +58,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.</TextBox>
+
+                    <Separator DockPanel.Dock="Top"/>
+
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Third Party notices can be found at:"/>
+
+                    <HyperlinkButton DockPanel.Dock="Top"
+                                     Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                     NavigateUri="https://raw.githubusercontent.com/CalyPdf/Caly/refs/heads/master/Caly.Desktop/THIRD-PARTY-NOTICES.TXT">
+                        <TextBlock Text="THIRD-PARTY-NOTICES.TXT"/>
+                    </HyperlinkButton>
+
+                    <Separator DockPanel.Dock="Top"/>
+
+                    <Grid/>
+
                 </DockPanel>
+
             </ControlTemplate>
+
         </Setter>
 
     </ControlTheme>

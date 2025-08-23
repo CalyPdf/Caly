@@ -19,36 +19,9 @@
 
                 <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
                         BorderThickness="1">
-                    <DockPanel Margin="5">
-                        <TextBlock DockPanel.Dock="Top"
-                                   Text="Caly Pdf Reader"
-                                   HorizontalAlignment="Left" />
 
-                        <TextBlock DockPanel.Dock="Top">
-                            <Run Text="Version "/>
-                            <Run Text="{Binding Version}"/>
-                        </TextBlock>
+                    <controls:CalyLicenseControl/>
 
-                        <Separator DockPanel.Dock="Top"/>
-
-                        <controls:CalyLicenseControl DockPanel.Dock="Top"/>
-
-                        <Separator DockPanel.Dock="Top"/>
-
-                        <TextBlock DockPanel.Dock="Top"
-                                   Text="Third Party notices can be found at:"/>
-
-                        <HyperlinkButton DockPanel.Dock="Top"
-                                         Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-                                         NavigateUri="https://raw.githubusercontent.com/CalyPdf/Caly/refs/heads/master/Caly.Desktop/THIRD-PARTY-NOTICES.TXT">
-                            <TextBlock Text="THIRD-PARTY-NOTICES.TXT"/>
-                        </HyperlinkButton>
-
-                        <Separator DockPanel.Dock="Top"/>
-
-                        <Grid/>
-
-                    </DockPanel>
                 </Border>
 
             </ControlTemplate>
