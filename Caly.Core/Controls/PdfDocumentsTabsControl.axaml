@@ -10,7 +10,7 @@
              x:DataType="vm:MainViewModel"
              SizeChanged="OnSizeChanged">
 
-    <controls1:TabsControl Background="Transparent"
+	<controls1:TabsControl Background="Transparent"
                            Padding="0"
                            Margin="0"
                            AddItemCommand="{Binding OpenFileCommand}"
@@ -55,29 +55,29 @@
 						</ToggleButton>
 
 						<!-- Page navigation -->
-                        <Button DockPanel.Dock="Left"
+						<Button DockPanel.Dock="Left"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Stretch"
                                 Background="Transparent"
                                 Command="{Binding GoToPreviousPageCommand}">
-                            <PathIcon Width="14"
+							<PathIcon Width="14"
                                       Height="14"
                                       Data="{StaticResource chevron_up_regular}">
-                                <ToolTip.Tip>Previous Page</ToolTip.Tip>
-                            </PathIcon>
-                        </Button>
+								<ToolTip.Tip>Previous Page</ToolTip.Tip>
+							</PathIcon>
+						</Button>
 
-                        <Button DockPanel.Dock="Left"
+						<Button DockPanel.Dock="Left"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Stretch"
                                 Background="Transparent"
                                 Command="{Binding GoToNextPageCommand}">
-                            <PathIcon Width="14"
+							<PathIcon Width="14"
                                       Height="14"
                                       Data="{StaticResource chevron_down_regular}">
-                                <ToolTip.Tip>Next Page</ToolTip.Tip>
-                            </PathIcon>
-                        </Button>
+								<ToolTip.Tip>Next Page</ToolTip.Tip>
+							</PathIcon>
+						</Button>
 
 						<TextBox MinWidth="50"
                                  MaxWidth="50"
@@ -87,7 +87,7 @@
                                  VerticalAlignment="Center"
 								 KeyDown="PageNumberTextBox_OnKeyDown"
                                  Text="{Binding SelectedPageIndexString}">
-                        </TextBox>
+						</TextBox>
 
 						<TextBlock DockPanel.Dock="Left"
 								   VerticalAlignment="Center"
@@ -158,7 +158,24 @@
 								   VerticalAlignment="Center"
 								   HorizontalAlignment="Center"/>
 
-						<Grid/>
+                        <!-- Right aligned -->
+						<Grid DockPanel.Dock="Right" Width="5"/>
+
+						<!-- Print -->
+                        <Button DockPanel.Dock="Right"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Stretch"
+                                Background="Transparent"
+                                Command="{Binding ZoomOutCommand}">
+                            <PathIcon Width="17"
+                                      Height="17"
+                                      Data="{StaticResource print_regular}">
+                                <ToolTip.Tip>Zoom Out</ToolTip.Tip>
+                            </PathIcon>
+                        </Button>
+
+						<!-- Below grid needed for correct alignment -->
+                        <Grid/>
 
 					</DockPanel>
 
@@ -175,7 +192,7 @@
 							<Grid ColumnDefinitions="*,5"
                                   IsVisible="{Binding IsPaneOpen}">
 
-                                <Border Grid.Column="0"
+								<Border Grid.Column="0"
                                         BorderThickness="1">
 
 									<TabControl Name="PART_TabControlNavigation"
@@ -211,7 +228,7 @@
 												</PathIcon>
 											</TabItem.Header>
 
-                                            <TreeDataGrid Source="{Binding BookmarksSource}"
+											<TreeDataGrid Source="{Binding BookmarksSource}"
                                                           IsVisible="{Binding !!Bookmarks.Count}"
                                                           ShowColumnHeaders="False"
                                                           CanUserSortColumns="False"
@@ -249,17 +266,17 @@
 								</Border>
 
 								<!-- Resize left navigation bar -->
-                                <Grid Grid.Column="1"
+								<Grid Grid.Column="1"
 									  Background="Transparent"
                                       PointerMoved="Resize_OnPointerMoved"
                                       PointerEntered="Resize_OnPointerEntered"
                                       PointerExited="Resize_OnPointerExited"
                                       PointerPressed="Resize_OnPointerPressed"
                                       PointerReleased="Resize_OnPointerReleased">
-                                    <Rectangle Width="{DynamicResource MenuFlyoutSeparatorThemeHeight}"
+									<Rectangle Width="{DynamicResource MenuFlyoutSeparatorThemeHeight}"
                                                HorizontalAlignment="Center"
                                                Fill="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"/>
-                                </Grid>
+								</Grid>
 							</Grid>
 						</SplitView.Pane>
 

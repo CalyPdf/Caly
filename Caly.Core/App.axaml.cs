@@ -34,6 +34,8 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
+using Caly.Printing.Services;
+using Caly.Printing.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core
@@ -109,6 +111,12 @@ namespace Caly.Core
             services.AddScoped<ITextSearchService, LiftiTextSearchService>();
             services.AddScoped<PdfDocumentViewModel>();
 
+#if WINDOWS
+            services.AddSingleton<IPrintingService, WindowsPrintingService>();
+#else
+            services.AddSingleton<IPrintingService, NoOpCalyPrintingService>();
+#endif
+
             Services = services.BuildServiceProvider();
 
 #pragma warning disable CS8601 // Possible null reference assignment.
@@ -123,7 +131,7 @@ namespace Caly.Core
 
             base.OnFrameworkInitializationCompleted();
         }
-
+        
         public bool TryBringToFront()
         {
             if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)

@@ -40,6 +40,8 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Services;
+using Caly.Printing.Models;
+using Caly.Printing.Services.Interfaces;
 
 namespace Caly.Core.ViewModels
 {
@@ -53,6 +55,7 @@ namespace Caly.Core.ViewModels
 
         private readonly IPdfService _pdfService;
         private readonly ISettingsService _settingsService;
+        private readonly IPrintingService _printingService;
 
         private readonly CancellationTokenSource _cts = new();
 
@@ -122,7 +125,7 @@ namespace Caly.Core.ViewModels
 
         private readonly IDisposable _searchResultsDisposable;
 
-        public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
+        public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService, IPrintingService printingService)
         {
             ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
             ArgumentNullException.ThrowIfNull(settingsService, nameof(settingsService));
@@ -131,6 +134,7 @@ namespace Caly.Core.ViewModels
 
             _pdfService = pdfService;
             _settingsService = settingsService;
+            _printingService = printingService;
 
             _paneSize = _settingsService.GetSettings().PaneSize;
             
@@ -299,7 +303,7 @@ namespace Caly.Core.ViewModels
                 }
             }, _cts.Token);
         }
-        
+
         [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]
         private void GoToPreviousPage()
         {
