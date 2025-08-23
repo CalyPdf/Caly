@@ -59,7 +59,7 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private ObservableCollection<PdfPageViewModel> _pages = [];
 
-        [ObservableProperty] private bool _isPaneOpen = !CalyExtensions.IsMobilePlatform();
+        [ObservableProperty] private bool _isDocumentPaneOpen = !CalyExtensions.IsMobilePlatform();
 
         [ObservableProperty] private double _paneSize;
 
@@ -110,7 +110,7 @@ namespace Caly.Core.ViewModels
         /// <summary>
         /// The task that opens the document. Can be awaited to make sure the document is done opening.
         /// </summary>
-        public Task<int> WaitOpenAsync { get; private set; }
+        public Task<int>? WaitOpenAsync { get; private set; }
 
         partial void OnPaneSizeChanged(double oldValue, double newValue)
         {

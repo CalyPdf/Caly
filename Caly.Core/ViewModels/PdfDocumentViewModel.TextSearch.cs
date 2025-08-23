@@ -64,7 +64,7 @@ namespace Caly.Core.ViewModels
         [RelayCommand]
         private void ActivateSearchTextTab()
         {
-            IsPaneOpen = true;
+            IsDocumentPaneOpen = true;
             SelectedTabIndex = 2;
         }
         

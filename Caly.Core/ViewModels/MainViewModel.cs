@@ -47,7 +47,7 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private int _selectedDocumentIndex;
 
-        [ObservableProperty] private bool _isPaneOpen;
+        [ObservableProperty] private bool _isSettingsPaneOpen;
 
         public string Version => CalyExtensions.CalyVersion;
 

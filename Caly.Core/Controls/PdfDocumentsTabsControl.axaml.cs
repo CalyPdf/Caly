@@ -177,14 +177,14 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
             return;
         }
 
-        if (GetSplitView()?.DataContext is not PdfDocumentViewModel vm || !vm.IsPaneOpen)
+        if (GetSplitView()?.DataContext is not PdfDocumentViewModel vm || !vm.IsDocumentPaneOpen)
         {
             return;
         }
         
         if (tabsControl.Bounds.Width < vm.PaneSize * 2)
         {
-            vm.IsPaneOpen = false;
+            vm.IsDocumentPaneOpen = false;
         }
     }
 }
