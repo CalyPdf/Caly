@@ -75,7 +75,7 @@ namespace Caly.Core.Services
             {
                 info = _document!.GetPage<PdfPageInformation>(pageNumber);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // TODO
                 info = new PdfPageInformation()

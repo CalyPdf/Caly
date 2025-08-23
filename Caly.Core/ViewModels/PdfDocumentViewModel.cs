@@ -55,9 +55,6 @@ namespace Caly.Core.ViewModels
         private readonly ISettingsService _settingsService;
 
         private readonly CancellationTokenSource _cts = new();
-
-        private Task? _processPagesInfoQueueTask;
-
         internal string? LocalPath { get; private set; }
 
         [ObservableProperty] private ObservableCollection<PdfPageViewModel> _pages = [];
