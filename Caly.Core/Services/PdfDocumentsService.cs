@@ -46,12 +46,10 @@ namespace Caly.Core.Services
             public required PdfDocumentViewModel ViewModel { get; init; }
         }
 
-        private readonly Visual _target;
         private readonly MainViewModel _mainViewModel;
         private readonly IFilesService _filesService;
         private readonly IDialogService _dialogService;
 
-        private readonly Channel<IStorageFile?> _fileChannel;
         private readonly ChannelWriter<IStorageFile?> _channelWriter;
         private readonly ChannelReader<IStorageFile?> _channelReader;
 
@@ -92,9 +90,7 @@ namespace Caly.Core.Services
         {
             Debug.ThrowNotOnUiThread();
 
-            _target = target;
-
-            if (_target.DataContext is not MainViewModel mvm)
+            if (target.DataContext is not MainViewModel mvm)
             {
                 throw new ArgumentException("Could not get a valid DataContext for the main window.");
             }
@@ -104,12 +100,12 @@ namespace Caly.Core.Services
             _filesService = filesService ?? throw new NullReferenceException("Missing File Service instance.");
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
 
-            _fileChannel = Channel.CreateUnbounded<IStorageFile?>(new UnboundedChannelOptions()
+            Channel<IStorageFile?> fileChannel = Channel.CreateUnbounded<IStorageFile?>(new UnboundedChannelOptions()
             {
                 AllowSynchronousContinuations = false, SingleReader = false, SingleWriter = false
             });
-            _channelWriter = _fileChannel.Writer;
-            _channelReader = _fileChannel.Reader;
+            _channelWriter = fileChannel.Writer;
+            _channelReader = fileChannel.Reader;
 
             StrongReferenceMessenger.Default.Register<SelectedDocumentChangedMessage>(this, HandleSelectedDocumentChangedMessage);
             StrongReferenceMessenger.Default.Register<LoadPageSizeMessage>(this, HandleLoadPageSizeMessage);
