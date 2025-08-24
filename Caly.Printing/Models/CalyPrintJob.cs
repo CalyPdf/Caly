@@ -8,8 +8,6 @@
 
         public IReadOnlyList<Range>? PagesRanges { get; init; }
 
-        public PagesToPrint PagesToPrintType { get; init; }
-
         public int CopiesCount { get; init; }
 
         // Pages range

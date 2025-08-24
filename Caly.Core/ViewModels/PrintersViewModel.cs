@@ -183,18 +183,15 @@ namespace Caly.Core.ViewModels
             {
                 case PagesToPrint.Custom:
                     pagesRanges = GetPagesRanges(CustomPages);
-                    if (pagesRanges.Count == 0)
-                    {
-                        // TODO - Is this correct to do so
-                        pagesToPrintType = PagesToPrint.All;
-                    }
                     break;
 
                 case PagesToPrint.Current:
-                    // TODO
+                    int selectedPage = pdfDocument.SelectedPageIndex ?? throw new Exception("Invalid selected page");
+                    pagesRanges = [new Range(selectedPage, selectedPage + 1)];
                     break;
 
                 case PagesToPrint.All:
+                    pagesRanges = [new Range(1, pdfDocument.PageCount + 1)];
                     break;
             }
 
@@ -207,7 +204,6 @@ namespace Caly.Core.ViewModels
             {
                 DocumentName = pdfDocument.FileName!,
                 PrinterName = SelectedPrinterDevice.Name,
-                PagesToPrintType = pagesToPrintType,
                 PagesRanges = pagesRanges,
                 CopiesCount = copiesCount
             };
@@ -221,6 +217,13 @@ namespace Caly.Core.ViewModels
             {
                 // error
             }
+        }
+
+        internal enum PagesToPrint : byte
+        {
+            All = 0,
+            Current = 1,
+            Custom = 2
         }
     }
 }
