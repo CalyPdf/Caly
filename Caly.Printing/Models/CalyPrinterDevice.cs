@@ -13,5 +13,10 @@
         public string? ServerName { get; init; }
 
         public required string DriverName { get; init; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

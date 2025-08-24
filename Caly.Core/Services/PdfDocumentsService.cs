@@ -24,12 +24,15 @@ using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using Caly.Printing.Models;
+using Caly.Printing.Services.Interfaces;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -49,6 +52,7 @@ namespace Caly.Core.Services
         private readonly MainViewModel _mainViewModel;
         private readonly IFilesService _filesService;
         private readonly IDialogService _dialogService;
+        private readonly IPrintingService _printingService;
 
         private readonly ChannelWriter<IStorageFile?> _channelWriter;
         private readonly ChannelReader<IStorageFile?> _channelReader;
@@ -86,7 +90,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public PdfDocumentsService(Visual target, IFilesService filesService, IDialogService dialogService)
+        public PdfDocumentsService(Visual target, IFilesService filesService, IDialogService dialogService, IPrintingService printingService)
         {
             Debug.ThrowNotOnUiThread();
 
@@ -99,6 +103,7 @@ namespace Caly.Core.Services
 
             _filesService = filesService ?? throw new NullReferenceException("Missing File Service instance.");
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
+            _printingService = printingService ?? throw new NullReferenceException("Missing Printing Service instance.");
 
             Channel<IStorageFile?> fileChannel = Channel.CreateUnbounded<IStorageFile?>(new UnboundedChannelOptions()
             {
@@ -113,8 +118,20 @@ namespace Caly.Core.Services
             StrongReferenceMessenger.Default.Register<UnloadPageMessage>(this, HandleUnloadPageMessage);
             StrongReferenceMessenger.Default.Register<LoadThumbnailMessage>(this, HandleLoadThumbnailMessage);
             StrongReferenceMessenger.Default.Register<UnloadThumbnailMessage>(this, HandleUnloadThumbnailMessage);
+            StrongReferenceMessenger.Default.Register<PrintDocumentRequestMessage>(this, HandlePrintDocumentRequestMessage);
+            StrongReferenceMessenger.Default.Register<PrintersRequestMessage>(this, HandlePrintersRequestMessage);
             
             _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
+        }
+
+        private void HandlePrintersRequestMessage(object r, PrintersRequestMessage message)
+        {
+            message.Reply(Task.Run(IReadOnlyList<CalyPrinterDevice> () => _printingService.GetPrinters().ToArray()));
+        }
+
+        private void HandlePrintDocumentRequestMessage(object r, PrintDocumentRequestMessage message)
+        {
+            message.Reply(_printingService.AddJob(message.PrintingJob));
         }
 
         private void HandleSelectedDocumentChangedMessage(object r, SelectedDocumentChangedMessage m)

@@ -7,9 +7,9 @@ namespace Caly.Printing.Services
     {
         public bool IsSupported => false;
 
-        public void AddJob(CalyPrintJob printJob)
+        public bool AddJob(CalyPrintJob printJob)
         {
-            throw new InvalidOperationException("Cannot add printing job, printing is not supported");
+            return false;
         }
 
         public IEnumerable<CalyPrinterDevice> GetPrinters()

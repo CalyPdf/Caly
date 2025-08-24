@@ -4,4 +4,5 @@ namespace Caly.Core.Controls;
 
 public class PrintingControl : TemplatedControl
 {
+
 }

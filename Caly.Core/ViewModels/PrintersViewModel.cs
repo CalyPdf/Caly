@@ -1,28 +1,36 @@
 ﻿using Avalonia.Data;
+using Caly.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Caly.Printing.Models;
 
 namespace Caly.Core.ViewModels
 {
     public sealed partial class PrintersViewModel : ViewModelBase
     {
+        private const char PageRangeSeparator = '-';
 
         [GeneratedRegex(@"\s*(\d+)(?:-(\d+))?\s*", RegexOptions.NonBacktracking, 5_000)]
         public static partial Regex CustomPagesMatch();
 
         public PagesToPrint[] PagesToPrintChoices => [PagesToPrint.All, PagesToPrint.Current, PagesToPrint.Custom];
 
-        public ObservableCollection<string> Printers { get; } = new();
+        //public ObservableCollection<string> Printers { get; } = new();
+        
+        public int MaxCopies => 1000;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(DisplayCustomPages))]
         private int _selectedPagesIndex;
 
-        public int MaxCopies => 1000;
+        [ObservableProperty]
+        private CalyPrinterDevice? _selectedPrinterDevice;
 
         public bool DisplayCustomPages
         {
@@ -33,8 +41,19 @@ namespace Caly.Core.ViewModels
             }
         }
 
+        private string? _customPages;
+        public string? CustomPages
+        {
+            get => _customPages;
+            set
+            {
+                SetProperty(ref _customPages, value);
+                _ = GetPagesRanges(_customPages);
+            }
+        }
+
         private string? _copiesCountText = "1";
-        public string CopiesCountText
+        public string? CopiesCountText
         {
             get => _copiesCountText;
             set
@@ -51,27 +70,25 @@ namespace Caly.Core.ViewModels
                     throw new DataValidationException("Number of copies should be 1 or more.");
                 }
 
-                if (count > MaxCopies) // Same as Max in xaml
+                if (count > MaxCopies)
                 {
                     throw new DataValidationException("Number of copies should less than 1000.");
                 }
             }
         }
 
-        private string? _customPages;
-        public string? CustomPages
+        public Task<ObservableCollection<CalyPrinterDevice>> PrintersAsync => GetPrinters();
+        private async Task<ObservableCollection<CalyPrinterDevice>> GetPrinters()
         {
-            get => _customPages;
-            set
+            var printers = await StrongReferenceMessenger.Default.Send(PrintersRequestMessage.Instance);
+            if (printers.Count > 0)
             {
-                SetProperty(ref _customPages, value);
-                _ = ValidateCustomPage(_customPages);
+                SelectedPrinterDevice = printers[0];
             }
+            return new ObservableCollection<CalyPrinterDevice>(printers);
         }
 
-        private const char PageRangeSeparator = '-';
-
-        private static IReadOnlyList<Range> ValidateCustomPage(string? value)
+        private static IReadOnlyList<Range> GetPagesRanges(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -153,28 +170,57 @@ namespace Caly.Core.ViewModels
 
             return ranges;
         }
-
-        [ObservableProperty] private int _selectedPrinterIndex;
-
-        public PrintersViewModel()
+        
+        [RelayCommand]
+        private void Print(PdfDocumentViewModel? pdfDocument)
         {
-            for (int i = 0; i < 5; i++)
+            ArgumentNullException.ThrowIfNull(pdfDocument, nameof(pdfDocument));
+            ArgumentNullException.ThrowIfNull(SelectedPrinterDevice, nameof(SelectedPrinterDevice));
+
+            var pagesToPrintType = PagesToPrintChoices[SelectedPagesIndex];
+            IReadOnlyList<Range>? pagesRanges = null;
+            switch (pagesToPrintType)
             {
-                Printers.Add($"Printer #{i + 1}");
+                case PagesToPrint.Custom:
+                    pagesRanges = GetPagesRanges(CustomPages);
+                    if (pagesRanges.Count == 0)
+                    {
+                        // TODO - Is this correct to do so
+                        pagesToPrintType = PagesToPrint.All;
+                    }
+                    break;
+
+                case PagesToPrint.Current:
+                    // TODO
+                    break;
+
+                case PagesToPrint.All:
+                    break;
+            }
+
+            if (!int.TryParse(CopiesCountText, out int copiesCount))
+            {
+                // error
+            }
+
+            var job = new CalyPrintJob()
+            {
+                DocumentName = pdfDocument.FileName!,
+                PrinterName = SelectedPrinterDevice.Name,
+                PagesToPrintType = pagesToPrintType,
+                PagesRanges = pagesRanges,
+                CopiesCount = copiesCount
+            };
+
+            var success = StrongReferenceMessenger.Default.Send(new PrintDocumentRequestMessage()
+            {
+                PrintingJob = job
+            });
+
+            if (!success)
+            {
+                // error
             }
         }
-
-        [RelayCommand]
-        private void Print()
-        {
-
-        }
-    }
-
-    public enum PagesToPrint : byte
-    {
-        All = 0,
-        Current = 1,
-        Custom = 2
     }
 }

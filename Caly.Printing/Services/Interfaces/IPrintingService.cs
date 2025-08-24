@@ -6,7 +6,7 @@ namespace Caly.Printing.Services.Interfaces
     {
         bool IsSupported { get; }
 
-        void AddJob(CalyPrintJob printJob);
+        bool AddJob(CalyPrintJob printJob);
 
         IEnumerable<CalyPrinterDevice> GetPrinters();
     }

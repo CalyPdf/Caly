@@ -280,7 +280,7 @@
                                                         </PathIcon>
                                                     </TabItem.Header>
 
-                                                    <controls:PrintingControl DataContext="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).Printers}"/>
+                                                    <controls:PrintingControl DataContext="{Binding $parent[views:MainView].DataContext}"/>
                                                 </TabItem>
 											</OnPlatform.Windows>
 										</OnPlatform>

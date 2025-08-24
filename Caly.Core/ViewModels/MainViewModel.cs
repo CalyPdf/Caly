@@ -51,7 +51,9 @@ namespace Caly.Core.ViewModels
 
         public string Version => CalyExtensions.CalyVersion;
 
-        public PrintersViewModel Printers { get; } = new();
+        public PdfDocumentViewModel? CurrentPdfDocument => GetCurrentPdfDocument();
+
+        public PrintersViewModel Printers { get; } = new PrintersViewModel();
 
         partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
         {

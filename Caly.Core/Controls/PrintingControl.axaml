@@ -13,7 +13,7 @@
 
     <ControlTheme x:Key="{x:Type controls:PrintingControl}"
                   TargetType="controls:PrintingControl"
-                  x:DataType="viewModels:PrintersViewModel">
+                  x:DataType="viewModels:MainViewModel">
 
         <Setter Property="Template">
 
@@ -23,34 +23,36 @@
 
                     <Label DockPanel.Dock="Top" Content="Printers"/>
                     <ComboBox DockPanel.Dock="Top"
-                              ItemsSource="{Binding Printers}"
-                              SelectedIndex="{Binding SelectedPrinterIndex}"
+                              ItemsSource="{Binding Printers.PrintersAsync^}"
+                              SelectedItem="{Binding Printers.SelectedPrinterDevice}"
                               HorizontalAlignment="Stretch"/>
 
                     <Label DockPanel.Dock="Top" Content="Copies"/>
                     <NumericUpDown DockPanel.Dock="Top"
-                                   Text="{Binding CopiesCountText}"
+                                   Text="{Binding Printers.CopiesCountText}"
                                    Value="1"
                                    Increment="1"
                                    FormatString="0"
                                    Minimum="1"
-                                   Maximum="{Binding MaxCopies, Mode=OneTime}"
+                                   Maximum="{Binding Printers.MaxCopies, Mode=OneTime}"
                                    ParsingNumberStyle="Integer"/>
 
                     <Label DockPanel.Dock="Top" Content="Pages"/>
                     <ComboBox DockPanel.Dock="Top"
-                              ItemsSource="{Binding PagesToPrintChoices}"
-                              SelectedIndex="{Binding SelectedPagesIndex}">
+                              ItemsSource="{Binding Printers.PagesToPrintChoices}"
+                              SelectedIndex="{Binding Printers.SelectedPagesIndex}">
                     </ComboBox>
                     <TextBox DockPanel.Dock="Top"
                              Watermark="e.g. 1-5, 15, 17, 25-30"
-                             IsVisible="{Binding DisplayCustomPages}"
-                             Text="{Binding CustomPages}">
+                             IsVisible="{Binding Printers.DisplayCustomPages}"
+                             Text="{Binding Printers.CustomPages}">
                     </TextBox>
 
                     <Grid DockPanel.Dock="Top" Height="15"/>
 
-                    <Button DockPanel.Dock="Top" Content="Print" Command="{Binding PrintCommand}"/>
+                    <Button DockPanel.Dock="Top" Content="Print"
+                            Command="{Binding Printers.PrintCommand}"
+                             CommandParameter="{Binding CurrentPdfDocument}"/>
 
                     <Grid DockPanel.Dock="Top"/>
 

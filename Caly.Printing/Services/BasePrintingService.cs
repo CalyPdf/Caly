@@ -29,21 +29,18 @@ namespace Caly.Printing.Services
             _ = Task.Run(() => ProcessingLoop(token), token);
         }
 
-        public void AddJob(CalyPrintJob printJob)
+        public bool AddJob(CalyPrintJob printJob)
         {
-            if (_channelWriter.TryWrite(printJob))
-            {
-                // TODO - error
-            }
+            return _channelWriter.TryWrite(printJob);
         }
 
         public async Task ProcessingLoop(CancellationToken token)
         {
             try
             {
-                while (!await _channelReader.WaitToReadAsync(token).ConfigureAwait(false))
+                while (await _channelReader.WaitToReadAsync(token).ConfigureAwait(false))
                 {
-                    var job = await _channelReader.ReadAsync(token);
+                    var job = await _channelReader.ReadAsync(token).ConfigureAwait(false);
                     Print(job);
                 }
             }
