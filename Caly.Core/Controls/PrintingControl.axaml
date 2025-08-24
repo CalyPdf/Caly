@@ -48,7 +48,11 @@
                              Text="{Binding CustomPages}">
                     </TextBox>
 
+                    <Grid DockPanel.Dock="Top" Height="15"/>
+
                     <Button DockPanel.Dock="Top" Content="Print" Command="{Binding PrintCommand}"/>
+
+                    <Grid DockPanel.Dock="Top"/>
 
                 </DockPanel>
 
