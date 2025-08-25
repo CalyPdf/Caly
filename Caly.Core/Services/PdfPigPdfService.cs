@@ -190,10 +190,14 @@ namespace Caly.Core.Services
             }
             finally
             {
+                // Only release on first pass
+                if (string.IsNullOrEmpty(password))
+                {
                 // The _semaphore starts with initial count set to 0 and maxCount to 1.
                 // By releasing here we allow _semaphore.Wait() in other methods.
                 _semaphore.Release();
             }
+        }
         }
 
         public async Task SetPageSizeAsync(PdfPageViewModel pdfPage, CancellationToken token)
