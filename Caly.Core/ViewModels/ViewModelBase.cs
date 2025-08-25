@@ -44,7 +44,6 @@ namespace Caly.Core.ViewModels
                 throw new NullReferenceException($"Missing {nameof(IDialogService)} instance.");
             }
 
-            //dialogService.ShowExceptionWindow(value);
             dialogService.ShowNotification("Critical error", value.Message, NotificationType.Error);
         }
     }

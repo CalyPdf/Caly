@@ -99,7 +99,7 @@ namespace Caly.Core.ViewModels
 
         public double DisplayHeight => IsPortrait ? Height : Width;
 
-        public bool IsPageRendering => PdfPicture is null || PdfPicture.Item is null; // TODO - refactor might not be optimal
+        public bool IsPageRendering => PdfPicture?.Item is null; // TODO - refactor might not be optimal
 
         public bool IsThumbnailRendering => Thumbnail is null;
 

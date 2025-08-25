@@ -442,21 +442,19 @@ public sealed class PdfPageItemsControl : ItemsControl
         base.OnPropertyChanged(change);
         if (change.Property == ItemsSourceProperty)
         {
-            if (change.OldValue is IEnumerable<PdfPageViewModel> items)
+            if (change.OldValue is not IEnumerable<PdfPageViewModel> items)
             {
-                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: doc vm: {this.DataContext}");
-                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: OldValue: {items?.FirstOrDefault()}");
-                System.Diagnostics.Debug.WriteLine($"ItemsSourceProperty: NewValue: {(change.NewValue as IEnumerable<PdfPageViewModel>)?.FirstOrDefault()}");
+                return;
+            }
 
-                foreach (var vm in items)
+            foreach (var vm in items)
+            {
+                System.Diagnostics.Debug.Assert(!vm.VisibleArea.HasValue);
+
+                if (vm.PdfPicture is not null)
                 {
-                    System.Diagnostics.Debug.Assert(!vm.VisibleArea.HasValue);
-
-                    if (vm.PdfPicture is not null)
-                    {
-                        // TODO - Check why this happens
-                        StrongReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
-                    }
+                    // TODO - Check why this happens
+                    StrongReferenceMessenger.Default.Send(new UnloadPageMessage(vm));
                 }
             }
         }

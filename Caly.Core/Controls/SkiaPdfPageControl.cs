@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -42,7 +43,7 @@ namespace Caly.Core.Controls
             private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
 
-            private readonly object _lock = new object();
+            private readonly Lock _lock = new Lock();
 
             public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality)
             {

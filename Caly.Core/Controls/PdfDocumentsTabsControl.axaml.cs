@@ -76,7 +76,7 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
 
     private void Resize_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Grid grid)
+        if (sender is not Grid)
         {
             return;
         }

@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -28,13 +29,14 @@ namespace Caly.Core.Views
 {
     public sealed partial class PdfPasswordWindow : Window
     {
-        private TextBox _textBoxPassword;
+        private TextBox? _textBoxPassword;
 
         public PdfPasswordWindow()
         {
             InitializeComponent();
         }
 
+        [MemberNotNull(nameof(_textBoxPassword))]
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);

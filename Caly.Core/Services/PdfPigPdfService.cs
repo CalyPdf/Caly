@@ -97,7 +97,7 @@ namespace Caly.Core.Services
 
             _processingLoopTask = Task.Run(ProcessingLoop, _mainCts.Token);
         }
-        
+
         public async Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
@@ -193,11 +193,11 @@ namespace Caly.Core.Services
                 // Only release on first pass
                 if (string.IsNullOrEmpty(password))
                 {
-                // The _semaphore starts with initial count set to 0 and maxCount to 1.
-                // By releasing here we allow _semaphore.Wait() in other methods.
-                _semaphore.Release();
+                    // The _semaphore starts with initial count set to 0 and maxCount to 1.
+                    // By releasing here we allow _semaphore.Wait() in other methods.
+                    _semaphore.Release();
+                }
             }
-        }
         }
 
         public async Task SetPageSizeAsync(PdfPageViewModel pdfPage, CancellationToken token)

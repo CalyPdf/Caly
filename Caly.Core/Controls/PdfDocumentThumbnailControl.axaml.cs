@@ -59,7 +59,6 @@ namespace Caly.Core.Controls
             }
         }
 
-
         private void ListBoxOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
             if (e.Property == DataContextProperty && e.OldValue is PdfDocumentViewModel oldVm)

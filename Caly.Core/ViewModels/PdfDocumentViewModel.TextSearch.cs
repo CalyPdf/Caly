@@ -47,7 +47,7 @@ namespace Caly.Core.ViewModels
 
         public bool BuildingIndex => BuildIndexProgress != 0 && BuildIndexProgress != 100;
 
-        [ObservableProperty] private string _searchStatus;
+        [ObservableProperty] private string _searchStatus = string.Empty;
 
         [ObservableProperty] private string? _textSearch;
 
@@ -105,6 +105,11 @@ namespace Caly.Core.ViewModels
                     await previousCts.CancelAsync();
                     try
                     {
+                        if (_pendingSearchTask is null)
+                        {
+                            throw new Exception("No existing pending search task.");
+                        }
+
                         await _pendingSearchTask;
                     }
                     catch (OperationCanceledException e)

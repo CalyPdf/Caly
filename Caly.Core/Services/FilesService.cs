@@ -33,7 +33,7 @@ namespace Caly.Core.Services
     internal sealed class FilesService : IFilesService
     {
         private readonly Visual _target;
-        private readonly IReadOnlyList<FilePickerFileType> _pdfFileFilter = new[] { FilePickerFileTypes.Pdf };
+        private readonly IReadOnlyList<FilePickerFileType> _pdfFileFilter = [FilePickerFileTypes.Pdf];
 
         public FilesService(Visual target)
         {

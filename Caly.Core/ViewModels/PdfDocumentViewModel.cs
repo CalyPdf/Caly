@@ -80,11 +80,7 @@ namespace Caly.Core.ViewModels
         /// </summary>
         public int? SelectedPageIndex
         {
-            get
-            {
-                return _selectedPageIndex;
-            }
-
+            get => _selectedPageIndex;
             set
             {
                 if (!SetProperty(ref _selectedPageIndex, value))

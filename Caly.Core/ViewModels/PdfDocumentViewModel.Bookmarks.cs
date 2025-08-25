@@ -36,7 +36,7 @@ namespace Caly.Core.ViewModels
         public Task LoadBookmarksTask => _loadBookmarksTask.Value;
 
         [ObservableProperty] private ObservableCollection<PdfBookmarkNode>? _bookmarks;
-        [ObservableProperty] private HierarchicalTreeDataGridSource<PdfBookmarkNode> _bookmarksSource;
+        [ObservableProperty] private HierarchicalTreeDataGridSource<PdfBookmarkNode>? _bookmarksSource;
 
         [ObservableProperty] private PdfBookmarkNode? _selectedBookmark;
 

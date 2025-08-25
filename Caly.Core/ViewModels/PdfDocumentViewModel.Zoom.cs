@@ -27,7 +27,7 @@ namespace Caly.Core.ViewModels
 {
     public partial class PdfDocumentViewModel
     {
-        private static readonly double[] _zoomLevelsDiscrete =
+        private static readonly double[] ZoomLevelsDiscrete =
         [
             0.08, 0.125, 0.25, 0.33, 0.5, 0.67, 0.75, 1,
             1.25, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64
@@ -37,10 +37,8 @@ namespace Caly.Core.ViewModels
          * See PDF Reference 1.7 - C.2 Architectural limits
          * The magnification factor of a view should be constrained to be between approximately 8 percent and 6400 percent.
          */
-#pragma warning disable CA1822
         public double MinZoomLevel => 0.08;
         public double MaxZoomLevel => 64;
-#pragma warning restore CA1822
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(ZoomInCommand))]
@@ -50,19 +48,19 @@ namespace Caly.Core.ViewModels
         [RelayCommand(CanExecute = nameof(CanZoomIn))]
         private void ZoomIn()
         {
-            var index = Array.BinarySearch(_zoomLevelsDiscrete, ZoomLevel);
+            var index = Array.BinarySearch(ZoomLevelsDiscrete, ZoomLevel);
             if (index < -1)
             {
-                ZoomLevel = Math.Min(MaxZoomLevel, _zoomLevelsDiscrete[~index]);
+                ZoomLevel = Math.Min(MaxZoomLevel, ZoomLevelsDiscrete[~index]);
             }
             else
             {
-                if (index >= _zoomLevelsDiscrete.Length - 1)
+                if (index >= ZoomLevelsDiscrete.Length - 1)
                 {
                     return;
                 }
 
-                ZoomLevel = Math.Min(MaxZoomLevel, _zoomLevelsDiscrete[index + 1]);
+                ZoomLevel = Math.Min(MaxZoomLevel, ZoomLevelsDiscrete[index + 1]);
             }
         }
 
@@ -74,10 +72,10 @@ namespace Caly.Core.ViewModels
         [RelayCommand(CanExecute = nameof(CanZoomOut))]
         private void ZoomOut()
         {
-            var index = Array.BinarySearch(_zoomLevelsDiscrete, ZoomLevel);
+            var index = Array.BinarySearch(ZoomLevelsDiscrete, ZoomLevel);
             if (index < -1)
             {
-                ZoomLevel = Math.Max(MinZoomLevel, _zoomLevelsDiscrete[~index - 1]);
+                ZoomLevel = Math.Max(MinZoomLevel, ZoomLevelsDiscrete[~index - 1]);
             }
             else
             {
@@ -86,7 +84,7 @@ namespace Caly.Core.ViewModels
                     return;
                 }
 
-                ZoomLevel = Math.Max(MinZoomLevel, _zoomLevelsDiscrete[index - 1]);
+                ZoomLevel = Math.Max(MinZoomLevel, ZoomLevelsDiscrete[index - 1]);
             }
         }
 

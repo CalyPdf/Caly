@@ -111,13 +111,11 @@ namespace Caly.Core
 
             Services = services.BuildServiceProvider();
 
-#pragma warning disable CS8601 // Possible null reference assignment.
             // Load settings
             Services.GetRequiredService<ISettingsService>().Load();
 
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
             _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
-#pragma warning restore CS8601 // Possible null reference assignment.
 
             // TODO - Check https://github.com/AvaloniaUI/Avalonia/commit/0e014f9cb627d99fb4e1afa389b4c073c836e9b6
 
@@ -159,19 +157,27 @@ namespace Caly.Core
 
         private async void Desktop_Startup(object? sender, ControlledApplicationLifetimeStartupEventArgs e)
         {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            try
             {
-                desktop.Startup -= Desktop_Startup;
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                {
+                    desktop.Startup -= Desktop_Startup;
+                }
+
+                _listeningToFiles = Task.Run(ListenToIncomingFiles); // Start listening
+
+                if (e.Args.Length == 0)
+                {
+                    return;
+                }
+
+                await Task.Run(() => OpenDoc(e.Args[0], CancellationToken.None));
             }
-
-            _listeningToFiles = Task.Run(ListenToIncomingFiles); // Start listening
-
-            if (e.Args.Length == 0)
+            catch (Exception ex)
             {
-                return;
+                ShowExceptionWindowSafely(ex);
+                Debug.WriteExceptionToFile(ex);
             }
-
-            await Task.Run(() => OpenDoc(e.Args[0], CancellationToken.None));
         }
 
         private void Desktop_Exit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
@@ -228,11 +234,9 @@ namespace Caly.Core
                 if (string.IsNullOrEmpty(path) || !File.Exists(path))
                 {
                     var dialogService = Services?.GetRequiredService<IDialogService>();
-                    if (dialogService is not null)
-                    {
-                        dialogService.ShowNotification("Cannot open file",
-                            "The file does not exist or the path is invalid.", NotificationType.Error);
-                    }
+                    dialogService?.ShowNotification("Cannot open file",
+                        "The file does not exist or the path is invalid.",
+                        NotificationType.Error);
 
                     return;
                 }
@@ -253,10 +257,7 @@ namespace Caly.Core
                 if (ex is null) return;
 
                 var dialogService = Services?.GetRequiredService<IDialogService>();
-                if (dialogService is not null)
-                {
-                    dialogService.ShowNotification("Error", ex.Message, NotificationType.Error);
-                }
+                dialogService?.ShowNotification("Error", ex.Message, NotificationType.Error);
             }
             catch
             {

@@ -27,7 +27,7 @@
 
                     <TextBlock DockPanel.Dock="Top">
                         <Run Text="Version "/>
-                        <Run Text="{Binding Version}"/>
+                        <Run Text="{Binding Version, Mode=OneTime}"/>
                     </TextBlock>
 
                     <Separator DockPanel.Dock="Top"/>

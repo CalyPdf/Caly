@@ -27,7 +27,7 @@ namespace Caly.Core.Utilities
 {
     internal sealed class CalyPdfPigLogger : ILog
     {
-        private const string _annotationTitle = "Error in pdf document";
+        private const string AnnotationTitle = "Error in pdf document";
 
         private readonly IDialogService _dialogService;
 
@@ -51,13 +51,13 @@ namespace Caly.Core.Utilities
 
         public void Error(string message)
         {
-            _dialogService.ShowNotification(_annotationTitle, message, NotificationType.Warning);
+            _dialogService.ShowNotification(AnnotationTitle, message, NotificationType.Warning);
         }
 
         public void Error(string message, Exception ex)
         {
             // We ignore the ex for the moment
-            _dialogService.ShowNotification(_annotationTitle, message, NotificationType.Warning);
+            _dialogService.ShowNotification(AnnotationTitle, message, NotificationType.Warning);
         }
     }
 }
