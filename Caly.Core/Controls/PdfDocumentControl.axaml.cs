@@ -120,7 +120,7 @@ namespace Caly.Core.Controls
 #if DEBUG
             if (Design.IsDesignMode)
             {
-                DataContext = new PdfDocumentViewModel(null, null, null);
+                DataContext = new PdfDocumentViewModel(null, null);
             }
 #endif
         }

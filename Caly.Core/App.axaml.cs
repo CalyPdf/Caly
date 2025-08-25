@@ -29,13 +29,12 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Caly.Core.Printing.Services.Interfaces;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
-using Caly.Printing.Services;
-using Caly.Printing.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core
@@ -112,9 +111,9 @@ namespace Caly.Core
             services.AddScoped<PdfDocumentViewModel>();
 
 #if WINDOWS
-            services.AddSingleton<IPrintingService, WindowsPrintingService>();
+            services.AddSingleton<IPrintingService, Printing.OS.Windows.WindowsPrintingService>();
 #else
-            services.AddSingleton<IPrintingService, NoOpCalyPrintingService>();
+            services.AddSingleton<IPrintingService, Printing.NoOpCalyPrintingService>();
 #endif
 
             Services = services.BuildServiceProvider();

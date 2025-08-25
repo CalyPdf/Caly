@@ -97,7 +97,7 @@ namespace Caly.Desktop
                 TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
                 return BuildAvaloniaApp()
-                    .WithDeveloperTools()
+                    //.WithDeveloperTools()
                     .StartWithClassicDesktopLifetime(args);
             }
             catch (Exception ex)

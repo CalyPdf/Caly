@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using Caly.Core.Printing.Models;
 using Caly.Core.ViewModels;
-using Caly.Printing.Models;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 
 namespace Caly.Core.Services

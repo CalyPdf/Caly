@@ -1,6 +1,7 @@
-﻿using Caly.Printing.Models;
+﻿using System.Collections.Generic;
+using Caly.Core.Printing.Models;
 
-namespace Caly.Printing.Services.Interfaces
+namespace Caly.Core.Printing.Services.Interfaces
 {
     public interface IPrintingService
     {

@@ -43,7 +43,7 @@ namespace Caly.Core.ViewModels
         private async Task LoadBookmarks()
         {
             _cts.Token.ThrowIfCancellationRequested();
-            await Task.Run(() => _pdfService.SetPdfBookmark(this, _cts.Token));
+            await Task.Run(() => PdfService.SetPdfBookmark(this, _cts.Token));
             if (Bookmarks?.Count > 0)
             {
                 BookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(Bookmarks)

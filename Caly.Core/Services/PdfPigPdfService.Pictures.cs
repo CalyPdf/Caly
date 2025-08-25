@@ -30,7 +30,7 @@ namespace Caly.Core.Services
 {
     internal sealed partial class PdfPigPdfService
     {
-        private async Task<IRef<SKPicture>?> GetRenderPageAsync(int pageNumber, CancellationToken token)
+        public async Task<IRef<SKPicture>?> GetRenderPageAsync(int pageNumber, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 

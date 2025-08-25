@@ -76,7 +76,7 @@ namespace Caly.Core.ViewModels
                 BuildIndexProgress = (int)Math.Ceiling((done / (double)PageCount) * 100);
             });
 
-            await Task.Run(() => _pdfService.BuildIndex(this, progress, _cts.Token), _cts.Token);
+            await Task.Run(() => PdfService.BuildIndex(this, progress, _cts.Token), _cts.Token);
 
             SetSearchStatusFinal();
         }
@@ -183,7 +183,7 @@ namespace Caly.Core.ViewModels
                     {
                         token.ThrowIfCancellationRequested();
                         indexBuildTaskComplete = indexBuildTask.IsCompleted;
-                        var searchResults = await _pdfService.SearchText(this, TextSearch, token);
+                        var searchResults = await PdfService.SearchText(this, TextSearch, token);
 
                         foreach (var result in searchResults.OrderBy(r => r.PageNumber))
                         {

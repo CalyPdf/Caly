@@ -1,9 +1,12 @@
-﻿using Caly.Printing.Models;
-using Caly.Printing.Services.Interfaces;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
+using Caly.Core.Printing.Models;
+using Caly.Core.Printing.Services.Interfaces;
 
-namespace Caly.Printing.Services
+namespace Caly.Core.Printing.Services
 {
     public abstract class BasePrintingService : IPrintingService
     {
@@ -47,7 +50,7 @@ namespace Caly.Printing.Services
             catch (Exception e)
             {
                 // Critical error - can't process printing jobs anymore
-                Debug.WriteLine($"ERROR in WorkerProc {e}");
+                System.Diagnostics.Debug.WriteLine($"ERROR in WorkerProc {e}");
                 //Debug.WriteExceptionToFile(e);
                 //await _dialogService.ShowExceptionWindowAsync(e);
                 throw;
@@ -61,6 +64,6 @@ namespace Caly.Printing.Services
 
         public abstract IEnumerable<CalyPrinterDevice> GetPrinters();
         
-        protected abstract void Print(CalyPrintJob printJob);
+        protected abstract Task Print(CalyPrintJob printJob);
     }
 }

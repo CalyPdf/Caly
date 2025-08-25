@@ -35,7 +35,7 @@ namespace Caly.Core.ViewModels
         private async Task LoadProperties()
         {
             _cts.Token.ThrowIfCancellationRequested();
-            await Task.Run(() => _pdfService.SetDocumentPropertiesAsync(this, _cts.Token));
+            await Task.Run(() => PdfService.SetDocumentPropertiesAsync(this, _cts.Token));
         }
     }
 }

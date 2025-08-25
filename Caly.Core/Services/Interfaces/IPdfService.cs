@@ -18,13 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Platform.Storage;
+using Caly.Core.Handlers.Interfaces;
+using Caly.Core.ViewModels;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Platform.Storage;
-using Caly.Core.Handlers.Interfaces;
-using Caly.Core.ViewModels;
+using Caly.Core.Utilities;
 
 namespace Caly.Core.Services.Interfaces
 {
@@ -75,5 +77,7 @@ namespace Caly.Core.Services.Interfaces
         void EnqueueRequestTextLayer(PdfPageViewModel page);
 
         void EnqueueRemoveTextLayer(PdfPageViewModel page);
+
+        Task<IRef<SKPicture>?> GetRenderPageAsync(int pageNumber, CancellationToken token);
     }
 }

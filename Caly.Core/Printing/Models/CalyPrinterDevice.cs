@@ -1,4 +1,4 @@
-﻿namespace Caly.Printing.Models
+﻿namespace Caly.Core.Printing.Models
 {
     public sealed class CalyPrinterDevice
     {
@@ -13,6 +13,8 @@
         public string? ServerName { get; init; }
 
         public required string DriverName { get; init; }
+
+        public bool IsMonochrome { get; init; }
 
         public override string ToString()
         {

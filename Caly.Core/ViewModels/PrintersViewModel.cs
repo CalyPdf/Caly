@@ -8,11 +8,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Caly.Printing.Models;
+using Caly.Core.Printing.Models;
 
 namespace Caly.Core.ViewModels
 {
-    public sealed partial class PrintersViewModel : ViewModelBase
+    internal sealed partial class PrintersViewModel : ViewModelBase
     {
         private const char PageRangeSeparator = '-';
 
@@ -178,7 +178,7 @@ namespace Caly.Core.ViewModels
             ArgumentNullException.ThrowIfNull(SelectedPrinterDevice, nameof(SelectedPrinterDevice));
 
             var pagesToPrintType = PagesToPrintChoices[SelectedPagesIndex];
-            IReadOnlyList<Range>? pagesRanges = null;
+            IReadOnlyList<Range> pagesRanges;
             switch (pagesToPrintType)
             {
                 case PagesToPrint.Custom:
@@ -193,6 +193,9 @@ namespace Caly.Core.ViewModels
                 case PagesToPrint.All:
                     pagesRanges = [new Range(1, pdfDocument.PageCount + 1)];
                     break;
+
+                default:
+                    throw new Exception($"Unknown pages to print type '{pagesToPrintType}'.");
             }
 
             if (!int.TryParse(CopiesCountText, out int copiesCount))
@@ -202,6 +205,7 @@ namespace Caly.Core.ViewModels
 
             var job = new CalyPrintJob()
             {
+                PdfDocument = pdfDocument,
                 DocumentName = pdfDocument.FileName!,
                 PrinterName = SelectedPrinterDevice.Name,
                 PagesRanges = pagesRanges,

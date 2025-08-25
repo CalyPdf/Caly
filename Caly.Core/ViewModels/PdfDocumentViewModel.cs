@@ -40,22 +40,19 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Services;
-using Caly.Printing.Models;
-using Caly.Printing.Services.Interfaces;
 
 namespace Caly.Core.ViewModels
 {
-    [DebuggerDisplay("[{_pdfService?.FileName}]")]
+    [DebuggerDisplay("[{PdfService?.FileName}]")]
     public sealed partial class PdfDocumentViewModel : ViewModelBase
     {
         public override string ToString()
         {
-            return _pdfService?.FileName ?? "FileName NOT SET";
+            return PdfService?.FileName ?? "FileName NOT SET";
         }
 
-        private readonly IPdfService _pdfService;
+        public readonly IPdfService PdfService;
         private readonly ISettingsService _settingsService;
-        private readonly IPrintingService _printingService;
 
         private readonly CancellationTokenSource _cts = new();
         internal string? LocalPath { get; private set; }
@@ -105,7 +102,7 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private string? _fileSize;
 
-        public ITextSelectionHandler? TextSelectionHandler => _pdfService.TextSelectionHandler;
+        public ITextSelectionHandler? TextSelectionHandler => PdfService.TextSelectionHandler;
         
         private readonly Lazy<Task> _loadPagesTask;
         public Task LoadPagesTask => _loadPagesTask.Value;
@@ -122,16 +119,15 @@ namespace Caly.Core.ViewModels
 
         private readonly IDisposable _searchResultsDisposable;
 
-        public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService, IPrintingService printingService)
+        public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
         {
             ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
             ArgumentNullException.ThrowIfNull(settingsService, nameof(settingsService));
 
             System.Diagnostics.Debug.Assert(pdfService.NumberOfPages == 0);
 
-            _pdfService = pdfService;
+            PdfService = pdfService;
             _settingsService = settingsService;
-            _printingService = printingService;
 
             _paneSize = _settingsService.GetSettings().PaneSize;
             
@@ -216,12 +212,12 @@ namespace Caly.Core.ViewModels
 
         public void SetActive()
         {
-            _pdfService.IsActive = true;
+            PdfService.IsActive = true;
         }
 
         public void SetInactive()
         {
-            _pdfService.IsActive = false;
+            PdfService.IsActive = false;
         }
 
         /// <summary>
@@ -234,20 +230,20 @@ namespace Caly.Core.ViewModels
 
             WaitOpenAsync = Task.Run(async () =>
             {
-                int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
+                int pageCount = await PdfService.OpenDocument(storageFile, password, combinedCts.Token);
 
                 if (pageCount == 0)
                 {
                     return pageCount;
                 }
 
-                PageCount = _pdfService.NumberOfPages;
-                FileName = _pdfService.FileName;
-                LocalPath = _pdfService.LocalPath;
+                PageCount = PdfService.NumberOfPages;
+                FileName = PdfService.FileName;
+                LocalPath = PdfService.LocalPath;
 
-                if (_pdfService.FileSize.HasValue)
+                if (PdfService.FileSize.HasValue)
                 {
-                    FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
+                    FileSize = Helpers.FormatSizeBytes(PdfService.FileSize.Value);
                 }
 
                 return pageCount;
@@ -258,7 +254,7 @@ namespace Caly.Core.ViewModels
 
         public void ClearAllThumbnails()
         {
-            _pdfService.ClearAllThumbnail();
+            PdfService.ClearAllThumbnail();
         }
 
         internal async ValueTask CancelAsync()
@@ -276,7 +272,7 @@ namespace Caly.Core.ViewModels
             await Task.Run(async () =>
             {
                 // Use 1st page size as default page size
-                var firstPage = new PdfPageViewModel(1, _pdfService);
+                var firstPage = new PdfPageViewModel(1, PdfService);
                 await firstPage.LoadPageSizeImmediate(_cts.Token);
 
                 StrongReferenceMessenger.Default.Send(new LoadPageMessage(firstPage));// Enqueue first page full loading
@@ -289,7 +285,7 @@ namespace Caly.Core.ViewModels
                 for (int p = 2; p <= PageCount; p++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
-                    var newPage = new PdfPageViewModel(p, _pdfService)
+                    var newPage = new PdfPageViewModel(p, PdfService)
                     {
                         Height = defaultHeight,
                         Width = defaultWidth

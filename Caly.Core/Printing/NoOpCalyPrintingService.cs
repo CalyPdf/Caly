@@ -1,7 +1,9 @@
-﻿using Caly.Printing.Models;
-using Caly.Printing.Services.Interfaces;
+﻿using System;
+using System.Collections.Generic;
+using Caly.Core.Printing.Models;
+using Caly.Core.Printing.Services.Interfaces;
 
-namespace Caly.Printing.Services
+namespace Caly.Core.Printing
 {
     public sealed class NoOpCalyPrintingService : IPrintingService
     {

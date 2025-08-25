@@ -24,8 +24,6 @@ using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
-using Caly.Printing.Models;
-using Caly.Printing.Services.Interfaces;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -37,6 +35,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Caly.Core.Printing.Models;
+using Caly.Core.Printing.Services.Interfaces;
 
 namespace Caly.Core.Services
 {

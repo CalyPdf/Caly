@@ -39,13 +39,15 @@ using Tabalonia.Controls;
 
 namespace Caly.Core.ViewModels
 {
-    public sealed partial class MainViewModel : ViewModelBase
+    internal sealed partial class MainViewModel : ViewModelBase
     {
         private readonly IDisposable _documentCollectionDisposable;
 
         public ObservableCollection<PdfDocumentViewModel> PdfDocuments { get; } = new();
 
-        [ObservableProperty] private int _selectedDocumentIndex;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CurrentPdfDocument))]
+        private int _selectedDocumentIndex;
 
         [ObservableProperty] private bool _isSettingsPaneOpen;
 
