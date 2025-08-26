@@ -80,7 +80,7 @@ namespace Caly.Core.Services
                    !_noSpaceBefore.Contains(currentCategory);
         }
 
-        public async Task SetAsync(PdfDocumentViewModel document, CancellationToken token)
+        public async Task<bool> SetAsync(PdfDocumentViewModel document, CancellationToken token)
         {
             // TODO - Check use of tasks here
 
@@ -90,7 +90,7 @@ namespace Caly.Core.Services
 
             if (!selection.IsValid)
             {
-                return;
+                return false;
             }
 
             // https://docs.avaloniaui.net/docs/next/concepts/services/clipboardS
@@ -154,6 +154,8 @@ namespace Caly.Core.Services
             await SetAsync(text);
 
             System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
+
+            return true;
         }
 
         public async Task SetAsync(string text)
@@ -165,7 +167,7 @@ namespace Caly.Core.Services
         {
             await _clipboard.ClearAsync();
         }
-
+        
         private readonly struct TextBlob
         {
             public TextBlob(string word, int lineNumber)

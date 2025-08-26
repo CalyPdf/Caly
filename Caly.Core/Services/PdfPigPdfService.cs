@@ -40,6 +40,7 @@ using Caly.Core.ViewModels;
 using Caly.Pdf;
 using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
+using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
@@ -56,7 +57,6 @@ namespace Caly.Core.Services
         private const string PdfVersionFormat = "0.0";
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
 
-        private readonly IDialogService _dialogService;
         private readonly ITextSearchService _textSearchService;
         
         private Stream? _fileStream;
@@ -93,9 +93,8 @@ namespace Caly.Core.Services
         }
 #endif
 
-        public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
+        public PdfPigPdfService(ITextSearchService textSearchService)
         {
-            _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
             _textSearchService = textSearchService;
 
             var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
@@ -149,7 +148,7 @@ namespace Caly.Core.Services
                     {
                         SkipMissingFonts = true,
                         FilterProvider = SkiaRenderingFilterProvider.Instance,
-                        Logger = new CalyPdfPigLogger(_dialogService)
+                        Logger = CalyPdfPigLogger.Instance
                     };
 
                     if (!string.IsNullOrEmpty(password))
@@ -180,7 +179,7 @@ namespace Caly.Core.Services
                 bool shouldContinue = true;
                 while (shouldContinue)
                 {
-                    string? pw = await _dialogService.ShowPdfPasswordDialogAsync();
+                    string? pw = await App.Messenger.Send(new ShowPdfPasswordDialogRequestMessage());
                     Debug.ThrowOnUiThread();
 
                     shouldContinue = !string.IsNullOrEmpty(pw);
