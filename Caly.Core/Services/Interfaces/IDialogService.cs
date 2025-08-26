@@ -18,10 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Controls.Notifications;
+using Caly.Core.Models;
+using Caly.Core.ViewModels;
 using System;
 using System.Threading.Tasks;
-using Avalonia.Controls.Notifications;
-using Caly.Core.ViewModels;
 
 namespace Caly.Core.Services.Interfaces
 {
@@ -36,6 +37,11 @@ namespace Caly.Core.Services.Interfaces
         /// Show a notification.
         /// </summary>
         void ShowNotification(string? title, string? message, NotificationType type);
+
+        /// <summary>
+        /// Show a notification.
+        /// </summary>
+        void ShowNotification(CalyNotification notification);
 
         /// <summary>
         /// Show an exception in a popup window.

@@ -168,7 +168,7 @@ namespace Caly.Core.ViewModels
 
         public ValueTask DisposeAsync()
         {
-            StrongReferenceMessenger.Default.Send(new UnloadThumbnailMessage(this));
+            App.Messenger.Send(new UnloadThumbnailMessage(this));
             return ValueTask.CompletedTask;
         }
     }
