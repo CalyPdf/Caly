@@ -34,12 +34,15 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core
 {
     public partial class App : Application
     {
+        public static readonly IMessenger Messenger = StrongReferenceMessenger.Default;
+
         private readonly FilePipeStream _pipeServer = new();
         private readonly CancellationTokenSource _listeningToFilesCts = new();
         private Task? _listeningToFiles;

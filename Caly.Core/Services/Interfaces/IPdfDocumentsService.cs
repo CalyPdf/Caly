@@ -41,7 +41,7 @@ namespace Caly.Core.Services.Interfaces
         /// <summary>
         /// Open and load the pdf documents.
         /// </summary>
-        Task OpenLoadDocuments(IEnumerable<IStorageItem?> storageFiles, CancellationToken cancellationToken);
+        Task<int> OpenLoadDocuments(IEnumerable<IStorageItem?> storageFiles, CancellationToken cancellationToken);
 
         /// <summary>
         /// Open and load the pdf document.
