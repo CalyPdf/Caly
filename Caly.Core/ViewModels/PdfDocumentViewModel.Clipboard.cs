@@ -19,9 +19,9 @@
 // SOFTWARE.
 
 using Avalonia.Threading;
-using Caly.Core.Services.Interfaces;
+using Caly.Core.Services;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,10 +40,11 @@ namespace Caly.Core.ViewModels
                     return;
                 }
 
-                IClipboardService clipboardService = App.Current?.Services?.GetRequiredService<IClipboardService>() ??
-                                                     throw new NullReferenceException($"Missing {nameof(IClipboardService)} instance.");
-
-                await clipboardService.SetAsync(this, token);
+                bool success = await App.Messenger.Send(new CopyToClipboardRequestMessage(this, token));
+                if (!success)
+                {
+                    // TODO - Error
+                }
             }
             catch (Exception ex)
             {

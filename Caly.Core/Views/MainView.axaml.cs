@@ -20,12 +20,11 @@
 
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
-using Caly.Core.Services.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
+using Caly.Core.Services;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace Caly.Core.Views
 {
@@ -64,10 +63,7 @@ namespace Caly.Core.Views
                     return;
                 }
 
-                var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()
-                                          ?? throw new NullReferenceException($"Missing {nameof(IPdfDocumentsService)} instance.");
-
-                await Task.Run(() => pdfDocumentsService.OpenLoadDocuments(files, CancellationToken.None));
+                _ = await App.Messenger.Send(new OpenLoadDocumentsRequestMessage(files, CancellationToken.None));
             }
             catch (Exception ex)
             {

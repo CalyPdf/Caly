@@ -20,7 +20,9 @@
 
 using System;
 using Avalonia.Controls.Notifications;
-using Caly.Core.Services.Interfaces;
+using Caly.Core.Models;
+using Caly.Core.Services;
+using CommunityToolkit.Mvvm.Messaging;
 using UglyToad.PdfPig.Logging;
 
 namespace Caly.Core.Utilities
@@ -29,13 +31,7 @@ namespace Caly.Core.Utilities
     {
         private const string AnnotationTitle = "Error in pdf document";
 
-        private readonly IDialogService _dialogService;
-
-        public CalyPdfPigLogger(IDialogService dialogService)
-        {
-            ArgumentNullException.ThrowIfNull(dialogService, nameof(dialogService));
-            _dialogService = dialogService;
-        }
+        public static readonly CalyPdfPigLogger Instance = new CalyPdfPigLogger();
 
         public void Debug(string message)
         {
@@ -51,13 +47,23 @@ namespace Caly.Core.Utilities
 
         public void Error(string message)
         {
-            _dialogService.ShowNotification(AnnotationTitle, message, NotificationType.Warning);
+            App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
+            {
+                Title = AnnotationTitle,
+                Message = message,
+                Type = NotificationType.Warning
+            }));
         }
 
         public void Error(string message, Exception ex)
         {
             // We ignore the ex for the moment
-            _dialogService.ShowNotification(AnnotationTitle, message, NotificationType.Warning);
+            App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
+            {
+                Title = AnnotationTitle,
+                Message = message,
+                Type = NotificationType.Warning
+            }));
         }
     }
 }
