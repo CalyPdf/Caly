@@ -65,6 +65,8 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private int _selectedTabIndex;
 
+        [ObservableProperty] private bool _isPasswordProtected;
+
         /// <summary>
         /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
         /// </summary>
@@ -228,14 +230,16 @@ namespace Caly.Core.ViewModels
             {
                 int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
 
+                IsPasswordProtected = _pdfService.IsPasswordProtected;
+                FileName = _pdfService.FileName;
+                LocalPath = _pdfService.LocalPath;
+
                 if (pageCount == 0)
                 {
                     return pageCount;
                 }
 
                 PageCount = _pdfService.NumberOfPages;
-                FileName = _pdfService.FileName;
-                LocalPath = _pdfService.LocalPath;
 
                 if (_pdfService.FileSize.HasValue)
                 {
@@ -262,7 +266,14 @@ namespace Caly.Core.ViewModels
         {
             if (PageCount == 0)
             {
-                throw new Exception("Cannot load pages because document has 0 pages.");
+                if (IsPasswordProtected)
+                {
+                    throw new Exception("Could not open password protected document.");
+                }
+                else
+                {
+                    throw new Exception("Cannot load pages because document has 0 pages.");
+                }
             }
             
             await Task.Run(async () =>

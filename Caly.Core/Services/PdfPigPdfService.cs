@@ -70,6 +70,8 @@ namespace Caly.Core.Services
 
         public int NumberOfPages { get; private set; }
 
+        public bool IsPasswordProtected { get; private set; } = false;
+
         public ITextSelectionHandler? TextSelectionHandler { get; private set; }
 
         private long _isActive = 0;
@@ -156,6 +158,8 @@ namespace Caly.Core.Services
             }
             catch (PdfDocumentEncryptedException)
             {
+                IsPasswordProtected = true;
+
                 if (!string.IsNullOrEmpty(password))
                 {
                     // Only stay at first level, do not recurse: If password is NOT null, this is recursion
@@ -326,17 +330,21 @@ namespace Caly.Core.Services
         public async Task SetPdfBookmark(PdfDocumentViewModel pdfDocument, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
+            if (_document is null)
+            {
+                return;
+            }
 
             Bookmarks? bookmarks = await ExecuteWithLockAsync(() =>
+            {
+                if (_document!.TryGetBookmarks(out var b))
                 {
-                    if (_document!.TryGetBookmarks(out var b))
-                    {
-                        return b;
-                    }
+                    return b;
+                }
 
-                    return null;
-                },
-                token);
+                return null;
+            },
+            token);
             
             try
             {
