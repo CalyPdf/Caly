@@ -95,17 +95,18 @@ namespace Caly.Core
                 };
                 services.AddSingleton(_ => (Visual)singleViewPlatform.MainView);
             }
-#if DEBUG
-            else if (ApplicationLifetime is null && Avalonia.Controls.Design.IsDesignMode)
+            else if (ApplicationLifetime is null)
             {
+                // Design mode or tests
                 var mainView = new MainView { DataContext = new MainViewModel() };
                 services.AddSingleton(_ => (Visual)mainView);
             }
-#endif
+
+            RegisterLifetimeDependantServices(services);
+
             services.AddSingleton<ISettingsService, JsonSettingsService>();
             services.AddSingleton<IFilesService, FilesService>();
             services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddSingleton<IPdfDocumentsService, PdfDocumentsService>();
 
             services.AddScoped<IPdfService, PdfPigPdfService>();
@@ -123,6 +124,11 @@ namespace Caly.Core
             // TODO - Check https://github.com/AvaloniaUI/Avalonia/commit/0e014f9cb627d99fb4e1afa389b4c073c836e9b6
 
             base.OnFrameworkInitializationCompleted();
+        }
+
+        public virtual void RegisterLifetimeDependantServices(ServiceCollection services)
+        {
+            services.AddSingleton<IClipboardService, ClipboardService>();
         }
 
         public bool TryBringToFront()

@@ -24,7 +24,7 @@ using Caly.Core.ViewModels;
 
 namespace Caly.Core.Services.Interfaces
 {
-    internal interface IClipboardService
+    public interface IClipboardService
     {
         /// <summary>
         /// Set clipboard.
@@ -35,6 +35,11 @@ namespace Caly.Core.Services.Interfaces
         /// Set clipboard.
         /// </summary>
         Task SetAsync(string text);
+
+        /// <summary>
+        /// Get clipboard content.
+        /// </summary>
+        Task<string?> GetAsync();
 
         /// <summary>
         /// Clear clipboard.
