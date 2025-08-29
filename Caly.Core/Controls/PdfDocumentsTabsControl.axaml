@@ -4,13 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Caly.Core.ViewModels"
              xmlns:controls="clr-namespace:Caly.Core.Controls"
-             xmlns:controls1="clr-namespace:Tabalonia.Controls;assembly=Tabalonia"
+             xmlns:tabalonia="clr-namespace:Tabalonia.Controls;assembly=Tabalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Caly.Core.Controls.PdfDocumentsTabsControl"
              x:DataType="vm:MainViewModel"
              SizeChanged="OnSizeChanged">
 
-    <controls1:TabsControl Background="Transparent"
+    <tabalonia:TabsControl Background="Transparent"
                            Padding="0"
                            Margin="0"
                            AddItemCommand="{Binding OpenFileCommand}"
@@ -274,6 +274,6 @@
 
 			</DataTemplate>
 		</TabControl.ContentTemplate>
-	</controls1:TabsControl>
+	</tabalonia:TabsControl>
 
 </UserControl>
