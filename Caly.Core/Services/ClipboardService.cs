@@ -20,8 +20,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Input.Platform;
 
 namespace Caly.Core.Services
@@ -29,10 +27,14 @@ namespace Caly.Core.Services
     internal sealed class ClipboardService : BaseClipboardService
     {
         private readonly IClipboard _clipboard;
-        public ClipboardService(Visual target)
+
+        public ClipboardService(IClipboard clipboard)
         {
-            _clipboard = TopLevel.GetTopLevel(target)?.Clipboard ??
-                         throw new ArgumentNullException($"Could not find {typeof(IClipboard)}");
+            _clipboard = clipboard;
+            if (_clipboard is null)
+            {
+                throw new ArgumentNullException($"Could not find {typeof(IClipboard)}.");
+            }
         }
 
         public override async Task SetAsync(string text)

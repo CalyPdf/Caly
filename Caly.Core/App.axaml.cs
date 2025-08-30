@@ -27,7 +27,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
@@ -81,8 +83,12 @@ namespace Caly.Core
                 };
 
                 services.AddSingleton(_ => (Visual)desktop.MainWindow);
+                services.AddSingleton<IStorageProvider>(_ => desktop.MainWindow.StorageProvider);
+                services.AddSingleton<IClipboard>(_ => desktop.MainWindow.Clipboard);
+
                 desktop.Startup += Desktop_Startup;
                 desktop.Exit += Desktop_Exit;
+
 #if DEBUG
                 desktop.MainWindow.RendererDiagnostics.DebugOverlays = Avalonia.Rendering.RendererDebugOverlays.RenderTimeGraph;
 #endif
@@ -93,7 +99,10 @@ namespace Caly.Core
                 {
                     DataContext = new MainViewModel()
                 };
+
                 services.AddSingleton(_ => (Visual)singleViewPlatform.MainView);
+                services.AddSingleton<IStorageProvider>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.StorageProvider);
+                services.AddSingleton<IClipboard>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.Clipboard);
             }
             else if (ApplicationLifetime is null)
             {
@@ -102,16 +111,17 @@ namespace Caly.Core
                 services.AddSingleton(_ => (Visual)mainView);
             }
 
-            RegisterLifetimeDependantServices(services);
-
             services.AddSingleton<ISettingsService, JsonSettingsService>();
             services.AddSingleton<IFilesService, FilesService>();
+            services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IPdfDocumentsService, PdfDocumentsService>();
 
             services.AddScoped<IPdfService, PdfPigPdfService>();
             services.AddScoped<ITextSearchService, LiftiTextSearchService>();
             services.AddScoped<PdfDocumentViewModel>();
+
+            OverrideRegisteredServices(services);
 
             Services = services.BuildServiceProvider();
 
@@ -126,9 +136,9 @@ namespace Caly.Core
             base.OnFrameworkInitializationCompleted();
         }
 
-        public virtual void RegisterLifetimeDependantServices(ServiceCollection services)
+        public virtual void OverrideRegisteredServices(ServiceCollection services)
         {
-            services.AddSingleton<IClipboardService, ClipboardService>();
+            // Mainly for test purpose
         }
 
         public bool TryBringToFront()
