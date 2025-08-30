@@ -5,8 +5,8 @@
 		<LangVersion>latest</LangVersion>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>Assets\caly-logo.ico</ApplicationIcon>
+		<Version>0.1.3.0</Version>
 	</PropertyGroup>
-
 
 	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
