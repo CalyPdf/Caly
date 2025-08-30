@@ -19,7 +19,7 @@
  */
 
 // Code from Avalonia
-// https://github.com/AvaloniaUI/Avalonia/blob/b15ee692da32dfa349c462c4c491a9cf652325b3/src/Avalonia.Base/Utilities/Ref.cs
+// https://github.com/AvaloniaUI/Avalonia/blob/86609c100c18639454076161c200744631b44c6a/src/Avalonia.Base/Utilities/Ref.cs
 
 using System;
 using System.Runtime.ConstrainedExecution;
@@ -51,6 +51,7 @@ namespace Caly.Core.Utilities
         /// <returns>A reference to the value as the new type but sharing the refcount.</returns>
         IRef<TResult> CloneAs<TResult>() where TResult : class;
 
+
         /// <summary>
         /// The current refcount of the object tracked in this reference. For debugging/unit test use only.
         /// </summary>
@@ -77,18 +78,18 @@ namespace Caly.Core.Utilities
 
             public RefCounter(IDisposable item)
             {
-                _item = item;
+                _item = item ?? throw new ArgumentNullException();
                 _refs = 1;
             }
 
-            public void AddRef()
+            internal bool TryAddRef()
             {
                 var old = _refs;
                 while (true)
                 {
                     if (old == 0)
                     {
-                        throw new ObjectDisposedException("Cannot add a reference to a nonreferenced item");
+                        return false;
                     }
                     var current = Interlocked.CompareExchange(ref _refs, old + 1, old);
                     if (current == old)
@@ -97,6 +98,8 @@ namespace Caly.Core.Utilities
                     }
                     old = current;
                 }
+
+                return true;
             }
 
             public void Release()
@@ -124,9 +127,8 @@ namespace Caly.Core.Utilities
 
         private sealed class Ref<T> : CriticalFinalizerObject, IRef<T> where T : class
         {
-            private T? _item;
-            private readonly RefCounter _counter;
-            private readonly object _lock = new object();
+            private volatile T? _item;
+            private volatile RefCounter? _counter;
 
             public Ref(T item, RefCounter counter)
             {
@@ -134,66 +136,65 @@ namespace Caly.Core.Utilities
                 _counter = counter;
             }
 
-            public void Dispose()
+            public void Dispose() => Dispose(true);
+            void Dispose(bool disposing)
             {
-                lock (_lock)
+                var item = Interlocked.Exchange(ref _item, null);
+
+                if (item != null)
                 {
-                    if (_item != null)
-                    {
-                        _counter.Release();
-                        _item = null;
-                    }
-                    GC.SuppressFinalize(this);
+                    var counter = _counter!;
+                    _counter = null;
+                    if (disposing)
+                        GC.SuppressFinalize(this);
+                    counter.Release();
                 }
             }
 
             ~Ref()
             {
-                Dispose();
+                Dispose(false);
                 System.Diagnostics.Debug.Assert(Item is null || RefCount == 0);
             }
 
-            public T Item
-            {
-                get
-                {
-                    lock (_lock)
-                    {
-                        return _item!;
-                    }
-                }
-            }
+
+            public T Item => _item ?? throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
 
             public IRef<T> Clone()
             {
-                lock (_lock)
-                {
-                    if (_item != null)
-                    {
-                        var newRef = new Ref<T>(_item, _counter);
-                        _counter.AddRef();
-                        return newRef;
-                    }
+                // Snapshot current ref state so we don't care if it's disposed in the meantime.
+                var counter = _counter;
+                var item = _item;
+
+                // Check if ref was invalid
+                if (item == null || counter == null)
                     throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
-                }
+
+                // Try to add a reference to the counter, if it fails, the item is disposed.
+                if (!counter.TryAddRef())
+                    throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
+
+                return new Ref<T>(item, counter);
             }
 
             public IRef<TResult> CloneAs<TResult>() where TResult : class
             {
-                lock (_lock)
-                {
-                    if (_item != null)
-                    {
-                        var castRef = new Ref<TResult>((TResult)(object)_item, _counter);
-                        Interlocked.MemoryBarrier();
-                        _counter.AddRef();
-                        return castRef;
-                    }
+                // Snapshot current ref state so we don't care if it's disposed in the meantime.
+                var counter = _counter;
+                var item = (TResult?)(object?)_item;
+
+                // Check if ref was invalid
+                if (item == null || counter == null)
                     throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
-                }
+
+                // Try to add a reference to the counter, if it fails, the item is disposed.
+                if (!counter.TryAddRef())
+                    throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
+
+                return new Ref<TResult>(item, counter);
             }
 
-            public int RefCount => _counter.RefCount;
+            public int RefCount => _counter?.RefCount ?? throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
         }
     }
 }
