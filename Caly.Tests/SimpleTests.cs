@@ -17,14 +17,11 @@ namespace Caly.Tests
         [AvaloniaFact]
         public async Task CanStart()
         {
-            // Create a window and set the view model as its data context:
-            var mvm = new MainViewModel();
-            var window = new MainWindow
-            {
-                DataContext = mvm,
-                Width = 1000,
-                Height = 500
-            };
+            var window = TestApp.Current.MainWindow;
+            Assert.NotNull(window);
+
+            var mvm = TestApp.Current.MainViewModel;
+            Assert.NotNull(mvm);
 
             // Show the window, as it's required to get layout processed:
             window.Show();
@@ -33,9 +30,9 @@ namespace Caly.Tests
             Assert.NotNull(openDocButton);
 
             bool buttonClicked = false;
-            openDocButton.Click += (sender, args) => buttonClicked  = true;
+            openDocButton.Click += (sender, args) => buttonClicked = true;
 
-            var buttonLoc = new Point(openDocButton.Bounds.Left + openDocButton.Bounds.Width / 2, 
+            var buttonLoc = new Point(openDocButton.Bounds.Left + openDocButton.Bounds.Width / 2,
                                       openDocButton.Bounds.Top + openDocButton.Bounds.Height / 2);
             window.MouseDown(buttonLoc, MouseButton.Left);
             window.MouseUp(buttonLoc, MouseButton.Left);
@@ -43,14 +40,45 @@ namespace Caly.Tests
 
             //Dispatcher.UIThread.RunJobs();
 
-            await Task.Delay(10_000);
-
-            /*
             while (mvm.PdfDocuments.Count == 0)
             {
                 await Task.Delay(500);
             }
+
+            /*
+            var doc = mvm.PdfDocuments[mvm.SelectedDocumentIndex];
+            Assert.NotNull(doc.WaitOpenAsync);
+            //await Task.Run(() => doc.WaitOpenAsync);
             */
+
+            //Dispatcher.UIThread.RunJobs();
+            //AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+
+            var frame = window.CaptureRenderedFrame();
+            frame?.Save("file.png");
+        }
+
+        [AvaloniaFact]
+        public async Task CanOpenPdf()
+        {
+            var window = TestApp.Current.MainWindow;
+            Assert.NotNull(window);
+
+            var mvm = TestApp.Current.MainViewModel;
+            Assert.NotNull(mvm);
+
+            // Show the window, as it's required to get layout processed:
+            window.Show();
+
+            await mvm.OpenFileCommand.ExecuteAsync(null);
+            //await Task.Delay(100_000);
+
+            while (mvm.PdfDocuments.Count == 0)
+            {
+                await Task.Delay(500);
+            }
+
+            
 
             Dispatcher.UIThread.RunJobs();
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();

@@ -113,7 +113,7 @@ namespace Caly.Core.Controls;
             /// </summary>
             public void Render(ImmediateDrawingContext context)
             {
-                Debug.ThrowOnUiThread();
+                //Debug.ThrowOnUiThread();
 
                 lock (_lock)
                 {
