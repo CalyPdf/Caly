@@ -278,6 +278,8 @@ namespace Caly.Core.ViewModels
             
             await Task.Run(async () =>
             {
+                Debug.ThrowOnUiThread();
+
                 // Use 1st page size as default page size
                 var firstPage = new PdfPageViewModel(1, _pdfService);
                 await firstPage.LoadPageSizeImmediate(_cts.Token);

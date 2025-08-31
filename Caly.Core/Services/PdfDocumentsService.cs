@@ -245,7 +245,7 @@ namespace Caly.Core.Services
                 {
                     // Do not await just yet - We need the WaitOpenAsync() to be created but we also
                     // want to add the document to PdfDocuments before opening it.
-                    Task<int> openDocTask = documentViewModel.OpenDocument(storageFile, password, cancellationToken);
+                    var openDocTask = documentViewModel.OpenDocument(storageFile, password, cancellationToken).ConfigureAwait(false);
 
                     // We need a lock to avoid issues with tabs when opening documents in parallel
                     _mainViewModel.PdfDocuments.AddSafely(documentViewModel);

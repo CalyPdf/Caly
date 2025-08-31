@@ -53,7 +53,7 @@ namespace Caly.Core
         private IPdfDocumentsService _pdfDocumentsService;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
-        public static new App? Current => Application.Current as App;
+        public new static App? Current => Application.Current as App;
 
         /// <summary>
         /// Gets the <see cref="IServiceProvider"/> instance to resolve application services.
@@ -104,12 +104,12 @@ namespace Caly.Core
                 services.AddSingleton<IStorageProvider>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.StorageProvider);
                 services.AddSingleton<IClipboard>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.Clipboard);
             }
-            else if (ApplicationLifetime is null)
-            {
-                // Design mode or tests
-                var mainView = new MainView { DataContext = new MainViewModel() };
-                services.AddSingleton(_ => (Visual)mainView);
-            }
+            //else if (ApplicationLifetime is null)
+            //{
+            //    // Design mode or tests
+            //    var mainWindow = new MainWindow { DataContext = new MainViewModel() };
+            //    services.AddSingleton(_ => (Visual)mainWindow);
+            //}
 
             services.AddSingleton<ISettingsService, JsonSettingsService>();
             services.AddSingleton<IFilesService, FilesService>();

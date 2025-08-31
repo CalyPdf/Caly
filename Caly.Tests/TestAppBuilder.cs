@@ -1,8 +1,11 @@
 ﻿using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Caly.Core;
 using Caly.Core.Services.Interfaces;
+using Caly.Core.ViewModels;
+using Caly.Core.Views;
 using Caly.Tests;
 using Caly.Tests.Mock;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,15 +32,25 @@ namespace Caly.Tests
     {
         private const string _pdfFilePath = @"C:\Users\Bob\source\repos\Caly\Caly.Tests\TIKA-584-0.pdf";
 
-        public override void OnFrameworkInitializationCompleted()
-        {
-            var lifetime = ApplicationLifetime;
+        public new static TestApp Current => App.Current as TestApp;
 
-            base.OnFrameworkInitializationCompleted();
-        }
+        public MainWindow? MainWindow { get; private set; }
+        public MainViewModel? MainViewModel { get; private set; } 
 
         public override void OverrideRegisteredServices(ServiceCollection services)
         {
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                MainViewModel = new MainViewModel();
+                MainWindow = new MainWindow
+                {
+                    DataContext = MainViewModel,
+                    Width = 1000,
+                    Height = 500
+                };
+                services.AddSingleton(_ => (Visual)MainWindow);
+            });
+
             // IStorageProvider
             foreach (var s in services.Where(sd => sd.ServiceType == typeof(IStorageProvider)).ToArray())
             {
