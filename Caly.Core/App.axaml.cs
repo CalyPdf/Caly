@@ -27,7 +27,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
@@ -77,7 +79,10 @@ namespace Caly.Core
                     DataContext = new MainViewModel()
                 };
 
-                services.AddSingleton(_ => (Visual)desktop.MainWindow);
+                services.AddSingleton<Visual>(_ => desktop.MainWindow);
+                services.AddSingleton<IStorageProvider>(_ => desktop.MainWindow.StorageProvider);
+                services.AddSingleton<IClipboard>(_ => desktop.MainWindow.Clipboard ?? throw new ArgumentNullException(nameof(IClipboard)));
+
                 desktop.Startup += Desktop_Startup;
                 desktop.Exit += Desktop_Exit;
 #if DEBUG
@@ -90,15 +95,18 @@ namespace Caly.Core
                 {
                     DataContext = new MainViewModel()
                 };
-                services.AddSingleton(_ => (Visual)singleViewPlatform.MainView);
+                services.AddSingleton<Visual>(_ => singleViewPlatform.MainView);
+                services.AddSingleton<IStorageProvider>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.StorageProvider ?? throw new ArgumentNullException(nameof(IStorageProvider)));
+                services.AddSingleton<IClipboard>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.Clipboard ?? throw new ArgumentNullException(nameof(IClipboard)));
             }
 #if DEBUG
             else if (ApplicationLifetime is null && Avalonia.Controls.Design.IsDesignMode)
             {
                 var mainView = new MainView { DataContext = new MainViewModel() };
-                services.AddSingleton(_ => (Visual)mainView);
+                services.AddSingleton<Visual>(_ => mainView);
             }
 #endif
+
             services.AddSingleton<ISettingsService, JsonSettingsService>();
             services.AddSingleton<IFilesService, FilesService>();
             services.AddSingleton<IDialogService, DialogService>();
@@ -109,6 +117,8 @@ namespace Caly.Core
             services.AddScoped<ITextSearchService, LiftiTextSearchService>();
             services.AddScoped<PdfDocumentViewModel>();
 
+            OverrideRegisteredServices(services);
+
             Services = services.BuildServiceProvider();
 
             // Load settings
@@ -117,9 +127,12 @@ namespace Caly.Core
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
             _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
 
-            // TODO - Check https://github.com/AvaloniaUI/Avalonia/commit/0e014f9cb627d99fb4e1afa389b4c073c836e9b6
-
             base.OnFrameworkInitializationCompleted();
+        }
+
+        protected virtual void OverrideRegisteredServices(IServiceCollection services)
+        {
+            // No-op, for testing purpose
         }
 
         public bool TryBringToFront()

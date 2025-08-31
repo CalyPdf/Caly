@@ -77,7 +77,9 @@ namespace Caly.Core.Controls
                 lock (_lock)
                 {
                     if (_picture?.Item is null || _picture.Item.Handle == IntPtr.Zero ||
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                         !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                     {
                         return;
                     }

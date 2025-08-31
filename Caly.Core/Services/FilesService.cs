@@ -18,10 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
@@ -32,25 +31,19 @@ namespace Caly.Core.Services
 
     internal sealed class FilesService : IFilesService
     {
-        private readonly Visual _target;
+        private readonly IStorageProvider _storageProvider;
         private readonly IReadOnlyList<FilePickerFileType> _pdfFileFilter = [FilePickerFileTypes.Pdf];
 
-        public FilesService(Visual target)
+        public FilesService(IStorageProvider? storageProvider)
         {
-            _target = target;
+            _storageProvider = storageProvider ?? throw new ArgumentNullException($"Could not find {typeof(IStorageProvider)}."); ;
         }
 
         public async Task<IStorageFile?> OpenPdfFileAsync()
         {
             Debug.ThrowNotOnUiThread();
 
-            TopLevel? top = TopLevel.GetTopLevel(_target);
-            if (top is null)
-            {
-                return null;
-            }
-
-            IReadOnlyList<IStorageFile> files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
             {
                 Title = "Open",
                 AllowMultiple = false,
@@ -62,13 +55,7 @@ namespace Caly.Core.Services
 
         public Task<IStorageFile?> SavePdfFileAsync()
         {
-            TopLevel? top = TopLevel.GetTopLevel(_target);
-            if (top is null)
-            {
-                return Task.FromResult<IStorageFile?>(null);
-            }
-
-            return top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+            return _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
             {
                 Title = "Save Pdf File"
             });
@@ -76,16 +63,17 @@ namespace Caly.Core.Services
 
         public async Task<IStorageFile?> TryGetFileFromPathAsync(string path)
         {
-            TopLevel? top = TopLevel.GetTopLevel(_target);
-
-            if (top is not null)
+            try
             {
                 // UIThread needed for Avalonia.FreeDesktop.DBusSystemDialog
-                return await Dispatcher.UIThread.InvokeAsync(() => top.StorageProvider.TryGetFileFromPathAsync(path));
+                return await Dispatcher.UIThread.InvokeAsync(() => _storageProvider.TryGetFileFromPathAsync(path));
             }
-
-            System.Diagnostics.Debug.WriteLine($"Could not get TopLevel in FilesService.TryGetFileFromPathAsync (path: '{path}').");
-            return null;
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine($"Could not get TopLevel in FilesService.TryGetFileFromPathAsync (path: '{path}').");
+                Debug.WriteExceptionToFile(e);
+                return null;
+            }
         }
     }
 }
