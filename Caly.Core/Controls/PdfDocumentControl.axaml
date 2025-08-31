@@ -1,15 +1,15 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:Caly.Core.Controls"
-        xmlns:viewModels="clr-namespace:Caly.Core.ViewModels"
+        xmlns:vm="clr-namespace:Caly.Core.ViewModels"
         xmlns:progRing="clr-namespace:AvaloniaProgressRing;assembly=AvaloniaProgressRing"
         xmlns:utilities="clr-namespace:Caly.Core.Utilities">
 
 	<Design.PreviewWith>
-		<controls:PdfDocumentControl x:DataType="viewModels:PdfDocumentViewModel" Width="630" Height="1782"/>
+		<controls:PdfDocumentControl x:DataType="vm:PdfDocumentViewModel" Width="630" Height="630"/>
 	</Design.PreviewWith>
 
-	<ControlTheme x:Key="{x:Type controls:PdfDocumentControl}" TargetType="controls:PdfDocumentControl" x:DataType="viewModels:PdfDocumentViewModel">
+	<ControlTheme x:Key="{x:Type controls:PdfDocumentControl}" TargetType="controls:PdfDocumentControl" x:DataType="vm:PdfDocumentViewModel">
 		<Setter Property="Exception" Value="{Binding Exception}"/>
 		<Setter Property="SelectedPageIndex" Value="{Binding SelectedPageIndex, Mode=TwoWay}"/>
 		<Setter Property="ItemsSource" Value="{Binding Pages}"/>

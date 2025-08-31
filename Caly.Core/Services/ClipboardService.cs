@@ -58,6 +58,13 @@ namespace Caly.Core.Services
 
         public ClipboardService(IClipboard? clipboard)
         {
+#if DEBUG
+            if (Avalonia.Controls.Design.IsDesignMode)
+            {
+                _clipboard = clipboard;
+                return;
+            }
+#endif
             _clipboard = clipboard ?? throw new ArgumentNullException($"Could not find {typeof(IClipboard)}.");
         }
 

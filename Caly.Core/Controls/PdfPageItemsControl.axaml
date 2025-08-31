@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="using:Caly.Core.Controls"
-                    xmlns:viewModels="clr-namespace:Caly.Core.ViewModels"
+                    xmlns:vm="clr-namespace:Caly.Core.ViewModels"
                     xmlns:utilities="clr-namespace:Caly.Core.Utilities">
 
 	<Design.PreviewWith>
@@ -14,7 +14,7 @@
 
     <ControlTheme x:Key="{x:Type controls:PdfPageItemsControl}"
                   TargetType="controls:PdfPageItemsControl"
-                  x:DataType="viewModels:PdfDocumentViewModel">
+                  x:DataType="vm:PdfDocumentViewModel">
 
         <Setter Property="MinZoomLevel" Value="{Binding MinZoomLevel}"/>
 		<Setter Property="MaxZoomLevel" Value="{Binding MaxZoomLevel}"/>

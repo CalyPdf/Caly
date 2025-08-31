@@ -36,6 +36,13 @@ namespace Caly.Core.Services
 
         public FilesService(IStorageProvider? storageProvider)
         {
+#if DEBUG
+            if (Avalonia.Controls.Design.IsDesignMode)
+            {
+                _storageProvider = storageProvider;
+                return;
+            }
+#endif
             _storageProvider = storageProvider ?? throw new ArgumentNullException($"Could not find {typeof(IStorageProvider)}."); ;
         }
 

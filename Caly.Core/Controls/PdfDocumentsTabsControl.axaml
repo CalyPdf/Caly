@@ -10,7 +10,11 @@
              x:DataType="vm:MainViewModel"
              SizeChanged="OnSizeChanged">
 
-    <tabalonia:TabsControl Background="Transparent"
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+	<tabalonia:TabsControl Background="Transparent"
                            Padding="0"
                            Margin="0"
                            AddItemCommand="{Binding OpenFileCommand}"

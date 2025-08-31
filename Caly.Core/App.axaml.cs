@@ -104,6 +104,8 @@ namespace Caly.Core
             {
                 var mainView = new MainView { DataContext = new MainViewModel() };
                 services.AddSingleton<Visual>(_ => mainView);
+                services.AddSingleton<IStorageProvider>(_ => TopLevel.GetTopLevel(mainView)?.StorageProvider);
+                services.AddSingleton<IClipboard>(_ => TopLevel.GetTopLevel(mainView)?.Clipboard);
             }
 #endif
 

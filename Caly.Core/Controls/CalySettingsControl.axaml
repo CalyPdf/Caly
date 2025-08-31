@@ -1,10 +1,10 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="using:Caly.Core.Controls"
-                    xmlns:viewModels="clr-namespace:Caly.Core.ViewModels">
+                    xmlns:vm="clr-namespace:Caly.Core.ViewModels">
 
     <Design.PreviewWith>
-        <DockPanel Width="300" Height="600">
+        <DockPanel Width="300" Height="700">
             <DockPanel Background="{DynamicResource SystemRegionBrush}">
                 <controls:CalySettingsControl />
             </DockPanel>
@@ -13,7 +13,7 @@
 
     <ControlTheme x:Key="{x:Type controls:CalySettingsControl}"
                   TargetType="controls:CalySettingsControl"
-                  x:DataType="viewModels:MainViewModel">
+                  x:DataType="vm:MainViewModel">
         <Setter Property="Template">
             <ControlTemplate>
 

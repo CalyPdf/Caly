@@ -28,6 +28,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Handlers;
@@ -81,7 +82,17 @@ namespace Caly.Core.Services
             get => Interlocked.Read(ref _isActive) == 1;
             set => Interlocked.Exchange(ref _isActive, Convert.ToInt64(value));
         }
-        
+
+#if DEBUG
+        public PdfPigPdfService()
+        {
+            if (!Design.IsDesignMode)
+            {
+                throw new InvalidOperationException("Should only be called in Design mode.");
+            }
+        }
+#endif
+
         public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
         {
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");

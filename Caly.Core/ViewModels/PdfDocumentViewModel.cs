@@ -117,6 +117,25 @@ namespace Caly.Core.ViewModels
 
         private readonly IDisposable _searchResultsDisposable;
 
+#if DEBUG
+        public PdfDocumentViewModel()
+        {
+            if (!Design.IsDesignMode)
+            {
+                throw new InvalidOperationException("Should only be called in Design mode.");
+            }
+
+            _pdfService = new PdfPigPdfService(new DialogService(null), new LiftiTextSearchService());
+            _settingsService = new JsonSettingsService(null);
+            _paneSize = 50;
+
+            IsPasswordProtected = _pdfService.IsPasswordProtected;
+            FileName = _pdfService.FileName;
+            LocalPath = _pdfService.LocalPath;
+            PageCount = _pdfService.NumberOfPages;
+        }
+#endif
+
         public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
         {
             ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
