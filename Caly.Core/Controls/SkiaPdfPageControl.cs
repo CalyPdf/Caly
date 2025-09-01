@@ -43,6 +43,7 @@ namespace Caly.Core.Controls
             private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
             private readonly bool _isDarkMode;
+            private readonly SKBitmap _imageMask;
 
             private readonly object _lock = new object();
 

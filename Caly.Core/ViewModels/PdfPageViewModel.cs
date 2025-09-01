@@ -106,6 +106,7 @@ namespace Caly.Core.ViewModels
 
         public bool IsPortrait => Rotation == 0 || Rotation == 180;
 
+        [ObservableProperty] private SKBitmap _imageMask;
 
         private long _isSizeSet;
         public bool IsSizeSet()

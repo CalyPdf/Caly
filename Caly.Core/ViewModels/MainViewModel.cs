@@ -112,6 +112,7 @@ namespace Caly.Core.ViewModels
                         Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
                     }
                 });
+            SyncSettings();
         }
 
         private PdfDocumentViewModel? GetCurrentPdfDocument()

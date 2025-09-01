@@ -341,6 +341,8 @@ namespace Caly.Core.ViewModels
 
             return SelectedPageIndex.Value < PageCount;
         }
+
+        public void RefreshAllThumbnails()
         {
             foreach (var page in Pages)
             {
