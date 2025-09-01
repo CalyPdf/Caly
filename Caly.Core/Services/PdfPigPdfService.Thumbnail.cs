@@ -18,15 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Media.Imaging;
+using Avalonia.Skia;
+using Avalonia.Threading;
+using Caly.Core.Utilities;
+using Caly.Core.ViewModels;
+using SkiaSharp;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
-using Avalonia.Threading;
-using Caly.Core.ViewModels;
-using SkiaSharp;
 
 namespace Caly.Core.Services
 {
@@ -55,71 +57,16 @@ namespace Caly.Core.Services
             }
 
             SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width, tHeight / (float)vm.Height);
-            
+
             using (var surface = SKSurface.Create(new SKImageInfo(tWidth, tHeight)))
-            using (var canvas = surface.Canvas)
             {
+                var canvas = surface.Canvas;
                 token.ThrowIfCancellationRequested();
 
-                bool _isDarkMode = _settingsService.GetSettings().IsDarkModeEnabled;
-
-                if (_isDarkMode)
+                // Dark mode rendering
+                if (_settingsService.GetSettings().IsDarkModeEnabled)
                 {
-                    canvas.Clear(SKColors.Black);
-
-                    using (var invertPaint = new SKPaint())
-                    {
-                        // Invert lightness across whole page 
-                        SKHighContrastConfig config = new()
-                        {
-                            Grayscale = false,
-                            InvertStyle = SKHighContrastConfigInvertStyle.InvertLightness,
-                            Contrast = 0.0f
-                        };
-
-                        invertPaint.ColorFilter = SKColorFilter.CreateHighContrast(config);
-
-                        canvas.DrawPicture(picture, ref scale, invertPaint);
-                    }
-
-                    // Image mask is used for drawing unprocessed images - pictures in the PDF that should not be inverted
-                    if (vm.ImageMask != null)
-                    {
-
-                        var _imageMask = vm.ImageMask.Copy();
-                        using (SKCanvas maskResize = new(_imageMask))
-                        {
-                            maskResize.SetMatrix(scale);
-                            maskResize.DrawBitmap(_imageMask, 0, 0);
-                        }
-
-
-                        using (var imagePaint = new SKPaint())
-                        {
-                            
-
-                            canvas.Save();
-                            using (var path = new SKPath())
-                            {
-                                // This approach is not optimal, but it supports any shape of images, not only rectangles
-                                for (int y = 0; y < _imageMask.Height; y++)
-                                {
-                                    for (int x = 0; x < _imageMask.Width; x++)
-                                    {
-                                        if (_imageMask.GetPixel(x, y).Red > 127)
-                                        {
-                                            path.AddRect(new SKRect(x, y, x + 1, y + 1));
-                                        }
-                                    }
-                                }
-
-                                canvas.ClipPath(path);
-                                canvas.DrawPicture(picture, ref scale, imagePaint);
-                            }
-                            canvas.Restore();
-                        }
-
-                    }  
+                    canvas = DarkModeRender.GenerateDarkModePage(canvas, picture, vm.ImageMask.Clone(), scale: scale);
                 }
                 // Original rendering (no dark mode)
                 else

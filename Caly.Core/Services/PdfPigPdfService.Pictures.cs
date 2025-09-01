@@ -124,7 +124,7 @@ namespace Caly.Core.Services
         }
 
    
-        public async Task<SKBitmap?> GenerateImageMaskAsync(int pageNumber, float scale, CancellationToken token)
+        public async Task<SKPath?> GenerateImageMaskAsync(int pageNumber, float scale, CancellationToken token)
         {
             if (_document == null || pageNumber < 1 || pageNumber > _document.NumberOfPages)
             {
@@ -144,34 +144,17 @@ namespace Caly.Core.Services
                     return null;
                 }
 
-                
-                int width = (int)(page.Width * scale);
-                int height = (int)(page.Height * scale);
-                var mask = new SKBitmap(width, height);
-
-                
-                using (var canvas = new SKCanvas(mask))
+                var mask = new SKPath();
+                foreach (var image in page.GetImages())
                 {
-                    
-                    canvas.Clear(SKColors.Black);
-
-                    
-                    foreach (var image in page.GetImages())
-                    {
-                        var rect = new SKRect(
-                            (float)image.Bounds.Left * scale,
-                            (float)(page.Height - image.Bounds.Top) * scale,
-                            (float)image.Bounds.Right * scale,
-                            (float)(page.Height - image.Bounds.Bottom) * scale
-                        );
-
-                        using (var paint = new SKPaint { Color = SKColors.White, Style = SKPaintStyle.Fill })
-                        {
-                            canvas.DrawRect(rect, paint);
-                        }
-                    }
+                    var rect = new SKRect(
+                        (float)image.Bounds.Left * scale,
+                        (float)(page.Height - image.Bounds.Top) * scale,
+                        (float)image.Bounds.Right * scale,
+                        (float)(page.Height - image.Bounds.Bottom) * scale
+                    );
+                    mask.AddRect(rect);
                 }
-
                 return mask;
             }, token).ConfigureAwait(false);
         }
