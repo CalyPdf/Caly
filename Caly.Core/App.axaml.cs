@@ -74,8 +74,10 @@ namespace Caly.Core
             // Initialise dependencies
             var services = new ServiceCollection();
 
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            IClassicDesktopStyleApplicationLifetime? desktop = null;
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d)
             {
+                desktop = d;
                 desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
                 desktop.MainWindow = new MainWindow
                 {
@@ -131,6 +133,12 @@ namespace Caly.Core
 
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
             _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
+
+            // Dark mode synchronoization
+            if (desktop?.MainWindow?.DataContext is Caly.Core.ViewModels.MainViewModel vm)
+            {
+                vm.SyncSettings();
+            }
 
             base.OnFrameworkInitializationCompleted();
         }
