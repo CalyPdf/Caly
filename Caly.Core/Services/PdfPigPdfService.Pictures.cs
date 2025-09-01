@@ -19,12 +19,19 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
+using Caly.Pdf.PageFactories;
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Core;
+using UglyToad.PdfPig.Graphics.Operations;
 
 namespace Caly.Core.Services
 {
@@ -115,5 +122,60 @@ namespace Caly.Core.Services
                 return recorder.EndRecording();
             }
         }
+
+   
+        public async Task<SKBitmap?> GenerateImageMaskAsync(int pageNumber, float scale, CancellationToken token)
+        {
+            if (_document == null || pageNumber < 1 || pageNumber > _document.NumberOfPages)
+            {
+                return null;
+            }
+
+            return await ExecuteWithLockAsync(() =>
+            {
+                if (IsDisposed())
+                {
+                    return null;
+                }
+
+                var page = _document.GetPage(pageNumber);
+                if (page == null)
+                {
+                    return null;
+                }
+
+                
+                int width = (int)(page.Width * scale);
+                int height = (int)(page.Height * scale);
+                var mask = new SKBitmap(width, height);
+
+                
+                using (var canvas = new SKCanvas(mask))
+                {
+                    
+                    canvas.Clear(SKColors.Black);
+
+                    
+                    foreach (var image in page.GetImages())
+                    {
+                        var rect = new SKRect(
+                            (float)image.Bounds.Left * scale,
+                            (float)(page.Height - image.Bounds.Top) * scale,
+                            (float)image.Bounds.Right * scale,
+                            (float)(page.Height - image.Bounds.Bottom) * scale
+                        );
+
+                        using (var paint = new SKPaint { Color = SKColors.White, Style = SKPaintStyle.Fill })
+                        {
+                            canvas.DrawRect(rect, paint);
+                        }
+                    }
+                }
+
+                return mask;
+            }, token).ConfigureAwait(false);
+        }
+
+         
     }
 }

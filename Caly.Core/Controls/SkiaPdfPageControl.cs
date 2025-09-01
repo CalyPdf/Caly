@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -41,14 +42,17 @@ namespace Caly.Core.Controls
             private readonly IRef<SKPicture>? _picture;
             private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
+            private readonly bool _isDarkMode;
 
             private readonly object _lock = new object();
 
-            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality)
+            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality, bool isDarkMode, SKBitmap imageMask)
             {
                 _picture = picture;
                 _visibleArea = visibleArea;
                 _filterQuality = filterQuality;
+                _isDarkMode = isDarkMode;
+                _imageMask = imageMask;
                 Bounds = bounds;
             }
 
@@ -83,6 +87,7 @@ namespace Caly.Core.Controls
 
                     using (ISkiaSharpApiLease lease = leaseFeature.Lease())
                     {
+
                         var canvas = lease?.SkCanvas;
                         if (canvas is null)
                         {
@@ -92,24 +97,89 @@ namespace Caly.Core.Controls
                         canvas.Save();
                         canvas.ClipRect(_visibleArea);
 
-                        using (var p = new SKPaint())
-                        {
-                            p.FilterQuality = _filterQuality;
-                            p.IsDither = false;
-                            p.FakeBoldText = false;
-                            p.IsAntialias = false;
 
-                            canvas.DrawPicture(_picture.Item, p);
+                        if (_isDarkMode)
+                        {
+                            using (var invertPaint = new SKPaint())
+                            {
+                                invertPaint.FilterQuality = _filterQuality;
+                                invertPaint.IsDither = false;
+                                invertPaint.FakeBoldText = false;
+                                invertPaint.IsAntialias = false;
+
+                                // Invert lightness across whole page 
+                                SKHighContrastConfig config = new()
+                                {
+                                    Grayscale = false,
+                                    InvertStyle = SKHighContrastConfigInvertStyle.InvertLightness,
+                                    Contrast = 0.0f
+                                };
+                                
+                                invertPaint.ColorFilter = SKColorFilter.CreateHighContrast(config);
+
+                                canvas.DrawPicture(_picture.Item, invertPaint);
+                            }
+
+                            // Image mask is used for drawing unprocessed images - pictures in the PDF that should not be inverted
+                            if (_imageMask != null)
+                            {
+                                
+                                using (var imagePaint = new SKPaint())
+                                {
+                                    imagePaint.FilterQuality = _filterQuality;
+                                    imagePaint.IsDither = false;
+                                    imagePaint.FakeBoldText = false;
+                                    imagePaint.IsAntialias = false;
+
+                                    
+                                    canvas.Save();
+                                    using (var path = new SKPath())
+                                    {
+                                        // This approach is not optimal, but it supports any shape of images, not only rectangles
+                                        for (int y = 0; y < _imageMask.Height; y++)
+                                        {
+                                            for (int x = 0; x < _imageMask.Width; x++)
+                                            {
+                                                if (_imageMask.GetPixel(x, y).Red > 127)
+                                                {
+                                                    path.AddRect(new SKRect(x, y, x + 1, y + 1));
+                                                }
+                                            }
+                                        }
+
+                                        canvas.ClipPath(path);
+                                        canvas.DrawPicture(_picture.Item, imagePaint);
+                                    }
+                                    canvas.Restore();
+                                }
+                            }
+                            
+                        }
+                        // Original rendering (no dark mode)
+                        else
+                        {
+                            
+                            using (var p = new SKPaint())
+                            {
+                                p.FilterQuality = _filterQuality;
+                                p.IsDither = false;
+                                p.FakeBoldText = false;
+                                p.IsAntialias = false;
+
+                                canvas.DrawPicture(_picture.Item, p);
+
+
 
 #if DEBUG
-                            using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
-                            using (var fontPaint = new SKPaint(skFont))
-                            {
-                                fontPaint.Style = SKPaintStyle.Fill;
-                                fontPaint.Color = SKColors.Blue.WithAlpha(100);
-                                canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
-                            }
+                                using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
+                                using (var fontPaint = new SKPaint(skFont))
+                                {
+                                    fontPaint.Style = SKPaintStyle.Fill;
+                                    fontPaint.Color = SKColors.Blue.WithAlpha(100);
+                                    canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
+                                }
 #endif
+                            }
                         }
                         canvas.Restore();
                     }
@@ -145,14 +215,38 @@ namespace Caly.Core.Controls
             set => SetValue(VisibleAreaProperty, value);
         }
 
+
+        public static readonly StyledProperty<bool> IsDarkModeProperty =
+        AvaloniaProperty.Register<SkiaPdfPageControl, bool>(nameof(IsDarkMode));
+
+        public bool IsDarkMode
+        {
+            get => GetValue(IsDarkModeProperty);
+            set => SetValue(IsDarkModeProperty, value);
+        }
+
+        public static readonly StyledProperty<SKBitmap> ImageMaskProperty =
+    AvaloniaProperty.Register<SkiaPdfPageControl, SKBitmap>(nameof(ImageMask));
+
+
+        public SKBitmap ImageMask
+        {
+            get => GetValue(ImageMaskProperty);
+            set => SetValue(ImageMaskProperty, value);
+        }
         static SkiaPdfPageControl()
         {
             ClipToBoundsProperty.OverrideDefaultValue<SkiaPdfPageControl>(true);
 
             AffectsRender<SkiaPdfPageControl>(PictureProperty, VisibleAreaProperty);
             AffectsMeasure<SkiaPdfPageControl>(PictureProperty, VisibleAreaProperty);
+            IsDarkModeProperty.Changed.AddClassHandler<SkiaPdfPageControl>((x, e) => x.OnDarkModeChanged(e));
         }
 
+        private void OnDarkModeChanged(AvaloniaPropertyChangedEventArgs e)
+        {
+            InvalidateVisual();
+        }
         /// <summary>
         /// This operation is executed on UI thread.
         /// </summary>
@@ -185,7 +279,7 @@ namespace Caly.Core.Controls
 
             var filter = RenderOptions.GetBitmapInterpolationMode(this);
 
-            context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality()));
+            context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality(), IsDarkMode, ImageMask));
         }
     }
 }

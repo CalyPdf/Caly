@@ -158,6 +158,21 @@
 								   VerticalAlignment="Center"
 								   HorizontalAlignment="Center"/>
 
+						<controls:VerticalSeparator/>
+
+						<!-- Toggle dark mode -->
+						<Button DockPanel.Dock="Left"
+								HorizontalAlignment="Center"
+								VerticalAlignment="Stretch"
+								Background="Transparent"
+								Command="{Binding Parent.ToggleDarkModeForAllCommand}">
+							<PathIcon Width="17"
+									  Height="17"
+									  Data="{StaticResource moon_icon}">
+								<ToolTip.Tip>Toggle Dark Mode</ToolTip.Tip>
+							</PathIcon>
+						</Button>
+
 						<Grid/>
 
 					</DockPanel>

@@ -57,7 +57,8 @@ namespace Caly.Core.Services
 
         private readonly IDialogService _dialogService;
         private readonly ITextSearchService _textSearchService;
-        
+        private readonly ISettingsService _settingsService;
+
         private Stream? _fileStream;
         private PdfDocument? _document;
         private Uri? _filePath;
@@ -80,10 +81,11 @@ namespace Caly.Core.Services
             set => Interlocked.Exchange(ref _isActive, Convert.ToInt64(value));
         }
         
-        public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService)
+        public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService, ISettingsService settingsService)
         {
             _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
             _textSearchService = textSearchService;
+            _settingsService = settingsService;
 
             var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
             {

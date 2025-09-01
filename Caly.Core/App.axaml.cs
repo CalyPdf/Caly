@@ -69,8 +69,10 @@ namespace Caly.Core
             // Initialise dependencies
             var services = new ServiceCollection();
 
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            IClassicDesktopStyleApplicationLifetime? desktop = null;
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d)
             {
+                desktop = d;
                 desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
                 desktop.MainWindow = new MainWindow
                 {
@@ -118,6 +120,12 @@ namespace Caly.Core
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
             _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
 #pragma warning restore CS8601 // Possible null reference assignment.
+
+            // Dark mode synchronoization
+            if (desktop?.MainWindow?.DataContext is Caly.Core.ViewModels.MainViewModel vm)
+            {
+                vm.SyncSettings();
+            }
 
             // TODO - Check https://github.com/AvaloniaUI/Avalonia/commit/0e014f9cb627d99fb4e1afa389b4c073c836e9b6
 

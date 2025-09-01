@@ -55,7 +55,6 @@ namespace Caly.Core.ViewModels
         private readonly ISettingsService _settingsService;
 
         private readonly CancellationTokenSource _cts = new();
-
         private Task? _processPagesInfoQueueTask;
 
         internal string? LocalPath { get; private set; }
@@ -98,7 +97,6 @@ namespace Caly.Core.ViewModels
                 SelectedPageIndexString = value.HasValue ? value.Value.ToString("0") : string.Empty;
             }
         }
-        
         [ObservableProperty] private int _pageCount;
 
         [ObservableProperty] private string? _fileName;
@@ -109,6 +107,8 @@ namespace Caly.Core.ViewModels
         
         private readonly Lazy<Task> _loadPagesTask;
         public Task LoadPagesTask => _loadPagesTask.Value;
+
+        [ObservableProperty] private bool _isDarkMode;
 
         /// <summary>
         /// The task that opens the document. Can be awaited to make sure the document is done opening.
@@ -133,11 +133,12 @@ namespace Caly.Core.ViewModels
             _settingsService = settingsService;
 
             _paneSize = _settingsService.GetSettings().PaneSize;
-            
+
             _loadPagesTask = new Lazy<Task>(LoadPages);
             _loadBookmarksTask = new Lazy<Task>(LoadBookmarks);
             _loadPropertiesTask = new Lazy<Task>(LoadProperties);
             _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
+            _isDarkMode = _settingsService.GetSettings().IsDarkModeEnabled;
 
             _searchResultsDisposable = SearchResults
                 .GetWeakCollectionChangedObservable()
@@ -150,7 +151,7 @@ namespace Caly.Core.ViewModels
                         {
                             throw new NullReferenceException("The TextSelectionHandler is null, cannot process search results.");
                         }
-                        
+
                         switch (e.Action)
                         {
                             case NotifyCollectionChangedAction.Reset:
@@ -340,5 +341,13 @@ namespace Caly.Core.ViewModels
 
             return SelectedPageIndex.Value < PageCount;
         }
+        {
+            foreach (var page in Pages)
+            {
+                StrongReferenceMessenger.Default.Send(new LoadThumbnailMessage(page));
+            }
+        }
+
+        public MainViewModel? Parent { get; set; }
     }
 }

@@ -61,8 +61,72 @@ namespace Caly.Core.Services
             {
                 token.ThrowIfCancellationRequested();
 
-                canvas.Clear(SKColors.White);
-                canvas.DrawPicture(picture, ref scale);
+                bool _isDarkMode = _settingsService.GetSettings().IsDarkModeEnabled;
+
+                if (_isDarkMode)
+                {
+                    canvas.Clear(SKColors.Black);
+
+                    using (var invertPaint = new SKPaint())
+                    {
+                        // Invert lightness across whole page 
+                        SKHighContrastConfig config = new()
+                        {
+                            Grayscale = false,
+                            InvertStyle = SKHighContrastConfigInvertStyle.InvertLightness,
+                            Contrast = 0.0f
+                        };
+
+                        invertPaint.ColorFilter = SKColorFilter.CreateHighContrast(config);
+
+                        canvas.DrawPicture(picture, ref scale, invertPaint);
+                    }
+
+                    // Image mask is used for drawing unprocessed images - pictures in the PDF that should not be inverted
+                    if (vm.ImageMask != null)
+                    {
+
+                        var _imageMask = vm.ImageMask.Copy();
+                        using (SKCanvas maskResize = new(_imageMask))
+                        {
+                            maskResize.SetMatrix(scale);
+                            maskResize.DrawBitmap(_imageMask, 0, 0);
+                        }
+
+
+                        using (var imagePaint = new SKPaint())
+                        {
+                            
+
+                            canvas.Save();
+                            using (var path = new SKPath())
+                            {
+                                // This approach is not optimal, but it supports any shape of images, not only rectangles
+                                for (int y = 0; y < _imageMask.Height; y++)
+                                {
+                                    for (int x = 0; x < _imageMask.Width; x++)
+                                    {
+                                        if (_imageMask.GetPixel(x, y).Red > 127)
+                                        {
+                                            path.AddRect(new SKRect(x, y, x + 1, y + 1));
+                                        }
+                                    }
+                                }
+
+                                canvas.ClipPath(path);
+                                canvas.DrawPicture(picture, ref scale, imagePaint);
+                            }
+                            canvas.Restore();
+                        }
+
+                    }  
+                }
+                // Original rendering (no dark mode)
+                else
+                {
+                    canvas.Clear(SKColors.White);
+                    canvas.DrawPicture(picture, ref scale);
+                }
 
 #if DEBUG
                 using (var skFont = SKTypeface.Default.ToFont(tHeight / 5f, 1f))
