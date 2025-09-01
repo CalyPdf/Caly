@@ -18,11 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
 using Avalonia.Controls.Notifications;
-using Caly.Core.Services.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
+using Caly.Core.Models;
+using Caly.Core.Services;
 
 namespace Caly.Core.ViewModels
 {
@@ -38,14 +38,12 @@ namespace Caly.Core.ViewModels
                 return;
             }
 
-            var dialogService = App.Current?.Services?.GetRequiredService<IDialogService>();
-            if (dialogService is null)
+            App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
             {
-                throw new NullReferenceException($"Missing {nameof(IDialogService)} instance.");
-            }
-
-            //dialogService.ShowExceptionWindow(value);
-            dialogService.ShowNotification("Critical error", value.Message, NotificationType.Error);
+                Title = "Critical error",
+                Message = value.Message,
+                Type = NotificationType.Error
+            }));
         }
     }
 }

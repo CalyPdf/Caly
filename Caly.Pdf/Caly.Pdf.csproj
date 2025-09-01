@@ -4,10 +4,11 @@
 		<TargetFrameworks>net9.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<Version>0.1.3.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PdfPig" Version="0.1.12-alpha-20250810-a43b9" />
+		<PackageReference Include="PdfPig" Version="0.1.12-alpha-20250815-3650e" />
 		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
 	</ItemGroup>
 

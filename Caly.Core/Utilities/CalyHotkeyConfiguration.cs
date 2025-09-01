@@ -27,7 +27,7 @@ namespace Caly.Core.Utilities
 {
     internal static class CalyHotkeyConfiguration
     {
-        private static readonly KeyModifiers _commandModifiers;
+        private static readonly KeyModifiers CommandModifiers;
 
         static CalyHotkeyConfiguration()
         {
@@ -36,7 +36,7 @@ namespace Caly.Core.Utilities
                 throw new NullReferenceException("PlatformSettings is null.");
             }
 
-            _commandModifiers = Application.Current.PlatformSettings.HotkeyConfiguration.CommandModifiers;
+            CommandModifiers = Application.Current.PlatformSettings.HotkeyConfiguration.CommandModifiers;
         }
 
         /// <summary>
@@ -44,15 +44,15 @@ namespace Caly.Core.Utilities
         /// </summary>
         public static KeyGesture? CopyGesture => Application.Current?.PlatformSettings?.HotkeyConfiguration.Copy.FirstOrDefault();
 
-        public static KeyGesture OpenFileGesture => new KeyGesture(Key.O, _commandModifiers);
+        public static KeyGesture OpenFileGesture => new KeyGesture(Key.O, CommandModifiers);
 
-        public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, _commandModifiers);
+        public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, CommandModifiers);
 
-        public static KeyGesture DocumentCloseGesture => new KeyGesture(Key.F4, _commandModifiers);
+        public static KeyGesture DocumentCloseGesture => new KeyGesture(Key.F4, CommandModifiers);
 
-        public static KeyGesture DocumentNextGesture => new KeyGesture(Key.PageDown, _commandModifiers);
+        public static KeyGesture DocumentNextGesture => new KeyGesture(Key.PageDown, CommandModifiers);
 
-        public static KeyGesture DocumentPreviousGesture => new KeyGesture(Key.PageUp, _commandModifiers);
+        public static KeyGesture DocumentPreviousGesture => new KeyGesture(Key.PageUp, CommandModifiers);
 
         // TODO
 

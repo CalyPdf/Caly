@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:viewModels="clr-namespace:Caly.Core.ViewModels"
+        xmlns:vm="clr-namespace:Caly.Core.ViewModels"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Caly.Core.Views.MessageWindow"
         Title="MessageWindow"
@@ -16,7 +16,7 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaToDecorationsHint="True"
 	-->
-    <Grid RowDefinitions="Auto, Auto, *" x:DataType="viewModels:ExceptionViewModel">
+    <Grid RowDefinitions="Auto, Auto, *" x:DataType="vm:ExceptionViewModel">
         <TextBlock Margin="5" FontSize="18" FontWeight="Bold">Error</TextBlock>
         <TextBlock Grid.Row="1" Margin="5" FontStyle="Italic" TextWrapping="Wrap" Text="{Binding Message, Mode=OneTime}"/>
         <ScrollViewer Grid.Row="2" Margin="5">

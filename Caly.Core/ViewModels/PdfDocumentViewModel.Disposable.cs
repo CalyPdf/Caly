@@ -38,11 +38,6 @@ namespace Caly.Core.ViewModels
 
             _searchResultsDisposable.Dispose();
 
-            if (_processPagesInfoQueueTask is not null)
-            {
-                await _processPagesInfoQueueTask;
-            }
-
             if (SearchResultsSource?.RowSelection is not null)
             {
                 SearchResultsSource.RowSelection.SelectionChanged -= TextSearchSelectionChanged;

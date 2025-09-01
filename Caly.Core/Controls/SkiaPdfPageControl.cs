@@ -19,7 +19,7 @@
 // SOFTWARE.
 
 using System;
-using System.Collections.Generic;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -45,7 +45,7 @@ namespace Caly.Core.Controls
             private readonly bool _isDarkMode;
             private readonly SKPath _imageMask;
 
-            private readonly object _lock = new object();
+            private readonly Lock _lock = new Lock();
 
             public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality, bool isDarkMode, SKPath imageMask)
             {
@@ -81,7 +81,9 @@ namespace Caly.Core.Controls
                 lock (_lock)
                 {
                     if (_picture?.Item is null || _picture.Item.Handle == IntPtr.Zero ||
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                         !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                     {
                         return;
                     }

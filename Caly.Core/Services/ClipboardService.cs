@@ -25,8 +25,6 @@ using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
@@ -56,11 +54,18 @@ namespace Caly.Core.Services
             UnicodeCategory.CurrencySymbol          // $
         }.ToFrozenSet();
 
-        private readonly Visual _target;
+        private readonly IClipboard _clipboard;
 
-        public ClipboardService(Visual target)
+        public ClipboardService(IClipboard? clipboard)
         {
-            _target = target;
+#if DEBUG
+            if (Avalonia.Controls.Design.IsDesignMode)
+            {
+                _clipboard = clipboard;
+                return;
+            }
+#endif
+            _clipboard = clipboard ?? throw new ArgumentNullException($"Could not find {typeof(IClipboard)}.");
         }
 
         public static bool ShouldDehyphenate(in UnicodeCategory prevCategory, in int previousLine, in int currentLine)
@@ -75,15 +80,17 @@ namespace Caly.Core.Services
                    !_noSpaceBefore.Contains(currentCategory);
         }
 
-        public async Task SetAsync(PdfDocumentViewModel document, CancellationToken token)
+        public async Task<bool> SetAsync(PdfDocumentViewModel document, CancellationToken token)
         {
             // TODO - Check use of tasks here
+
+            ArgumentNullException.ThrowIfNull(document.TextSelectionHandler, nameof(document.TextSelectionHandler));
 
             PdfTextSelection selection = document.TextSelectionHandler.Selection;
 
             if (!selection.IsValid)
             {
-                return;
+                return false;
             }
 
             // https://docs.avaloniaui.net/docs/next/concepts/services/clipboardS
@@ -147,24 +154,20 @@ namespace Caly.Core.Services
             await SetAsync(text);
 
             System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
+
+            return true;
         }
 
         public async Task SetAsync(string text)
         {
-            IClipboard clipboard = TopLevel.GetTopLevel(_target)?.Clipboard ??
-                                   throw new ArgumentNullException($"Could not find {typeof(IClipboard)}");
-
-            await clipboard.SetTextAsync(text);
+            await _clipboard.SetTextAsync(text);
         }
 
         public async Task ClearAsync()
         {
-            IClipboard clipboard = TopLevel.GetTopLevel(_target)?.Clipboard ??
-                                   throw new ArgumentNullException($"Could not find {typeof(IClipboard)}");
-
-            await clipboard.ClearAsync();
+            await _clipboard.ClearAsync();
         }
-
+        
         private readonly struct TextBlob
         {
             public TextBlob(string word, int lineNumber)

@@ -30,7 +30,7 @@ namespace Caly.Core.ViewModels
         private readonly Lazy<Task> _loadPropertiesTask;
         public Task LoadPropertiesTask => _loadPropertiesTask.Value;
 
-        [ObservableProperty] private PdfDocumentProperties _properties;
+        [ObservableProperty] private PdfDocumentProperties? _properties;
 
         private async Task LoadProperties()
         {

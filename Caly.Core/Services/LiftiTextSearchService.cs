@@ -25,7 +25,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Services.Interfaces;
-using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Lifti;
 using Lifti.Querying;

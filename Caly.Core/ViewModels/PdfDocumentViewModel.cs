@@ -55,17 +55,18 @@ namespace Caly.Core.ViewModels
         private readonly ISettingsService _settingsService;
 
         private readonly CancellationTokenSource _cts = new();
-        private Task? _processPagesInfoQueueTask;
-
+        
         internal string? LocalPath { get; private set; }
 
         [ObservableProperty] private ObservableCollection<PdfPageViewModel> _pages = [];
 
-        [ObservableProperty] private bool _isPaneOpen = !CalyExtensions.IsMobilePlatform();
+        [ObservableProperty] private bool _isDocumentPaneOpen = !CalyExtensions.IsMobilePlatform();
 
         [ObservableProperty] private double _paneSize;
 
         [ObservableProperty] private int _selectedTabIndex;
+
+        [ObservableProperty] private bool _isPasswordProtected;
 
         /// <summary>
         /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
@@ -82,11 +83,7 @@ namespace Caly.Core.ViewModels
         /// </summary>
         public int? SelectedPageIndex
         {
-            get
-            {
-                return _selectedPageIndex;
-            }
-
+            get => _selectedPageIndex;
             set
             {
                 if (!SetProperty(ref _selectedPageIndex, value))
@@ -113,7 +110,7 @@ namespace Caly.Core.ViewModels
         /// <summary>
         /// The task that opens the document. Can be awaited to make sure the document is done opening.
         /// </summary>
-        public Task<int> WaitOpenAsync { get; private set; }
+        public Task<int>? WaitOpenAsync { get; private set; }
 
         partial void OnPaneSizeChanged(double oldValue, double newValue)
         {
@@ -121,6 +118,25 @@ namespace Caly.Core.ViewModels
         }
 
         private readonly IDisposable _searchResultsDisposable;
+
+#if DEBUG
+        public PdfDocumentViewModel()
+        {
+            if (!Design.IsDesignMode)
+            {
+                throw new InvalidOperationException("Should only be called in Design mode.");
+            }
+
+            _pdfService = new PdfPigPdfService(new LiftiTextSearchService());
+            _settingsService = new JsonSettingsService(null);
+            _paneSize = 50;
+
+            IsPasswordProtected = _pdfService.IsPasswordProtected;
+            FileName = _pdfService.FileName;
+            LocalPath = _pdfService.LocalPath;
+            PageCount = _pdfService.NumberOfPages;
+        }
+#endif
 
         public PdfDocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
         {
@@ -236,14 +252,16 @@ namespace Caly.Core.ViewModels
             {
                 int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
 
+                IsPasswordProtected = _pdfService.IsPasswordProtected;
+                FileName = _pdfService.FileName;
+                LocalPath = _pdfService.LocalPath;
+
                 if (pageCount == 0)
                 {
                     return pageCount;
                 }
 
                 PageCount = _pdfService.NumberOfPages;
-                FileName = _pdfService.FileName;
-                LocalPath = _pdfService.LocalPath;
 
                 if (_pdfService.FileSize.HasValue)
                 {
@@ -270,7 +288,14 @@ namespace Caly.Core.ViewModels
         {
             if (PageCount == 0)
             {
-                throw new Exception("Cannot load pages because document has 0 pages.");
+                if (IsPasswordProtected)
+                {
+                    throw new Exception("Could not open password protected document.");
+                }
+                else
+                {
+                    throw new Exception("Cannot load pages because document has 0 pages.");
+                }
             }
             
             await Task.Run(async () =>
@@ -279,7 +304,7 @@ namespace Caly.Core.ViewModels
                 var firstPage = new PdfPageViewModel(1, _pdfService);
                 await firstPage.LoadPageSizeImmediate(_cts.Token);
 
-                StrongReferenceMessenger.Default.Send(new LoadPageMessage(firstPage));// Enqueue first page full loading
+                App.Messenger.Send(new LoadPageMessage(firstPage)); // Enqueue first page full loading
 
                 double defaultWidth = firstPage.Width;
                 double defaultHeight = firstPage.Height;
@@ -295,7 +320,7 @@ namespace Caly.Core.ViewModels
                         Width = defaultWidth
                     };
 
-                    StrongReferenceMessenger.Default.Send(new LoadPageSizeMessage(newPage));
+                    App.Messenger.Send(new LoadPageSizeMessage(newPage));
                     Pages.Add(newPage);
                 }
             }, _cts.Token);

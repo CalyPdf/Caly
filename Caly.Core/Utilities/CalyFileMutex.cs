@@ -40,7 +40,7 @@ namespace Caly.Core.Utilities
     /// </summary>
     public sealed class CalyFileMutex
     {
-        private static readonly string _lockFileName = Path.Combine(Path.GetTempPath(), "caly.lock");
+        private static readonly string LockFileName = Path.Combine(Path.GetTempPath(), "caly.lock");
 
         private FileStream? _lockFile;
 
@@ -61,7 +61,7 @@ namespace Caly.Core.Utilities
             try
             {
                 // Force FileMode.CreateNew - if the file already exists, should throw (done for Linux)
-                _lockFile = new FileStream(_lockFileName, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Delete);
+                _lockFile = new FileStream(LockFileName, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.Delete);
             }
             catch (IOException)
             {
@@ -76,7 +76,7 @@ namespace Caly.Core.Utilities
         {
             try
             {
-                File.Delete(_lockFileName);
+                File.Delete(LockFileName);
             }
             catch (Exception e)
             {
@@ -96,7 +96,7 @@ namespace Caly.Core.Utilities
         {
             try
             {
-                File.Delete(_lockFileName);
+                File.Delete(LockFileName);
                 return true;
             }
             catch (Exception e)

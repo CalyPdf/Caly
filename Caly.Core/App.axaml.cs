@@ -27,19 +27,24 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core
 {
     public partial class App : Application
     {
+        public static readonly IMessenger Messenger = StrongReferenceMessenger.Default;
+
         private readonly FilePipeStream _pipeServer = new();
         private readonly CancellationTokenSource _listeningToFilesCts = new();
         private Task? _listeningToFiles;
@@ -79,7 +84,10 @@ namespace Caly.Core
                     DataContext = new MainViewModel()
                 };
 
-                services.AddSingleton(_ => (Visual)desktop.MainWindow);
+                services.AddSingleton<Visual>(_ => desktop.MainWindow);
+                services.AddSingleton<IStorageProvider>(_ => desktop.MainWindow.StorageProvider);
+                services.AddSingleton<IClipboard>(_ => desktop.MainWindow.Clipboard ?? throw new ArgumentNullException(nameof(IClipboard)));
+
                 desktop.Startup += Desktop_Startup;
                 desktop.Exit += Desktop_Exit;
 #if DEBUG
@@ -92,15 +100,20 @@ namespace Caly.Core
                 {
                     DataContext = new MainViewModel()
                 };
-                services.AddSingleton(_ => (Visual)singleViewPlatform.MainView);
+                services.AddSingleton<Visual>(_ => singleViewPlatform.MainView);
+                services.AddSingleton<IStorageProvider>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.StorageProvider ?? throw new ArgumentNullException(nameof(IStorageProvider)));
+                services.AddSingleton<IClipboard>(_ => TopLevel.GetTopLevel(singleViewPlatform.MainView)?.Clipboard ?? throw new ArgumentNullException(nameof(IClipboard)));
             }
 #if DEBUG
             else if (ApplicationLifetime is null && Avalonia.Controls.Design.IsDesignMode)
             {
                 var mainView = new MainView { DataContext = new MainViewModel() };
-                services.AddSingleton(_ => (Visual)mainView);
+                services.AddSingleton<Visual>(_ => mainView);
+                services.AddSingleton<IStorageProvider>(_ => TopLevel.GetTopLevel(mainView)?.StorageProvider);
+                services.AddSingleton<IClipboard>(_ => TopLevel.GetTopLevel(mainView)?.Clipboard);
             }
 #endif
+
             services.AddSingleton<ISettingsService, JsonSettingsService>();
             services.AddSingleton<IFilesService, FilesService>();
             services.AddSingleton<IDialogService, DialogService>();
@@ -111,15 +124,15 @@ namespace Caly.Core
             services.AddScoped<ITextSearchService, LiftiTextSearchService>();
             services.AddScoped<PdfDocumentViewModel>();
 
+            OverrideRegisteredServices(services);
+
             Services = services.BuildServiceProvider();
 
-#pragma warning disable CS8601 // Possible null reference assignment.
             // Load settings
             Services.GetRequiredService<ISettingsService>().Load();
 
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
             _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
-#pragma warning restore CS8601 // Possible null reference assignment.
 
             // Dark mode synchronoization
             if (desktop?.MainWindow?.DataContext is Caly.Core.ViewModels.MainViewModel vm)
@@ -127,9 +140,12 @@ namespace Caly.Core
                 vm.SyncSettings();
             }
 
-            // TODO - Check https://github.com/AvaloniaUI/Avalonia/commit/0e014f9cb627d99fb4e1afa389b4c073c836e9b6
-
             base.OnFrameworkInitializationCompleted();
+        }
+
+        protected virtual void OverrideRegisteredServices(IServiceCollection services)
+        {
+            // No-op, for testing purpose
         }
 
         public bool TryBringToFront()
@@ -167,19 +183,27 @@ namespace Caly.Core
 
         private async void Desktop_Startup(object? sender, ControlledApplicationLifetimeStartupEventArgs e)
         {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            try
             {
-                desktop.Startup -= Desktop_Startup;
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                {
+                    desktop.Startup -= Desktop_Startup;
+                }
+
+                _listeningToFiles = Task.Run(ListenToIncomingFiles); // Start listening
+
+                if (e.Args.Length == 0)
+                {
+                    return;
+                }
+
+                await Task.Run(() => OpenDoc(e.Args[0], CancellationToken.None));
             }
-
-            _listeningToFiles = Task.Run(ListenToIncomingFiles); // Start listening
-
-            if (e.Args.Length == 0)
+            catch (Exception ex)
             {
-                return;
+                ShowExceptionWindowSafely(ex);
+                Debug.WriteExceptionToFile(ex);
             }
-
-            await Task.Run(() => OpenDoc(e.Args[0], CancellationToken.None));
         }
 
         private void Desktop_Exit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
@@ -236,11 +260,9 @@ namespace Caly.Core
                 if (string.IsNullOrEmpty(path) || !File.Exists(path))
                 {
                     var dialogService = Services?.GetRequiredService<IDialogService>();
-                    if (dialogService is not null)
-                    {
-                        dialogService.ShowNotification("Cannot open file",
-                            "The file does not exist or the path is invalid.", NotificationType.Error);
-                    }
+                    dialogService?.ShowNotification("Cannot open file",
+                        "The file does not exist or the path is invalid.",
+                        NotificationType.Error);
 
                     return;
                 }
@@ -261,10 +283,7 @@ namespace Caly.Core
                 if (ex is null) return;
 
                 var dialogService = Services?.GetRequiredService<IDialogService>();
-                if (dialogService is not null)
-                {
-                    dialogService.ShowNotification("Error", ex.Message, NotificationType.Error);
-                }
+                dialogService?.ShowNotification("Error", ex.Message, NotificationType.Error);
             }
             catch
             {

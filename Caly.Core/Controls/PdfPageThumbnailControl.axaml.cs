@@ -35,10 +35,10 @@ namespace Caly.Core.Controls
 
         private const double _borderThickness = 2;
 
-        private static readonly Color _areaColor = Colors.DodgerBlue;
-        private static readonly Brush _areaBrush = new SolidColorBrush(_areaColor);
-        private static readonly Brush _areaTransparentBrush = new SolidColorBrush(_areaColor, 0.3);
-        private static readonly Pen _areaPen = new Pen() { Brush = _areaBrush, Thickness = _borderThickness };
+        private static readonly Color AreaColor = Colors.DodgerBlue;
+        private static readonly Brush AreaBrush = new SolidColorBrush(AreaColor);
+        private static readonly Brush AreaTransparentBrush = new SolidColorBrush(AreaColor, 0.3);
+        private static readonly Pen AreaPen = new Pen() { Brush = AreaBrush, Thickness = _borderThickness };
 
         private Matrix _scale = Matrix.Identity;
 
@@ -155,11 +155,11 @@ namespace Caly.Core.Controls
 
                 if (area is { Width: > _borderThickness, Height: > _borderThickness })
                 {
-                    context.DrawRectangle(_areaTransparentBrush.ToImmutable(), _areaPen.ToImmutable(), area.Deflate(_borderThickness / 2.0));
+                    context.DrawRectangle(AreaTransparentBrush.ToImmutable(), AreaPen.ToImmutable(), area.Deflate(_borderThickness / 2.0));
                 }
                 else
                 {
-                    context.DrawRectangle(_areaBrush.ToImmutable(), null, area);
+                    context.DrawRectangle(AreaBrush.ToImmutable(), null, area);
                 }
             }
         }

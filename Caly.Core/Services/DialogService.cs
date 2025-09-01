@@ -25,6 +25,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
@@ -52,7 +53,7 @@ namespace Caly.Core.Services
                 w.Loaded += _window_Loaded;
             }
         }
-
+        
         private void _window_Loaded(object? sender, RoutedEventArgs e)
         {
             if (_target is Window w)
@@ -82,7 +83,12 @@ namespace Caly.Core.Services
                 return Task.FromResult<string?>(string.Empty);
             });
         }
-        
+
+        public void ShowNotification(CalyNotification notification)
+        {
+            ShowNotification(notification.Title, notification.Message, notification.Type);
+        }
+
         public void ShowNotification(string? title, string? message, NotificationType type)
         {
             Dispatcher.UIThread.Post(() =>

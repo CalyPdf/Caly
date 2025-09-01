@@ -76,7 +76,7 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
 
     private void Resize_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Grid grid)
+        if (sender is not Grid)
         {
             return;
         }
@@ -177,14 +177,14 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
             return;
         }
 
-        if (GetSplitView()?.DataContext is not PdfDocumentViewModel vm || !vm.IsPaneOpen)
+        if (GetSplitView()?.DataContext is not PdfDocumentViewModel vm || !vm.IsDocumentPaneOpen)
         {
             return;
         }
         
         if (tabsControl.Bounds.Width < vm.PaneSize * 2)
         {
-            vm.IsPaneOpen = false;
+            vm.IsDocumentPaneOpen = false;
         }
     }
 }

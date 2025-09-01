@@ -26,7 +26,7 @@
 	<Grid RowDefinitions="*,20">
 
 		<SplitView Grid.Row="0"
-                   IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
+                   IsPaneOpen="{Binding IsSettingsPaneOpen, Mode=TwoWay}"
                    OpenPaneLength="300"
                    CompactPaneLength="0"
                    DisplayMode="CompactOverlay"
@@ -47,7 +47,7 @@
 			<ToggleButton DockPanel.Dock="Left"
                           VerticalAlignment="Stretch"
                           Background="Transparent"
-                          IsChecked="{Binding IsPaneOpen}">
+                          IsChecked="{Binding IsSettingsPaneOpen}">
 				<PathIcon Width="14"
                           Height="14"
                           Data="{StaticResource settings_regular}"

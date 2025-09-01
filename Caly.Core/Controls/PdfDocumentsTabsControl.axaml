@@ -4,13 +4,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:Caly.Core.ViewModels"
              xmlns:controls="clr-namespace:Caly.Core.Controls"
-             xmlns:controls1="clr-namespace:Tabalonia.Controls;assembly=Tabalonia"
+             xmlns:tabalonia="clr-namespace:Tabalonia.Controls;assembly=Tabalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Caly.Core.Controls.PdfDocumentsTabsControl"
              x:DataType="vm:MainViewModel"
              SizeChanged="OnSizeChanged">
 
-    <controls1:TabsControl Background="Transparent"
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+	<tabalonia:TabsControl Background="Transparent"
                            Padding="0"
                            Margin="0"
                            AddItemCommand="{Binding OpenFileCommand}"
@@ -36,7 +40,7 @@
 						<ToggleButton DockPanel.Dock="Left"
 									  VerticalAlignment="Stretch"
 									  Background="Transparent"
-									  IsChecked="{Binding IsPaneOpen}">
+									  IsChecked="{Binding IsDocumentPaneOpen}">
 							<ToggleButton.Styles>
 								<Style Selector="PathIcon.closed">
 									<Setter Property="Data" Value="{StaticResource pane_close_regular}" />
@@ -48,8 +52,8 @@
 
 							<PathIcon Width="17"
                                       Height="17"
-                                      Classes.opened="{Binding IsPaneOpen}"
-									  Classes.closed="{Binding !IsPaneOpen}">
+                                      Classes.opened="{Binding IsDocumentPaneOpen}"
+									  Classes.closed="{Binding !IsDocumentPaneOpen}">
 								<ToolTip.Tip>Toggle Sidebar Menu</ToolTip.Tip>
 							</PathIcon>
 						</ToggleButton>
@@ -179,7 +183,7 @@
 
 					<SplitView Grid.Row="1"
 							   Name="PART_SplitView"
-							   IsPaneOpen="{Binding IsPaneOpen}"
+							   IsPaneOpen="{Binding IsDocumentPaneOpen}"
 							   OpenPaneLength="{Binding PaneSize, Mode=TwoWay}"
 							   CompactPaneLength="0"
 							   DisplayMode="CompactInline">
@@ -188,7 +192,7 @@
 						<SplitView.Pane>
 
 							<Grid ColumnDefinitions="*,5"
-                                  IsVisible="{Binding IsPaneOpen}">
+                                  IsVisible="{Binding IsDocumentPaneOpen}">
 
                                 <Border Grid.Column="0"
                                         BorderThickness="1">
@@ -211,7 +215,7 @@
 													</PathIcon.RenderTransform>
 												</PathIcon>
 											</TabItem.Header>
-											<controls:PdfDocumentThumbnailControl IsVisible="{Binding IsPaneOpen}" />
+											<controls:PdfDocumentThumbnailControl IsVisible="{Binding IsDocumentPaneOpen}" />
 										</TabItem>
 
 										<!-- Bookmarks tab -->
@@ -289,6 +293,6 @@
 
 			</DataTemplate>
 		</TabControl.ContentTemplate>
-	</controls1:TabsControl>
+	</tabalonia:TabsControl>
 
 </UserControl>

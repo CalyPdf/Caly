@@ -36,21 +36,10 @@ namespace Caly.Core.Utilities
         
         static CalyExtensions()
         {
-            var assembly = Assembly.GetEntryAssembly();
-            if (assembly is null)
-            {
-                assembly = Assembly.GetExecutingAssembly();
-            }
+            var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
 
             string? version = assembly.GetName().Version?.ToString().Trim();
-            if (!string.IsNullOrEmpty(version))
-            {
-                CalyVersion = version;
-            }
-            else
-            {
-                CalyVersion = @"n/a";
-            }
+            CalyVersion = !string.IsNullOrEmpty(version) ? version : @"n/a";
         }
 
         public static bool IsMobilePlatform()
@@ -92,7 +81,7 @@ namespace Caly.Core.Utilities
         /// </summary>
         public static void AddSafely<T>(this ObservableCollection<T> collection, T element)
         {
-            var list = (IList)collection;
+            IList list = collection;
             lock (list.SyncRoot)
             {
                 list.Add(element);
@@ -104,7 +93,7 @@ namespace Caly.Core.Utilities
         /// </summary>
         public static void ClearSafely<T>(this ObservableCollection<T> collection)
         {
-            var list = (IList)collection;
+            IList list = collection;
             lock (list.SyncRoot)
             {
                 list.Clear();
@@ -116,7 +105,7 @@ namespace Caly.Core.Utilities
         /// </summary>
         public static void RemoveSafely<T>(this ObservableCollection<T> collection, T element)
         {
-            var list = (IList)collection;
+            IList list = collection;
             lock (list.SyncRoot)
             {
                 list.Remove(element);
@@ -128,7 +117,7 @@ namespace Caly.Core.Utilities
         /// </summary>
         public static int IndexOfSafely<T>(this ObservableCollection<T> collection, T element)
         {
-            var list = (IList)collection;
+            IList list = collection;
             lock (list.SyncRoot)
             {
                 return list.IndexOf(element);

@@ -42,6 +42,8 @@ namespace Caly.Core.Services.Interfaces
 
         string? LocalPath { get; }
 
+        bool IsPasswordProtected { get; }
+
         /// <summary>
         /// Open the pdf document.
         /// </summary>

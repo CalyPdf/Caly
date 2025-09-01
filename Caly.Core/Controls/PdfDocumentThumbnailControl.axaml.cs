@@ -59,7 +59,6 @@ namespace Caly.Core.Controls
             }
         }
 
-
         private void ListBoxOnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
             if (e.Property == DataContextProperty && e.OldValue is PdfDocumentViewModel oldVm)
@@ -80,7 +79,7 @@ namespace Caly.Core.Controls
                 return;
             }
 
-            StrongReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm));
+            App.Messenger.Send(new LoadThumbnailMessage(vm));
         }
 
         private void ListBoxContainerClearing(object? sender, ContainerClearingEventArgs e)
@@ -100,7 +99,7 @@ namespace Caly.Core.Controls
             {
                 // The container is not visible anymore, we unload the thumbnail
                 System.Diagnostics.Debug.WriteLine($"Page {vm.PageNumber} thumbnail out of sight.");
-                StrongReferenceMessenger.Default.Send(new UnloadThumbnailMessage(vm));
+                App.Messenger.Send(new UnloadThumbnailMessage(vm));
             }
         }
         
@@ -134,7 +133,7 @@ namespace Caly.Core.Controls
                     {
                         if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
                         {
-                            StrongReferenceMessenger.Default.Send(new LoadThumbnailMessage(vm)); // Load image
+                            App.Messenger.Send(new LoadThumbnailMessage(vm)); // Load image
                         }
                     }
                 }

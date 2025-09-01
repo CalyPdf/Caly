@@ -36,15 +36,15 @@ namespace Caly.Core.Utilities
     /// </summary>
     public sealed class FilePipeStream : IDisposable, IAsyncDisposable
     {
-        private static readonly MemoryPool<byte> _memoryPool = MemoryPool<byte>.Shared;
+        private static readonly MemoryPool<byte> MemoryPool = MemoryPool<byte>.Shared;
 
         // https://googleprojectzero.blogspot.com/2019/09/windows-exploitation-tricks-spoofing.html
 
-        private static readonly string _pipeName = "caly_pdf_files.pipe";
+        private static readonly string PipeName = "caly_pdf_files.pipe";
 
-        private static ReadOnlySpan<byte> _keyPhrase => "ca1y k3y pa$$"u8;
+        private static ReadOnlySpan<byte> KeyPhrase => "ca1y k3y pa$$"u8;
 
-        private static readonly TimeSpan _connectTimeout = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(2);
 
         private readonly NamedPipeServerStream _pipeServer;
 
@@ -57,7 +57,7 @@ namespace Caly.Core.Utilities
                 return;
             }
 #endif
-            _pipeServer = new(_pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
+            _pipeServer = new(PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
         }
         
         public async IAsyncEnumerable<string?> ReceivePathAsync([EnumeratorCancellation] CancellationToken token)
@@ -74,7 +74,7 @@ namespace Caly.Core.Utilities
                     await _pipeServer.WaitForConnectionAsync(token);
 
                     ushort len = 0;
-                    using (var lengthMemoryOwner = _memoryPool.Rent(Math.Max(_keyPhrase.Length, len)))
+                    using (var lengthMemoryOwner = MemoryPool.Rent(Math.Max(KeyPhrase.Length, len)))
                     {
                         Memory<byte> lengthBuffer = lengthMemoryOwner.Memory;
                         if (await _pipeServer.ReadAsync(lengthBuffer, token) != 2)
@@ -92,19 +92,19 @@ namespace Caly.Core.Utilities
                         continue;
                     }
 
-                    using (var memoryOwner = _memoryPool.Rent(Math.Max(_keyPhrase.Length, len)))
+                    using (var memoryOwner = MemoryPool.Rent(Math.Max(KeyPhrase.Length, len)))
                     {
                         Memory<byte> buffer = memoryOwner.Memory;
 
                         // Read key phrase
-                        if (await _pipeServer.ReadAsync(buffer.Slice(0, _keyPhrase.Length), token) != _keyPhrase.Length)
+                        if (await _pipeServer.ReadAsync(buffer.Slice(0, KeyPhrase.Length), token) != KeyPhrase.Length)
                         {
                             // TODO - Log
                             continue;
                         }
 
                         // Check key phrase
-                        if (!buffer.Span.Slice(0, _keyPhrase.Length).SequenceEqual(_keyPhrase))
+                        if (!buffer.Span.Slice(0, KeyPhrase.Length).SequenceEqual(KeyPhrase))
                         {
                             // TODO - Log
                             continue;
@@ -206,15 +206,15 @@ namespace Caly.Core.Utilities
         {
             try
             {
-                using (var pipeClient = new NamedPipeClientStream(".", _pipeName,
+                using (var pipeClient = new NamedPipeClientStream(".", PipeName,
                            PipeDirection.Out, PipeOptions.CurrentUserOnly,
                            TokenImpersonationLevel.Identification))
                 {
-                    pipeClient.Connect(_connectTimeout); // If you are getting a timeout in debug mode, just re-run Caly
+                    pipeClient.Connect(ConnectTimeout); // If you are getting a timeout in debug mode, just re-run Caly
 
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)1);
                     pipeClient.Write(lengthBytes.Span);
-                    pipeClient.Write(_keyPhrase);
+                    pipeClient.Write(KeyPhrase);
                     pipeClient.WriteByte((byte)PipeMessageType.Command);
                     pipeClient.WriteByte((byte)PipeCommandMessageType.BringToFront);
 
@@ -250,11 +250,11 @@ namespace Caly.Core.Utilities
         {
             try
             {
-                using (var pipeClient = new NamedPipeClientStream(".", _pipeName,
+                using (var pipeClient = new NamedPipeClientStream(".", PipeName,
                            PipeDirection.Out, PipeOptions.CurrentUserOnly,
                            TokenImpersonationLevel.Identification))
                 {
-                    pipeClient.Connect(_connectTimeout);
+                    pipeClient.Connect(ConnectTimeout);
 
                     Memory<byte> pathBytes = Encoding.UTF8.GetBytes(filePath);
                     if (pathBytes.Length > ushort.MaxValue)
@@ -264,7 +264,7 @@ namespace Caly.Core.Utilities
 
                     Memory<byte> lengthBytes = BitConverter.GetBytes((ushort)pathBytes.Length);
                     pipeClient.Write(lengthBytes.Span);
-                    pipeClient.Write(_keyPhrase);
+                    pipeClient.Write(KeyPhrase);
                     pipeClient.WriteByte((byte)PipeMessageType.FilePath);
                     pipeClient.Write(pathBytes.Span);
 

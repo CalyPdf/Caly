@@ -170,7 +170,7 @@ namespace Caly.Core.Utilities
             var t = double.MinValue;
             var l = double.MinValue;
 
-            for (var i = 0; i < rects.Length; i++)
+            for (var i = 0; i < rects.Length; ++i)
             {
                 var rect = rects[i];
                 if (rect.BottomLeft.X < b)
@@ -206,7 +206,7 @@ namespace Caly.Core.Utilities
             var l = double.MaxValue;
             var r = double.MinValue;
 
-            for (var i = 0; i < rects.Length; i++)
+            for (var i = 0; i < rects.Length; ++i)
             {
                 var rect = rects[i];
                 if (rect.TopLeft.X > b)

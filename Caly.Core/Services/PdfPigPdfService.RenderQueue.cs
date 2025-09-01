@@ -166,7 +166,7 @@ namespace Caly.Core.Services
                 cts.Dispose();
             }
 
-            if (_bitmaps.TryRemove(page.PageNumber, out var vm))
+            if (_bitmaps.TryRemove(page.PageNumber, out _))
             {
                 // Should always be null
                 //System.Diagnostics.Debug.Assert(vm.Thumbnail is null);

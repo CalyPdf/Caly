@@ -8,7 +8,7 @@
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<AssemblyName>Caly</AssemblyName>
-		<Version>0.1.2.0</Version>
+		<Version>0.1.3.0</Version>
 		<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
 	</PropertyGroup>
 
@@ -69,7 +69,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Avalonia.Desktop" Version="11.3.3" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
 		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.0.4" />
 	</ItemGroup>
 

@@ -28,6 +28,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Handlers;
@@ -39,6 +40,7 @@ using Caly.Core.ViewModels;
 using Caly.Pdf;
 using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
+using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
@@ -55,7 +57,6 @@ namespace Caly.Core.Services
         private const string PdfVersionFormat = "0.0";
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
 
-        private readonly IDialogService _dialogService;
         private readonly ITextSearchService _textSearchService;
         private readonly ISettingsService _settingsService;
 
@@ -71,6 +72,8 @@ namespace Caly.Core.Services
 
         public int NumberOfPages { get; private set; }
 
+        public bool IsPasswordProtected { get; private set; } = false;
+
         public ITextSelectionHandler? TextSelectionHandler { get; private set; }
 
         private long _isActive = 0;
@@ -80,10 +83,19 @@ namespace Caly.Core.Services
             get => Interlocked.Read(ref _isActive) == 1;
             set => Interlocked.Exchange(ref _isActive, Convert.ToInt64(value));
         }
-        
-        public PdfPigPdfService(IDialogService dialogService, ITextSearchService textSearchService, ISettingsService settingsService)
+
+#if DEBUG
+        public PdfPigPdfService()
         {
-            _dialogService = dialogService ?? throw new NullReferenceException("Missing Dialog Service instance.");
+            if (!Design.IsDesignMode)
+            {
+                throw new InvalidOperationException("Should only be called in Design mode.");
+            }
+        }
+#endif
+
+       public PdfPigPdfService(ITextSearchService textSearchService, ISettingsService settingsService)
+        {
             _textSearchService = textSearchService;
             _settingsService = settingsService;
 
@@ -99,7 +111,7 @@ namespace Caly.Core.Services
 
             _processingLoopTask = Task.Run(ProcessingLoop, _mainCts.Token);
         }
-        
+
         public async Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
@@ -138,7 +150,7 @@ namespace Caly.Core.Services
                     {
                         SkipMissingFonts = true,
                         FilterProvider = SkiaRenderingFilterProvider.Instance,
-                        Logger = new CalyPdfPigLogger(_dialogService)
+                        Logger = CalyPdfPigLogger.Instance
                     };
 
                     if (!string.IsNullOrEmpty(password))
@@ -158,6 +170,8 @@ namespace Caly.Core.Services
             }
             catch (PdfDocumentEncryptedException)
             {
+                IsPasswordProtected = true;
+
                 if (!string.IsNullOrEmpty(password))
                 {
                     // Only stay at first level, do not recurse: If password is NOT null, this is recursion
@@ -167,7 +181,7 @@ namespace Caly.Core.Services
                 bool shouldContinue = true;
                 while (shouldContinue)
                 {
-                    string? pw = await _dialogService.ShowPdfPasswordDialogAsync();
+                    string? pw = await App.Messenger.Send(new ShowPdfPasswordDialogRequestMessage());
                     Debug.ThrowOnUiThread();
 
                     shouldContinue = !string.IsNullOrEmpty(pw);
@@ -192,9 +206,13 @@ namespace Caly.Core.Services
             }
             finally
             {
-                // The _semaphore starts with initial count set to 0 and maxCount to 1.
-                // By releasing here we allow _semaphore.Wait() in other methods.
-                _semaphore.Release();
+                // Only release on first pass
+                if (string.IsNullOrEmpty(password))
+                {
+                    // The _semaphore starts with initial count set to 0 and maxCount to 1.
+                    // By releasing here we allow _semaphore.Wait() in other methods.
+                    _semaphore.Release();
+                }
             }
         }
 
@@ -324,17 +342,21 @@ namespace Caly.Core.Services
         public async Task SetPdfBookmark(PdfDocumentViewModel pdfDocument, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
+            if (_document is null)
+            {
+                return;
+            }
 
             Bookmarks? bookmarks = await ExecuteWithLockAsync(() =>
+            {
+                if (_document!.TryGetBookmarks(out var b))
                 {
-                    if (_document!.TryGetBookmarks(out var b))
-                    {
-                        return b;
-                    }
+                    return b;
+                }
 
-                    return null;
-                },
-                token);
+                return null;
+            },
+            token);
             
             try
             {

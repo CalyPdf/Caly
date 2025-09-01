@@ -47,7 +47,7 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private int _selectedDocumentIndex;
 
-        [ObservableProperty] private bool _isPaneOpen;
+        [ObservableProperty] private bool _isSettingsPaneOpen;
 
         [ObservableProperty] private bool _isDarkMode;
 
@@ -61,8 +61,8 @@ namespace Caly.Core.ViewModels
             {
                 return;
             }
-            
-            StrongReferenceMessenger.Default.Send(new SelectedDocumentChangedMessage(currentDoc));
+
+            App.Messenger.Send(new SelectedDocumentChangedMessage(currentDoc));
         }
 
         public MainViewModel()
