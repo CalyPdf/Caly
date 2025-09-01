@@ -127,7 +127,7 @@ namespace Caly.Core.ViewModels
                 throw new InvalidOperationException("Should only be called in Design mode.");
             }
 
-            _pdfService = new PdfPigPdfService(new LiftiTextSearchService());
+            _pdfService = new PdfPigPdfService(new LiftiTextSearchService(), null);
             _settingsService = new JsonSettingsService(null);
             _paneSize = 50;
 
