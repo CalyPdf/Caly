@@ -371,7 +371,7 @@ namespace Caly.Core.ViewModels
         {
             foreach (var page in Pages)
             {
-                StrongReferenceMessenger.Default.Send(new LoadThumbnailMessage(page));
+                App.Messenger.Send(new LoadThumbnailMessage(page));
             }
         }
 
