@@ -320,6 +320,7 @@ namespace Caly.Core.ViewModels
                         Width = defaultWidth
                     };
 
+                    await newPage.LoadImageMaskAsync(_cts.Token);
 
                     App.Messenger.Send(new LoadPageSizeMessage(newPage));
                     Pages.Add(newPage);
