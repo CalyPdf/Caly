@@ -320,6 +320,7 @@ namespace Caly.Core.ViewModels
                         Width = defaultWidth
                     };
 
+
                     App.Messenger.Send(new LoadPageSizeMessage(newPage));
                     Pages.Add(newPage);
                 }

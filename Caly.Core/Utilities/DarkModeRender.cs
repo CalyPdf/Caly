@@ -32,7 +32,11 @@ namespace Caly.Core.Utilities
                 {
                     canvas.DrawPicture(picture, invertPaint);
                 }
-                canvas.DrawPicture(picture, ref scale, invertPaint);
+                else
+                {
+                    canvas.DrawPicture(picture, ref scale, invertPaint);
+                }
+                
             }
 
             // Image mask is used for drawing unprocessed images - pictures in the PDF that should not be inverted
@@ -55,7 +59,10 @@ namespace Caly.Core.Utilities
                     {
                         canvas.DrawPicture(picture, imagePaint);
                     }
-                    canvas.DrawPicture(picture, ref scale, imagePaint);
+                    else
+                    {
+                        canvas.DrawPicture(picture, ref scale, imagePaint);
+                    }
 
                     canvas.Restore();
                 }
