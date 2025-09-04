@@ -11,6 +11,7 @@
             <ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary>
                     <converters:ZeroPageIndexConverter x:Key="zeroPageIndexConverter"/>
+					<converters:BoolToBrushConverter x:Key="BoolToBrushConverter"/>
                     <x:Double x:Key="ControlContentThemeFontSize">12</x:Double>
 				</ResourceDictionary>
 
