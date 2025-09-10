@@ -132,7 +132,7 @@ namespace Caly.Core.Handlers
             p1 = loc;
 #endif
 
-            // Try find closest line as we are already selecting something
+            // Try finding the closest line as we are already selecting something
 
             // TODO - To finish, improve performance
             var point = new PdfPoint(loc.X, loc.Y);
@@ -145,18 +145,25 @@ namespace Caly.Core.Handlers
             {
                 foreach (var line in block.TextLines)
                 {
-                    PdfPoint? projection = PdfPointExtensions.ProjectPointOnLine(in point, line.BoundingBox.BottomLeft,
-                        line.BoundingBox.BottomRight, out double s);
+                    PdfPoint? projection = PdfPointExtensions.ProjectPointOnLine(in point,
+                        line.BoundingBox.BottomLeft,
+                        line.BoundingBox.BottomRight,
+                        out double s);
 
-                    if (!projection.HasValue || s < 0) // Cursor is before (to the left) line, we ignore
+                    if (!projection.HasValue || s < 0)
                     {
+                        // If s < 0, the cursor is before the line (to the left), we ignore
                         continue;
                     }
 
-                    double localDist = Distances.Euclidean(point, projection.Value);
+                    // If s > 1, the cursor is after the line (to the right), we measure distance from bottom right corner
+                    PdfPoint referencePoint = s > 1 ? line.BoundingBox.BottomRight : projection.Value;
 
-                    // Line is closer OR same distance AND current projection is closer
-                    if (localDist < dist || localDist.AlmostEquals(dist) && s < projectionOnLine)
+                    double localDist = SquaredWeightedEuclidean(in point, in referencePoint, wY: 4); // Make y direction farther
+                    
+                    // TODO - Prevent selection line 'below' cursor
+
+                    if (localDist < dist)
                     {
                         dist = localDist;
                         l = line;
@@ -186,6 +193,13 @@ namespace Caly.Core.Handlers
 
             // TODO - to improve, we already know where on the line is the point thanks to 'projectionOnLine'
             return l.FindNearestWord(loc.X, loc.Y);
+
+            static double SquaredWeightedEuclidean(in PdfPoint point1, in PdfPoint point2, double wX = 1.0, double wY = 1.0)
+            {
+                double dx = point1.X - point2.X;
+                double dy = point1.Y - point2.Y;
+                return wX * dx * dx + wY * dy * dy;
+            }
         }
 
 #if DEBUG
@@ -255,7 +269,7 @@ namespace Caly.Core.Handlers
                 return;
             }
 
-            // Get the line under the mouse or nearest from the top
+            // Get the line under the cursor or nearest from the top
             PdfTextLine? lineBox = control.PdfTextLayer!.FindLineOver(loc.X, loc.Y);
 
             PdfWord? word = null;
@@ -269,22 +283,17 @@ namespace Caly.Core.Handlers
             {
                 return;
             }
-
-            if (lineBox is null)
+            
+            if (lineBox is not null && word is null)
             {
-                return;
-            }
-
-            if (word is null)
-            {
-                // get the word under the mouse
+                // Get the word under the cursor
                 word = lineBox.FindWordOver(loc.X, loc.Y);
-            }
 
-            // if no word found under the mouse use the last or the first word in the line
-            if (word is null)
-            {
-                word = lineBox.FindNearestWord(loc.X, loc.Y);
+                // If no word found under the cursor use the last or the first word in the line
+                if (word is null)
+                {
+                    word = lineBox.FindNearestWord(loc.X, loc.Y);
+                }
             }
 
             if (word is null)
@@ -292,7 +301,7 @@ namespace Caly.Core.Handlers
                 return;
             }
 
-            // if there is matching word
+            // If there is matching word
             bool allowPartialSelect = !_isMultipleClickSelection;
 
             int focusPageIndex = Selection.FocusPageIndex;
