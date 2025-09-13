@@ -10,6 +10,7 @@
 		<AssemblyName>Caly</AssemblyName>
 		<Version>0.1.3.0</Version>
 		<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+		<Deterministic>true</Deterministic>
 	</PropertyGroup>
 
 	<!--https://learn.microsoft.com/en-gb/dotnet/core/deploying/native-aot/optimizing-->
