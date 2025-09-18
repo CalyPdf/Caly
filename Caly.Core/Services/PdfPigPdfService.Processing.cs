@@ -83,8 +83,55 @@ namespace Caly.Core.Services
         {
             Debug.ThrowOnUiThread();
 
+            var options = new ParallelOptions()
+            {
+                // PdfPig cannot process pages in parallel, so we limit number of request being processed in parallel.
+                // The main reason to allow parallel processing of request is for the creation of the text layer
+                // via `PdfTextLayerHelper.GetTextLayer()` (which is independent of PdfPig) to not block requests relying on PdfPig.
+                MaxDegreeOfParallelism = 4,
+                CancellationToken = _mainCts.Token
+            };
+            
             try
             {
+                await Parallel.ForEachAsync(_requestsReader.ReadAllAsync(_mainCts.Token), options, async (r, _) =>
+                {
+                    try
+                    {
+                        switch (r.Type)
+                        {
+                            case RenderRequestTypes.PageSize:
+                                await ProcessPageSizeRequest(r);
+                                break;
+
+                            case RenderRequestTypes.Picture:
+                                await ProcessPictureRequest(r);
+                                break;
+
+                            case RenderRequestTypes.Thumbnail:
+                                await ProcessThumbnailRequest(r);
+                                break;
+
+                            case RenderRequestTypes.TextLayer:
+                                await ProcessTextLayerRequest(r);
+                                break;
+
+                            default:
+                                throw new NotImplementedException(r.Type.ToString());
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] CANCELED: Page {r.Page.PageNumber}, type {r.Type}.");
+                    }
+                    catch (Exception e)
+                    {
+                        // We just ignore for the moment
+                        Debug.WriteExceptionToFile(e);
+                    }
+                });
+
+                /* Previous logic below
                 while (await _requestsReader.WaitToReadAsync(_mainCts.Token))
                 {
                     var r = await _requestsReader.ReadAsync(_mainCts.Token);
@@ -122,6 +169,7 @@ namespace Caly.Core.Services
                         Debug.WriteExceptionToFile(e);
                     }
                 }
+                */
             }
             catch (OperationCanceledException) { }
         }
