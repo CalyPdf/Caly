@@ -145,7 +145,7 @@ namespace Caly.Pdf.TextLayer
                     .Transform(renderingMatrix,
                         textMatrix,
                         transformationMatrix,
-                        new PdfRectangle(0, 0, characterBoundingBox.Width, UserSpaceUnit.PointMultiples)),
+                        new PdfRectangle(0, 0, characterBoundingBox.Width, UserSpaceUnit.PointMultiples + font.GetDescent())),
                 _pageHeight);
 
 
