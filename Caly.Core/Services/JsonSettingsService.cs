@@ -142,6 +142,10 @@ namespace Caly.Core.Services
                     case CalySettingsProperty.PaneSize:
                         _current.PaneSize = (int)(double)value;
                         break;
+
+                    case CalySettingsProperty.IsDarkModeEnabled:
+                        _current.IsDarkModeEnabled = (bool)value;
+                        break;
                 }
             }
             catch (Exception ex)
