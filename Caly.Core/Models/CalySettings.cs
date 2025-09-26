@@ -34,6 +34,8 @@ namespace Caly.Core.Models
         public int Width { get; set; }
 
         public int Height { get; set; }
+        
+        public bool IsMaximised { get; set; }
 
         public int PaneSize { get; set; }
 

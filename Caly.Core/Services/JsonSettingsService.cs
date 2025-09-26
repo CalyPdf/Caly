@@ -59,6 +59,41 @@ namespace Caly.Core.Services
             {
                 w.Opened += _window_Opened;
                 w.Closing += _window_Closing;
+                w.PropertyChanged += _window_PropertyChanged;
+            }
+        }
+
+        private void _window_PropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property == Window.WindowStateProperty)
+            {
+                // When it's loaded, we handle the first time the window changes state:
+                // If the window goes from Maximised to Normal, we set the width and height
+                // because not value has been properly set yet (will use the default xaml values)
+
+                if (_current is not null && sender is Window w)
+                {
+                    if (!w.IsLoaded)
+                    {
+                        return;
+                    }
+
+                    w.PropertyChanged -= _window_PropertyChanged;
+
+                    var oldState = (WindowState?)e.OldValue;
+                    var newState = (WindowState?)e.NewValue;
+
+                    if (!oldState.HasValue || !newState.HasValue)
+                    {
+                        return;
+                    }
+                    
+                    if (oldState == WindowState.Maximized && newState == WindowState.Normal)
+                    {
+                        w.Width = _current.Width;
+                        w.Height = _current.Height;
+                    }
+                }
             }
         }
 
@@ -66,12 +101,24 @@ namespace Caly.Core.Services
         {
             if (_target is Window w)
             {
+                w.Opened -= _window_Opened;
                 w.Closing -= _window_Closing;
+                w.PropertyChanged -= _window_PropertyChanged;
 
-                if (_current is not null && w.WindowState == WindowState.Normal)
+                if (_current is not null)
                 {
-                    _current.Width = (int)w.Width;
-                    _current.Height = (int)w.Height;
+                    switch (w.WindowState)
+                    {
+                        case WindowState.Normal:
+                            _current.IsMaximised = false;
+                            _current.Width = (int)w.Width;
+                            _current.Height = (int)w.Height;
+                            break;
+                        
+                        case WindowState.Maximized:
+                            _current.IsMaximised = true;
+                            break;
+                    }
                 }
             }
 
@@ -91,10 +138,16 @@ namespace Caly.Core.Services
                 {
                     return;
                 }
-                
+
+                if (_current.IsMaximised)
+                {
+                    mw.WindowState = WindowState.Maximized;
+                    return;
+                }
+
                 mw.Width = _current.Width;
                 mw.Height = _current.Height;
-
+                
                 try
                 {
                     if (mw.WindowStartupLocation == WindowStartupLocation.CenterScreen)
