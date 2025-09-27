@@ -66,9 +66,9 @@ namespace Caly.Core.Controls
         public static readonly StyledProperty<TextSearchResultViewModel?> SelectedTextSearchResultProperty = AvaloniaProperty.Register<PdfDocumentControl, TextSearchResultViewModel?>(nameof(SelectedTextSearchResult));
 
         /// <summary>
-        /// Defines the <see cref="TextSelectionHandler"/> property.
+        /// Defines the <see cref="PageInteractiveLayerHandler"/> property.
         /// </summary>
-        public static readonly StyledProperty<ITextSelectionHandler?> TextSelectionHandlerProperty = AvaloniaProperty.Register<PdfDocumentControl, ITextSelectionHandler?>(nameof(TextSelectionHandler));
+        public static readonly StyledProperty<IPageInteractiveLayerHandler?> PageInteractiveLayerHandlerProperty = AvaloniaProperty.Register<PdfDocumentControl, IPageInteractiveLayerHandler?>(nameof(PageInteractiveLayerHandler));
 
         public int PageCount
         {
@@ -109,10 +109,10 @@ namespace Caly.Core.Controls
             set => SetValue(ItemsSourceProperty, value);
         }
 
-        public ITextSelectionHandler? TextSelectionHandler
+        public IPageInteractiveLayerHandler? PageInteractiveLayerHandler
         {
-            get => GetValue(TextSelectionHandlerProperty);
-            set => SetValue(TextSelectionHandlerProperty, value);
+            get => GetValue(PageInteractiveLayerHandlerProperty);
+            set => SetValue(PageInteractiveLayerHandlerProperty, value);
         }
 
         public PdfDocumentControl()
@@ -131,11 +131,11 @@ namespace Caly.Core.Controls
 
             var pointer = e.GetCurrentPoint(this);
 
-            if (TextSelectionHandler is not null &&
+            if (PageInteractiveLayerHandler is not null &&
                 pointer.Properties.IsLeftButtonPressed &&
                 e.Source is not PdfPageTextLayerControl)
             {
-                TextSelectionHandler.ClearSelection(this);
+                PageInteractiveLayerHandler.ClearSelection(this);
             }
         }
 

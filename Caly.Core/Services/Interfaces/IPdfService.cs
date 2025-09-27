@@ -32,7 +32,7 @@ namespace Caly.Core.Services.Interfaces
     {
         bool IsActive { get; internal set; }
 
-        ITextSelectionHandler? TextSelectionHandler { get; }
+        IPageInteractiveLayerHandler? PageInteractiveLayerHandler { get; }
         
         int NumberOfPages { get; }
 
@@ -56,7 +56,7 @@ namespace Caly.Core.Services.Interfaces
 
         Task BuildIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token);
 
-        Task<IEnumerable<TextSearchResultViewModel>> SearchText(PdfDocumentViewModel pdfDocument, string query, CancellationToken token);
+        IEnumerable<TextSearchResultViewModel> SearchText(PdfDocumentViewModel pdfDocument, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
 
         Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token);
 

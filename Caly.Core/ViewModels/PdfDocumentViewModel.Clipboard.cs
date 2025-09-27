@@ -35,7 +35,7 @@ namespace Caly.Core.ViewModels
         {
             try
             {
-                if (TextSelectionHandler?.Selection.IsValid != true)
+                if (PageInteractiveLayerHandler?.Selection.IsValid != true)
                 {
                     return;
                 }
@@ -55,7 +55,7 @@ namespace Caly.Core.ViewModels
         
         private bool CanCopyText()
         {
-            return TextSelectionHandler?.Selection.IsValid == true;
+            return PageInteractiveLayerHandler?.Selection.IsValid == true;
         }
     }
 }

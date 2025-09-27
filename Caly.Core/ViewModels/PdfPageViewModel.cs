@@ -20,7 +20,9 @@
 
 using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Caly.Core.Handlers.Interfaces;
+using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
@@ -31,7 +33,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.Services;
 
 namespace Caly.Core.ViewModels
 {
@@ -87,7 +88,7 @@ namespace Caly.Core.ViewModels
         [ObservableProperty]
         private bool _selectionChangedFlag;
 
-        public ITextSelectionHandler TextSelectionHandler => PdfService.TextSelectionHandler!;
+        public IPageInteractiveLayerHandler PageInteractiveLayerHandler => PdfService.PageInteractiveLayerHandler!;
 
         public bool IsPageVisible => VisibleArea.HasValue;
 
@@ -135,7 +136,7 @@ namespace Caly.Core.ViewModels
 
         public PdfPageViewModel(int pageNumber, IPdfService pdfService)
         {
-            ArgumentNullException.ThrowIfNull(pdfService?.TextSelectionHandler, nameof(pdfService.TextSelectionHandler));
+            ArgumentNullException.ThrowIfNull(pdfService?.PageInteractiveLayerHandler, nameof(pdfService.PageInteractiveLayerHandler));
             PageNumber = pageNumber;
             PdfService = pdfService;
         }
@@ -150,7 +151,12 @@ namespace Caly.Core.ViewModels
             await PdfService.SetPageTextLayerAsync(this, token);
         }
 
-        public void FlagSelectionChanged()
+        public void RemovePageTextLayerImmediate()
+        {
+            Dispatcher.UIThread.Invoke(() => PdfTextLayer = null);
+        }
+
+        public void FlagInteractiveLayerChanged()
         {
             Debug.ThrowNotOnUiThread();
             SelectionChangedFlag = !SelectionChangedFlag;
