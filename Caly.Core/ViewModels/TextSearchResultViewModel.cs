@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Caly.Pdf.Models;
@@ -31,7 +32,7 @@ namespace Caly.Core.ViewModels
         [ObservableProperty] private SearchResultItemType _itemType;
         [ObservableProperty] private int _pageNumber;
         [ObservableProperty] private int? _wordIndex;
-        [ObservableProperty] private PdfWord? _word;
+        [ObservableProperty] private IReadOnlyList<PdfWord>? _word;
         [ObservableProperty] private double? _score;
         [ObservableProperty] private ObservableCollection<TextSearchResultViewModel>? _nodes;
 

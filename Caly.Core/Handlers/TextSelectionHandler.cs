@@ -618,7 +618,7 @@ namespace Caly.Core.Handlers
 
                     _searchResults[result.PageNumber] = result.Nodes
                         .Where(x => x is { ItemType: SearchResultItemType.Word, Word: not null })
-                        .Select(x => x.Word!)
+                        .SelectMany(x => x.Word!)
                         .ToArray();
 
                     Dispatcher.UIThread.Invoke(documentViewModel.Pages[result.PageNumber - 1].FlagSelectionChanged);
