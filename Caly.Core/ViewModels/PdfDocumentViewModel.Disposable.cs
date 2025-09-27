@@ -47,6 +47,8 @@ namespace Caly.Core.ViewModels
             {
                 BookmarksSource.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
             }
+
+            SearchResults.Clear();
         }
 
         public void Dispose()

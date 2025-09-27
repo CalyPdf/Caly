@@ -100,7 +100,7 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private string? _fileSize;
 
-        public ITextSelectionHandler? TextSelectionHandler => _pdfService.TextSelectionHandler;
+        public IPageInteractiveLayerHandler? PageInteractiveLayerHandler => _pdfService.PageInteractiveLayerHandler;
         
         private readonly Lazy<Task> _loadPagesTask;
         public Task LoadPagesTask => _loadPagesTask.Value;
@@ -125,7 +125,7 @@ namespace Caly.Core.ViewModels
                 throw new InvalidOperationException("Should only be called in Design mode.");
             }
 
-            _pdfService = new PdfPigPdfService(new LiftiTextSearchService());
+            _pdfService = new PdfPigPdfService(new SearchValuesTextSearchService());
             _settingsService = new JsonSettingsService(null);
             _paneSize = 50;
 
@@ -158,17 +158,19 @@ namespace Caly.Core.ViewModels
                 .ObserveOn(Scheduler.Default)
                 .Subscribe(e =>
                 {
+                    Debug.ThrowOnUiThread();
+
                     try
                     {
-                        if (TextSelectionHandler is null)
+                        if (PageInteractiveLayerHandler is null)
                         {
-                            throw new NullReferenceException("The TextSelectionHandler is null, cannot process search results.");
+                            throw new NullReferenceException("The PageInteractiveLayerHandler is null, cannot process search results.");
                         }
-                        
+
                         switch (e.Action)
                         {
                             case NotifyCollectionChangedAction.Reset:
-                                TextSelectionHandler.ClearTextSearchResults(this);
+                                PageInteractiveLayerHandler.ClearTextSearchResults(this);
                                 break;
 
                             case NotifyCollectionChangedAction.Add:
@@ -179,11 +181,11 @@ namespace Caly.Core.ViewModels
 
                                     if (first is null || first.PageNumber <= 0)
                                     {
-                                        TextSelectionHandler.ClearTextSearchResults(this);
+                                        PageInteractiveLayerHandler.ClearTextSearchResults(this);
                                     }
                                     else
                                     {
-                                        TextSelectionHandler.AddTextSearchResults(this, searchResult);
+                                        PageInteractiveLayerHandler.AddTextSearchResults(this, searchResult);
                                     }
                                 }
 

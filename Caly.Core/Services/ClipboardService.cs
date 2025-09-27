@@ -84,9 +84,9 @@ namespace Caly.Core.Services
         {
             // TODO - Check use of tasks here
 
-            ArgumentNullException.ThrowIfNull(document.TextSelectionHandler, nameof(document.TextSelectionHandler));
+            ArgumentNullException.ThrowIfNull(document.PageInteractiveLayerHandler, nameof(document.PageInteractiveLayerHandler));
 
-            PdfTextSelection selection = document.TextSelectionHandler.Selection;
+            PdfTextSelection selection = document.PageInteractiveLayerHandler.Selection;
 
             if (!selection.IsValid)
             {

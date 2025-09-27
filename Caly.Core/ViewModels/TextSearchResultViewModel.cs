@@ -18,34 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Collections.ObjectModel;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using Caly.Pdf.Models;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Caly.Core.ViewModels
 {
-    [DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({Score}), Children {Nodes?.Count}")]
-    public sealed partial class TextSearchResultViewModel : ViewModelBase
+    [DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({WordCount}), Children {Nodes?.Count}")]
+    public sealed class TextSearchResultViewModel : ViewModelBase
     {
-        [ObservableProperty] private SearchResultItemType _itemType;
-        [ObservableProperty] private int _pageNumber;
-        [ObservableProperty] private int? _wordIndex;
-        [ObservableProperty] private PdfWord? _word;
-        [ObservableProperty] private double? _score;
-        [ObservableProperty] private ObservableCollection<TextSearchResultViewModel>? _nodes;
+        public required SearchResultItemType ItemType { get; init; }
+
+        public required int PageNumber { get; init; }
+
+        public int? WordIndex { get; init; }
+
+        public int? WordCount { get; init; }
+
+        public IReadOnlyList<TextSearchResultViewModel>? Nodes { get; init; }
+
+        public ReadOnlyMemory<char> SampleText { get; init; }
 
         public override string ToString()
         {
+            if (!SampleText.IsEmpty)
+            {
+                return $"...{SampleText}...";
+            }
+
             if (Nodes is null)
             {
                 return $"{WordIndex} [{ItemType}]";
             }
+
             return $"{PageNumber} ({Nodes.Count})";
         }
     }
 
-    public enum SearchResultItemType
+    public enum SearchResultItemType : byte
     {
         Unspecified = 0,
         Word = 1,

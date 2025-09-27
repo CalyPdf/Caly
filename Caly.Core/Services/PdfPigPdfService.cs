@@ -74,7 +74,7 @@ namespace Caly.Core.Services
 
         public bool IsPasswordProtected { get; private set; } = false;
 
-        public ITextSelectionHandler? TextSelectionHandler { get; private set; }
+        public IPageInteractiveLayerHandler? PageInteractiveLayerHandler { get; private set; }
 
         private long _isActive = 0;
         public bool IsActive
@@ -164,7 +164,7 @@ namespace Caly.Core.Services
                     _document.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
 
                     NumberOfPages = _document.NumberOfPages;
-                    TextSelectionHandler = new TextSelectionHandler(NumberOfPages);
+                    PageInteractiveLayerHandler = new PageInteractiveLayerHandler(NumberOfPages);
                     return NumberOfPages;
                 }, token);
             }
@@ -262,7 +262,7 @@ namespace Caly.Core.Services
             if (page.PdfTextLayer is not null)
             {
                 // We ensure the correct selection is set now that we have the text layer
-                page.TextSelectionHandler.Selection.SelectWordsInRange(page);
+                page.PageInteractiveLayerHandler.UpdateInteractiveLayer(page);
             }
         }
 
@@ -393,11 +393,11 @@ namespace Caly.Core.Services
             await _textSearchService.BuildPdfDocumentIndex(pdfDocument, progress, token);
         }
 
-        public Task<IEnumerable<TextSearchResultViewModel>> SearchText(PdfDocumentViewModel pdfDocument, string query, CancellationToken token)
+        public IEnumerable<TextSearchResultViewModel> SearchText(PdfDocumentViewModel pdfDocument, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            return _textSearchService.Search(pdfDocument, query, token);
+            return _textSearchService.Search(pdfDocument, query, pagesToSkip, token);
         }
 
         private static PdfBookmarkNode? BuildPdfBookmarkNode(BookmarkNode node, CancellationToken cancellationToken)
