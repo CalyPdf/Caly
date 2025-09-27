@@ -29,7 +29,6 @@ using Avalonia.Threading;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Lifti;
 
 namespace Caly.Core.ViewModels
 {
@@ -236,12 +235,12 @@ namespace Caly.Core.ViewModels
             }
             catch (OperationCanceledException)
             { }
-            catch (LiftiException qpe)
-            {
-                System.Diagnostics.Debug.Write(qpe.ToString());
-                _isSearchQueryError = true;
-                SetSearchStatus(qpe.Message);
-            }
+            //catch (LiftiException qpe)
+            //{
+            //    System.Diagnostics.Debug.Write(qpe.ToString());
+            //    _isSearchQueryError = true;
+            //    SetSearchStatus(qpe.Message);
+            //}
             catch (Exception ex)
             {
                 Debug.WriteExceptionToFile(ex);
