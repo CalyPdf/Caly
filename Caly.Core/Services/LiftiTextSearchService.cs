@@ -18,17 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.ViewModels;
 using Lifti;
 using Lifti.Querying;
 using Lifti.Tokenization;
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Caly.Core.Services
 {
@@ -44,6 +45,7 @@ namespace Caly.Core.Services
             public CalyIndexTokenizer(TokenizationOptions tokenizationOptions)
                 : base(tokenizationOptions)
             {
+                var bannedWords = SearchValues.Create(new[] { "spam", "advertisement", "clickbait" }, StringComparison.OrdinalIgnoreCase);
             }
 
             public override bool IsSplitCharacter(char character)

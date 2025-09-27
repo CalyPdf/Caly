@@ -119,7 +119,8 @@ namespace Caly.Core
             services.AddSingleton<IPdfDocumentsService, PdfDocumentsService>();
 
             services.AddScoped<IPdfService, PdfPigPdfService>();
-            services.AddScoped<ITextSearchService, LiftiTextSearchService>();
+            //services.AddScoped<ITextSearchService, LiftiTextSearchService>();
+            services.AddScoped<ITextSearchService, SearchValuesTextSearchService>();
             services.AddScoped<PdfDocumentViewModel>();
 
             OverrideRegisteredServices(services);
