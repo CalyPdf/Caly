@@ -6,15 +6,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using static SkiaSharp.HarfBuzz.SKShaper;
+using Caly.Pdf.Models;
 
 namespace Caly.Core.Services
 {
     internal class SearchValuesTextSearchService : ITextSearchService
     {
+        private const char WordSeparator = ' ';
+        
         private readonly ConcurrentDictionary<int, string> _index = new ConcurrentDictionary<int, string>();
         
         public void Dispose()
@@ -42,7 +43,7 @@ namespace Caly.Core.Services
                         throw new NullReferenceException("Cannot index search on a null PdfTextLayer.");
                     }
 
-                    _index[p.PageNumber] = string.Join(' ', textLayer.Select(w => w.Value));
+                    _index[p.PageNumber] = string.Join(WordSeparator, textLayer.Select(w => w.Value));
                     progress.Report(Interlocked.Add(ref done, 1));
                 }, ct);
             });
@@ -52,53 +53,47 @@ namespace Caly.Core.Services
         {
             return await Task.Run(() =>
             {
-                List<TextSearchResultViewModel> results = new List<TextSearchResultViewModel>();
-                var searchValue = SearchValues.Create(text);
-
+                var results = new List<TextSearchResultViewModel>();
+                var searchValue = SearchValues.Create([text], StringComparison.OrdinalIgnoreCase);
+                
                 foreach (var pageKvp in _index)
                 {
                     token.ThrowIfCancellationRequested();
-                    List<TextSearchResultViewModel> pageResults = new List<TextSearchResultViewModel>();
-                    var textLayer = pdfDocument.Pages[pageKvp.Key - 1].PdfTextLayer;
+                    var pageResults = new List<TextSearchResultViewModel>();
+                    PdfTextLayer? textLayer = pdfDocument.Pages[pageKvp.Key - 1].PdfTextLayer;
                     if (textLayer is null)
                     {
-                        throw new Exception();
+                        throw new NullReferenceException($"Text layer for page {pageKvp.Key} is null.");
                     }
 
-                    var index = _index[pageKvp.Key];
+                    string index = _index[pageKvp.Key];
                     int lastWordFound = 0;
 
                     while (true)
                     {
                         token.ThrowIfCancellationRequested();
                         var range = index.AsSpan(lastWordFound);
-                        if (range.ContainsAny(searchValue))
-                        {
-                            int current = range.IndexOf(text);
-                            if (current == -1)
-                            {
-                                break;
-                            }
 
-                            lastWordFound += current;
-
-                            var wordIndex = index.AsSpan(0, lastWordFound).Count(' ');
-                            var w = textLayer[wordIndex];
-
-                            pageResults.Add(new TextSearchResultViewModel()
-                            {
-                                PageNumber = pageKvp.Key,
-                                ItemType = SearchResultItemType.Word,
-                                Word = w,
-                                WordIndex = wordIndex
-                            });
-
-                            lastWordFound += w.Value.Length;
-                        }
-                        else
+                        int current = range.IndexOfAny(searchValue);
+                        if (current == -1)
                         {
                             break;
                         }
+
+                        lastWordFound += current;
+
+                        var wordIndex = index.AsSpan(0, lastWordFound).Count(WordSeparator);
+                        var word = textLayer[wordIndex];
+
+                        pageResults.Add(new TextSearchResultViewModel()
+                        {
+                            PageNumber = pageKvp.Key,
+                            ItemType = SearchResultItemType.Word,
+                            Word = word,
+                            WordIndex = wordIndex
+                        });
+
+                        lastWordFound += word.Value.Length;
                     }
 
                     if (pageResults.Count > 0)
