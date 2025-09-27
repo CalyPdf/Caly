@@ -69,12 +69,11 @@ namespace Caly.Core.Services
                     string index = _index[pageKvp.Key];
                     int lastWordFound = 0;
 
-                    while (true)
+                    while (lastWordFound < index.Length)
                     {
                         token.ThrowIfCancellationRequested();
-                        var range = index.AsSpan(lastWordFound);
-
-                        int current = range.IndexOfAny(searchValue);
+                        
+                        int current = index.AsSpan(lastWordFound).IndexOfAny(searchValue);
                         if (current == -1)
                         {
                             break;
