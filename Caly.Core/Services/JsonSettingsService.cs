@@ -164,9 +164,12 @@ namespace Caly.Core.Services
                             return;
                         }
 
+                        // Adjust for scale
+                        var area = screen.WorkingArea.ToRect(screen.Scaling);
+
                         // Center window
-                        double x = screen.WorkingArea.X + (screen.WorkingArea.Width - mw.Width) / 2.0;
-                        double y = screen.WorkingArea.Y + (screen.WorkingArea.Height - mw.Height) / 2.0;
+                        double x = area.X + (area.Width - mw.Width) / 2.0;
+                        double y = area.Y + (area.Height - mw.Height) / 2.0;
                         mw.Position = PixelPoint.FromPoint(new Point(x, y), screen.Scaling);
                     }
                 }
