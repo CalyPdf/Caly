@@ -793,6 +793,14 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void OnKeyUpHandler(object? sender, KeyEventArgs e)
     {
+        if (Scroll is not null)
+        {
+            // We re-subscribe to key down events, even if no
+            // unsubscribe happened.
+            Scroll.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
+            Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
+        }
+        
         if (e.IsPanningOrZooming())
         {
             ResetPanTo();
@@ -803,6 +811,10 @@ public sealed class PdfPageItemsControl : ItemsControl
     {
         if (e.IsPanningOrZooming())
         {
+            // We stop listening to key down events when panning / zooming.
+            // Keeping the 'ctrl' key down involves continuously firing 
+            // key down events.
+            Scroll?.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
             ResetPanTo();
         }
         
