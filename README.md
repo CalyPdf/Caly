@@ -42,7 +42,8 @@ As of now, only the Windows, Linux and Android versions have been tested. Androi
 7. To view page thumbnails, click on the "Thumbnails" button in the left menu.
 8. To navigate through bookmarks, click on the "Bookmarks" button in the left menu.
 9. To zoom in and out of your document, either use the scroll wheel while pressing `Ctrl`, or use the "Zoom" buttons in the top menu.
-10. To rotate pages, either right-click and select one of the rotate options, or use the "Rotate" buttons in the top menu.
+10. To pan / move the view in your document, use left-click while pressing `Ctrl`.
+11. To rotate pages, either right-click and select one of the rotate options, or use the "Rotate" buttons in the top menu.
 
 ## Why Caly Pdf Reader?
 
