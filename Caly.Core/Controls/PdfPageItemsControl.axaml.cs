@@ -801,6 +801,11 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void OnKeyDownHandler(object? sender, KeyEventArgs e)
     {
+        if (e.IsPanningOrZooming())
+        {
+            ResetPanTo();
+        }
+        
         switch (e.Key)
         {
             case Key.Right:
