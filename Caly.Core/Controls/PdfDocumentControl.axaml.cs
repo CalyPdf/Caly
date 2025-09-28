@@ -167,12 +167,12 @@ namespace Caly.Core.Controls
             }
             else if (change.Property == ZoomLevelProperty)
             {
-                if (_pdfPageItemsControl?.LayoutTransformControl is null || change.NewValue is not double newZoom)
+                if (_pdfPageItemsControl?.LayoutTransform is null || change.NewValue is not double newZoom)
                 {
                     return;
                 }
 
-                if (!_pdfPageItemsControl.LayoutTransformControl.IsAttachedToVisualTree())
+                if (!_pdfPageItemsControl.LayoutTransform.IsAttachedToVisualTree())
                 {
                     return;
                 }
@@ -190,7 +190,7 @@ namespace Caly.Core.Controls
                 }
 
                 var pixelPoint = this.PointToScreen(new Point((int)(w / 2.0), (int)(h / 2.0)));
-                var point = _pdfPageItemsControl.LayoutTransformControl.PointToClient(pixelPoint);
+                var point = _pdfPageItemsControl.LayoutTransform.PointToClient(pixelPoint);
                 _pdfPageItemsControl.ZoomTo(dZoom, point);
             }
         }

@@ -26,6 +26,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Utilities
@@ -74,6 +75,29 @@ namespace Caly.Core.Utilities
         public static PdfRectangle ToPdfRectangle(this Rect rect)
         {
             return new PdfRectangle(rect.Left, rect.Bottom, rect.Right, rect.Top);
+        }
+
+        public static bool IsPanning(this PointerEventArgs e)
+        {
+            if (!e.Properties.IsLeftButtonPressed)
+            {
+                return false;
+            }
+
+            var hotkeys = Application.Current!.PlatformSettings?.HotkeyConfiguration;
+            return hotkeys is not null && e.KeyModifiers.HasFlag(hotkeys.CommandModifiers);
+        }
+
+        public static bool IsPanningOrZooming(this PointerEventArgs e)
+        {
+            var hotkeys = Application.Current!.PlatformSettings?.HotkeyConfiguration;
+            return hotkeys is not null && e.KeyModifiers.HasFlag(hotkeys.CommandModifiers);
+        }
+
+        public static bool IsPanningOrZooming(this KeyEventArgs e)
+        {
+            var hotkeys = Application.Current!.PlatformSettings?.HotkeyConfiguration;
+            return hotkeys is not null && e.KeyModifiers.HasFlag(hotkeys.CommandModifiers);
         }
 
         /// <summary>
