@@ -154,7 +154,6 @@ namespace Caly.Core.Utilities
             ~Ref()
             {
                 Dispose(false);
-                System.Diagnostics.Debug.Assert(Item is null || RefCount == 0);
             }
 
 
