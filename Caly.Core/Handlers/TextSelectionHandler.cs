@@ -39,7 +39,6 @@ using Caly.Pdf;
 using Caly.Pdf.Models;
 using UglyToad.PdfPig.Actions;
 using UglyToad.PdfPig.Core;
-using UglyToad.PdfPig.DocumentLayoutAnalysis;
 using UglyToad.PdfPig.Geometry;
 
 namespace Caly.Core.Handlers
@@ -240,9 +239,16 @@ namespace Caly.Core.Handlers
                 // TODO - We have an issue when scrolling and changing page here, similar the TrySwitchCapture
                 // not sure how we should address it
             }
+            
+            if (e.IsDragging())
+            {
+                // Dragging pages is not handled here
+                return;
+            }
 
             if (pointerPoint.Properties.IsLeftButtonPressed && _startPointerPressed.HasValue && _startPointerPressed.Value.Euclidean(loc) > 1.0)
             {
+                // Text selection
                 HandleMouseMoveSelection(control, e, loc);
             }
             else
@@ -392,11 +398,6 @@ namespace Caly.Core.Handlers
                 return;
             }
 
-            if (e.ClickCount < 2)
-            {
-                //throw new ArgumentException($"Click count should be 2 or more. Got {e.ClickCount} click(s).");
-            }
-
             PdfWord? startWord;
             PdfWord? endWord;
 
@@ -458,6 +459,14 @@ namespace Caly.Core.Handlers
             if (pointerPoint.Properties.IsLeftButtonPressed)
             {
                 _startPointerPressed = point;
+
+                if (e.IsDragging())
+                {
+                    // Dragging pages is not handled here
+                    return;
+                }
+
+                // Text selection
                 PdfWord? word = control.PdfTextLayer.FindWordOver(point.X, point.Y);
 
                 if (word is not null && Selection.IsWordSelected(control.PageNumber!.Value, word))
@@ -498,8 +507,9 @@ namespace Caly.Core.Handlers
             var pointerPoint = e.GetCurrentPoint(control);
 
             bool ignore = _isSelecting || _isMultipleClickSelection;
-            if (!ignore && pointerPoint.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
+            if (!ignore && pointerPoint.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased && !e.IsDragging())
             {
+                // Dragging pages is not handled here
                 ClearSelection(control);
 
                 // Check link

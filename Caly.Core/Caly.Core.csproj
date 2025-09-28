@@ -28,7 +28,6 @@
 		<PackageReference Include="Caly.Tabalonia" Version="11.3.2.2" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
-		<PackageReference Include="Lifti.Core" Version="6.4.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
 		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.12.1-alpha004" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />

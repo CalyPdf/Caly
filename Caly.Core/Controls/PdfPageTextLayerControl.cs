@@ -22,7 +22,6 @@ using System;
 using System.Reactive.Disposables;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Caly.Core.Handlers.Interfaces;
@@ -35,9 +34,6 @@ namespace Caly.Core.Controls
     {
         // https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Controls/Primitives/TextSelectionCanvas.cs#L62
         // Check caret handle
-
-        private static readonly Cursor IbeamCursor = new(StandardCursorType.Ibeam);
-        private static readonly Cursor HandCursor = new(StandardCursorType.Hand);
 
         private CompositeDisposable? _pointerDisposables;
 
@@ -96,32 +92,29 @@ namespace Caly.Core.Controls
 
         internal void SetIbeamCursor()
         {
-            if (Cursor == IbeamCursor)
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is not null && topLevel.Cursor != App.IbeamCursor)
             {
-                return;
+                topLevel.Cursor = App.IbeamCursor;
             }
-
-            Cursor = IbeamCursor;
         }
 
         internal void SetHandCursor()
         {
-            if (Cursor == HandCursor)
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is not null && topLevel.Cursor != App.HandCursor)
             {
-                return;
+                topLevel.Cursor = App.HandCursor;
             }
-
-            Cursor = HandCursor;
         }
-
+        
         internal void SetDefaultCursor()
         {
-            if (Cursor == Cursor.Default)
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is not null && topLevel.Cursor != App.DefaultCursor)
             {
-                return;
+                topLevel.Cursor = App.DefaultCursor;
             }
-
-            Cursor = Cursor.Default;
         }
 
         public override void Render(DrawingContext context)
@@ -152,10 +145,10 @@ namespace Caly.Core.Controls
                 
                 if (TextSelectionHandler is not null)
                 {
-                    var pointerMovedDisposable = this.GetObservable(PointerMovedEvent)
+                    var pointerWheelChangedDisposable = this.GetObservable(PointerWheelChangedEvent, handledEventsToo: true)
                         .Subscribe(TextSelectionHandler!.OnPointerMoved);
 
-                    var pointerWheelChangedDisposable = this.GetObservable(PointerWheelChangedEvent, handledEventsToo: true)
+                    var pointerMovedDisposable = this.GetObservable(PointerMovedEvent)
                         .Subscribe(TextSelectionHandler!.OnPointerMoved);
 
                     var pointerPressedDisposable = this.GetObservable(PointerPressedEvent)
