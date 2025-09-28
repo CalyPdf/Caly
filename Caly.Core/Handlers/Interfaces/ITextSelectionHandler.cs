@@ -37,7 +37,7 @@ namespace Caly.Core.Handlers.Interfaces
         void OnPointerPressed(PointerPressedEventArgs e);
 
         void OnPointerReleased(PointerReleasedEventArgs e);
-        
+
         /// <summary>
         /// Add results to existing ones.
         /// </summary>

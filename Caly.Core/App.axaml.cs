@@ -27,6 +27,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Notifications;
 using Avalonia.Data.Core.Plugins;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -43,6 +44,14 @@ namespace Caly.Core
 {
     public partial class App : Application
     {
+        #region Cursors definition
+        public static readonly Cursor DefaultCursor = Cursor.Default;
+        public static readonly Cursor PanCursor = new(StandardCursorType.SizeAll);
+        public static readonly Cursor SizeWestEastCursor = new(StandardCursorType.SizeWestEast);
+        public static readonly Cursor IbeamCursor = new(StandardCursorType.Ibeam);
+        public static readonly Cursor HandCursor = new(StandardCursorType.Hand);
+        #endregion
+
         public static readonly IMessenger Messenger = StrongReferenceMessenger.Default;
 
         private readonly FilePipeStream _pipeServer = new();

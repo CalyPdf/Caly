@@ -63,10 +63,10 @@ public sealed class PdfPageItemsControl : ItemsControl
         AvaloniaProperty.RegisterDirect<PdfPageItemsControl, ScrollViewer?>(nameof(Scroll), o => o.Scroll);
 
     /// <summary>
-    /// Defines the <see cref="LayoutTransformControl"/> property.
+    /// Defines the <see cref="LayoutTransform"/> property.
     /// </summary>
     public static readonly DirectProperty<PdfPageItemsControl, LayoutTransformControl?> LayoutTransformControlProperty =
-        AvaloniaProperty.RegisterDirect<PdfPageItemsControl, LayoutTransformControl?>(nameof(LayoutTransformControl), o => o.LayoutTransformControl);
+        AvaloniaProperty.RegisterDirect<PdfPageItemsControl, LayoutTransformControl?>(nameof(LayoutTransform), o => o.LayoutTransform);
 
     /// <summary>
     /// Defines the <see cref="PageCount"/> property.
@@ -94,7 +94,7 @@ public sealed class PdfPageItemsControl : ItemsControl
     public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PdfPageItemsControl, double>(nameof(ZoomLevel), 1, defaultBindingMode: BindingMode.TwoWay);
     
     private ScrollViewer? _scroll;
-    private LayoutTransformControl? _layoutTransformControl;
+    private LayoutTransformControl? _layoutTransform;
     private TabsControl? _tabsControl;
 
     static PdfPageItemsControl()
@@ -116,10 +116,10 @@ public sealed class PdfPageItemsControl : ItemsControl
     /// <summary>
     /// Gets the scroll information for the <see cref="ListBox"/>.
     /// </summary>
-    public LayoutTransformControl? LayoutTransformControl
+    public LayoutTransformControl? LayoutTransform
     {
-        get => _layoutTransformControl;
-        private set => SetAndRaise(LayoutTransformControlProperty, ref _layoutTransformControl, value);
+        get => _layoutTransform;
+        private set => SetAndRaise(LayoutTransformControlProperty, ref _layoutTransform, value);
     }
 
     public int PageCount
@@ -371,6 +371,26 @@ public sealed class PdfPageItemsControl : ItemsControl
         return null;
     }
 
+    private Point? _currentPosition = null;
+
+    internal void SetPanCursor()
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is not null && topLevel.Cursor != App.PanCursor)
+        {
+            topLevel.Cursor = App.PanCursor;
+        }
+    }
+
+    internal void SetDefaultCursor()
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is not null && topLevel.Cursor != App.DefaultCursor)
+        {
+            topLevel.Cursor = App.DefaultCursor;
+        }
+    }
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
@@ -379,10 +399,14 @@ public sealed class PdfPageItemsControl : ItemsControl
         Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
         Scroll.AddHandler(SizeChangedEvent, (_, _) => SetPagesVisibility(), RoutingStrategies.Direct);
         Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
+        Scroll.AddHandler(KeyUpEvent, OnKeyUpHandler);
         Scroll.Focus(); // Make sure the Scroll has focus
 
-        LayoutTransformControl = e.NameScope.FindFromNameScope<LayoutTransformControl>("PART_LayoutTransformControl");
-        LayoutTransformControl.AddHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
+        LayoutTransform = e.NameScope.FindFromNameScope<LayoutTransformControl>("PART_LayoutTransformControl");
+        LayoutTransform.AddHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
+        LayoutTransform.AddHandler(PointerPressedEvent, OnPointerPressed);
+        LayoutTransform.AddHandler(PointerMovedEvent, OnPointerMoved);
+        LayoutTransform.AddHandler(PointerReleasedEvent, OnPointerReleased);
         
         _tabsControl = this.FindAncestorOfType<TabsControl>();
         if (_tabsControl is not null)
@@ -393,13 +417,50 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         if (CalyExtensions.IsMobilePlatform())
         {
-            LayoutTransformControl.GestureRecognizers.Add(new PinchGestureRecognizer());
-            Gestures.AddPinchHandler(LayoutTransformControl, _onPinchChangedHandler);
-            Gestures.AddPinchEndedHandler(LayoutTransformControl, _onPinchEndedHandler);
-            Gestures.AddHoldingHandler(LayoutTransformControl, _onHoldingChangedHandler);
+            LayoutTransform.GestureRecognizers.Add(new PinchGestureRecognizer());
+            Gestures.AddPinchHandler(LayoutTransform, _onPinchChangedHandler);
+            Gestures.AddPinchEndedHandler(LayoutTransform, _onPinchEndedHandler);
+            Gestures.AddHoldingHandler(LayoutTransform, _onHoldingChangedHandler);
         }
     }
 
+    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromLogicalTree(e);
+
+        ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
+        
+        if (Scroll is not null)
+        {
+            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
+            Scroll.RemoveHandler(SizeChangedEvent, (_, _) => SetPagesVisibility());
+            Scroll.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
+            Scroll.RemoveHandler(KeyUpEvent, OnKeyUpHandler);
+        }
+
+        if (LayoutTransform is not null)
+        {
+            LayoutTransform.RemoveHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
+            LayoutTransform.RemoveHandler(PointerPressedEvent, OnPointerPressed);
+            LayoutTransform.RemoveHandler(PointerMovedEvent, OnPointerMoved);
+            LayoutTransform.RemoveHandler(PointerReleasedEvent, OnPointerReleased);
+            
+            if (CalyExtensions.IsMobilePlatform())
+            {
+                Gestures.RemovePinchHandler(LayoutTransform, _onPinchChangedHandler);
+                Gestures.RemovePinchEndedHandler(LayoutTransform, _onPinchEndedHandler);
+                LayoutTransform.RemoveHandler(Gestures.HoldingEvent, _onHoldingChangedHandler);
+                //Gestures.RemoveHoldingHandler(LayoutTransformControl, _onHoldingChangedHandler);
+            }
+        }
+
+        if (_tabsControl is not null)
+        {
+            _tabsControl.TabDragStarted -= TabControlOnTabDragStarted;
+            _tabsControl.TabDragCompleted -= TabControlOnTabDragCompleted;
+        }
+    }
+    
     private void TabControlOnTabDragStarted(object? sender, Tabalonia.Events.DragTabDragStartedEventArgs e)
     {
         _isTabDragging = true;
@@ -492,32 +553,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         // page has exactly the same dimension of the visible page
         SetPagesVisibility();
     }
-
-    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromLogicalTree(e);
-
-        Scroll?.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
-        Scroll?.RemoveHandler(SizeChangedEvent, (_, _) => SetPagesVisibility());
-        Scroll?.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
-        LayoutTransformControl?.RemoveHandler(PointerWheelChangedEvent, OnPointerWheelChangedHandler);
-        ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
-
-        if (_tabsControl is not null)
-        {
-            _tabsControl.TabDragStarted -= TabControlOnTabDragStarted;
-            _tabsControl.TabDragCompleted -= TabControlOnTabDragCompleted;
-        }
-
-        if (CalyExtensions.IsMobilePlatform() && LayoutTransformControl is not null)
-        {
-            Gestures.RemovePinchHandler(LayoutTransformControl, _onPinchChangedHandler);
-            Gestures.RemovePinchEndedHandler(LayoutTransformControl, _onPinchEndedHandler);
-            LayoutTransformControl.RemoveHandler(Gestures.HoldingEvent, _onHoldingChangedHandler);
-            //Gestures.RemoveHoldingHandler(LayoutTransformControl, _onHoldingChangedHandler);
-        }
-    }
-
+    
     private bool HasRealisedItems()
     {
         if (ItemsPanelRoot is VirtualizingStackPanel vsp)
@@ -553,16 +589,16 @@ public sealed class PdfPageItemsControl : ItemsControl
             return;
         }
 
-        if (LayoutTransformControl is null || Scroll is null ||
+        if (LayoutTransform is null || Scroll is null ||
             Scroll.Viewport.IsEmpty() || ItemsView.Count == 0 ||
             !HasRealisedItems())
         {
             return;
         }
 
-        Debug.AssertIsNullOrScale(LayoutTransformControl.LayoutTransform?.Value);
+        Debug.AssertIsNullOrScale(LayoutTransform.LayoutTransform?.Value);
 
-        double invScale = 1.0 / (LayoutTransformControl.LayoutTransform?.Value.M11 ?? 1.0);
+        double invScale = 1.0 / (LayoutTransform.LayoutTransform?.Value.M11 ?? 1.0);
         Matrix fastInverse = Matrix.CreateScale(invScale, invScale);
 
         Rect viewPort = Scroll.GetViewportRect().TransformToAABB(fastInverse);
@@ -755,6 +791,14 @@ public sealed class PdfPageItemsControl : ItemsControl
         return !(top1 > bottom2 || bottom1 < top2);
     }
 
+    private void OnKeyUpHandler(object? sender, KeyEventArgs e)
+    {
+        if (e.IsPanningOrZooming())
+        {
+            ResetPanTo();
+        }
+    }
+
     private void OnKeyDownHandler(object? sender, KeyEventArgs e)
     {
         switch (e.Key)
@@ -798,7 +842,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void ZoomTo(PinchEventArgs e)
     {
-        if (LayoutTransformControl is null)
+        if (LayoutTransform is null)
         {
             return;
         }
@@ -816,9 +860,9 @@ public sealed class PdfPageItemsControl : ItemsControl
             double dZoom = (e.Scale * _pinchZoomReference) / ZoomLevel;
 
             // TODO - Origin still not correct
-            var point = LayoutTransformControl.PointToClient(new PixelPoint((int)e.ScaleOrigin.X, (int)e.ScaleOrigin.Y));
+            var point = LayoutTransform.PointToClient(new PixelPoint((int)e.ScaleOrigin.X, (int)e.ScaleOrigin.Y));
             ZoomToInternal(dZoom, point);
-            SetCurrentValue(ZoomLevelProperty, LayoutTransformControl.LayoutTransform?.Value.M11);
+            SetCurrentValue(ZoomLevelProperty, LayoutTransform.LayoutTransform?.Value.M11);
         }
         finally
         {
@@ -826,6 +870,67 @@ public sealed class PdfPageItemsControl : ItemsControl
         }
     }
     #endregion
+
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.IsPanning())
+        {
+            return;
+        }
+
+        var point = e.GetCurrentPoint(this);
+        _currentPosition = point.Position;
+        e.Handled = true;
+    }
+
+    private void OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!e.IsPanningOrZooming())
+        {
+            return;
+        }
+        
+        if (e.IsPanning())
+        {
+            SetPanCursor();
+            PanTo(e);
+        }
+        
+        e.Handled = true;
+    }
+
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        ResetPanTo();
+    }
+
+    private void PanTo(PointerEventArgs e)
+    {
+        if (Scroll is null)
+        {
+            return;
+        }
+
+        var point = e.GetCurrentPoint(this);
+
+        if (!_currentPosition.HasValue)
+        {
+            _currentPosition = point.Position;
+            return;
+        }
+
+        var delta = point.Position - _currentPosition;
+
+        var offset = Scroll.Offset - delta.Value;
+        Scroll.SetCurrentValue(ScrollViewer.OffsetProperty, offset);
+        _currentPosition = point.Position;
+    }
+
+    private void ResetPanTo()
+    {
+        _currentPosition = null;
+        SetDefaultCursor();
+    }
 
     private void OnPointerWheelChangedHandler(object? sender, PointerWheelEventArgs e)
     {
@@ -842,7 +947,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void ZoomTo(PointerWheelEventArgs e)
     {
-        if (LayoutTransformControl is null)
+        if (LayoutTransform is null)
         {
             return;
         }
@@ -856,8 +961,8 @@ public sealed class PdfPageItemsControl : ItemsControl
         {
             _isZooming = true;
             double dZoom = Math.Round(Math.Pow(_zoomFactor, e.Delta.Y), 4); // If IsScrollInertiaEnabled = false, Y is only 1 or -1
-            ZoomToInternal(dZoom, e.GetPosition(LayoutTransformControl));
-            SetCurrentValue(ZoomLevelProperty, LayoutTransformControl.LayoutTransform?.Value.M11);
+            ZoomToInternal(dZoom, e.GetPosition(LayoutTransform));
+            SetCurrentValue(ZoomLevelProperty, LayoutTransform.LayoutTransform?.Value.M11);
         }
         finally
         {
@@ -867,7 +972,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     internal void ZoomTo(double dZoom, Point point)
     {
-        if (LayoutTransformControl is null || Scroll is null)
+        if (LayoutTransform is null || Scroll is null)
         {
             return;
         }
@@ -890,12 +995,12 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void ZoomToInternal(double dZoom, Point point)
     {
-        if (LayoutTransformControl is null || Scroll is null)
+        if (LayoutTransform is null || Scroll is null)
         {
             return;
         }
 
-        double oldZoom = LayoutTransformControl.LayoutTransform?.Value.M11 ?? 1.0;
+        double oldZoom = LayoutTransform.LayoutTransform?.Value.M11 ?? 1.0;
         double newZoom = oldZoom * dZoom;
 
         if (newZoom < MinZoomLevel)
@@ -921,7 +1026,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
         var builder = TransformOperations.CreateBuilder(1);
         builder.AppendScale(newZoom, newZoom);
-        LayoutTransformControl.LayoutTransform = builder.Build();
+        LayoutTransform.LayoutTransform = builder.Build();
 
         var offset = Scroll.Offset - GetOffset(dZoom, point.X, point.Y);
         if (newZoom > oldZoom)
