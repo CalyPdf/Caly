@@ -64,20 +64,14 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
     #region Resize SplitView.Pane
     private void Resize_OnPointerEntered(object? sender, PointerEventArgs e)
     {
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is not null && topLevel.Cursor != App.SizeWestEastCursor)
-        {
-            topLevel.Cursor = App.SizeWestEastCursor;
-        }
+        Debug.ThrowNotOnUiThread();
+        Cursor = App.SizeWestEastCursor;
     }
 
     private void Resize_OnPointerExited(object? sender, PointerEventArgs e)
     {
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is not null && topLevel.Cursor != App.DefaultCursor)
-        {
-            Cursor = App.DefaultCursor;
-        }
+        Debug.ThrowNotOnUiThread();
+        Cursor = App.DefaultCursor;
     }
 
     private void Resize_OnPointerPressed(object? sender, PointerPressedEventArgs e)

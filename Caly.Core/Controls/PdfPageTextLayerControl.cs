@@ -24,6 +24,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
@@ -92,28 +93,34 @@ namespace Caly.Core.Controls
 
         internal void SetIbeamCursor()
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is not null && topLevel.Cursor != App.IbeamCursor)
+            Debug.ThrowNotOnUiThread();
+
+            var itemsControl = this.FindAncestorOfType<PdfPageItemsControl>();
+            if (itemsControl is not null && itemsControl.Cursor != App.IbeamCursor)
             {
-                topLevel.Cursor = App.IbeamCursor;
+                itemsControl.Cursor = App.IbeamCursor;
             }
         }
 
         internal void SetHandCursor()
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is not null && topLevel.Cursor != App.HandCursor)
+            Debug.ThrowNotOnUiThread();
+
+            var itemsControl = this.FindAncestorOfType<PdfPageItemsControl>();
+            if (itemsControl is not null && itemsControl.Cursor != App.HandCursor)
             {
-                topLevel.Cursor = App.HandCursor;
+                itemsControl.Cursor = App.HandCursor;
             }
         }
         
         internal void SetDefaultCursor()
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is not null && topLevel.Cursor != App.DefaultCursor)
+            Debug.ThrowNotOnUiThread();
+
+            var itemsControl = this.FindAncestorOfType<PdfPageItemsControl>();
+            if (itemsControl is not null && itemsControl.Cursor != App.DefaultCursor)
             {
-                topLevel.Cursor = App.DefaultCursor;
+                itemsControl.Cursor = App.DefaultCursor;
             }
         }
 

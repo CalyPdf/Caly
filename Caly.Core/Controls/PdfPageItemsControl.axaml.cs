@@ -375,20 +375,14 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     internal void SetPanCursor()
     {
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is not null && topLevel.Cursor != App.PanCursor)
-        {
-            topLevel.Cursor = App.PanCursor;
-        }
+        Debug.ThrowNotOnUiThread();
+        Cursor = App.PanCursor;
     }
 
     internal void SetDefaultCursor()
     {
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is not null && topLevel.Cursor != App.DefaultCursor)
-        {
-            topLevel.Cursor = App.DefaultCursor;
-        }
+        Debug.ThrowNotOnUiThread();
+        Cursor = App.DefaultCursor;
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
