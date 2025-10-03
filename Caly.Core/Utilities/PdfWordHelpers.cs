@@ -42,6 +42,8 @@ namespace Caly.Core.Utilities
                 ctx.EndFigure(true);
             }
 
+            System.Diagnostics.Debug.Assert(Math.Abs(Math.Round(rect.Width, 1) - Math.Round(sg.Bounds.Width, 1)) <= 0.15);
+
             return sg;
         }
 
@@ -64,7 +66,7 @@ namespace Caly.Core.Utilities
             }
 
             Span<PdfRectangle> rects = length <= 128 ? stackalloc PdfRectangle[length] : new PdfRectangle[length];
-
+            
             for (int l = startIndex; l <= endIndex; ++l)
             {
                 rects[l - startIndex] = word.GetLetterBoundingBox(l);

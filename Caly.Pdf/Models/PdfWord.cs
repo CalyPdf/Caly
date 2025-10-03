@@ -83,11 +83,34 @@ namespace Caly.Pdf.Models
             var firstLetter = letters[0];
             int charsCount = firstLetter.Value.Length;
 
+            switch (TextOrientation)
+            {
+                case TextOrientation.Horizontal:
+                    BoundingBox = GetBoundingBoxH(letters);
+                    break;
+
+                case TextOrientation.Rotate180:
+                    BoundingBox = GetBoundingBox180(letters);
+                    break;
+
+                case TextOrientation.Rotate90:
+                    BoundingBox = GetBoundingBox90(letters);
+                    break;
+
+                case TextOrientation.Rotate270:
+                    BoundingBox = GetBoundingBox270(letters);
+                    break;
+
+                default: // Other
+                    BoundingBox = GetBoundingBoxOther(letters);
+                    break;
+            }
+
             if (Count == 1)
             {
                 // Do nothing
             }
-            else if (TextOrientation == TextOrientation.Other)
+            else if (TextOrientation == TextOrientation.Other || !IsConsistent(BoundingBox, letters))
             {
                 // We keep all bounding boxes
                 _lettersBoundingBoxes = new PdfRectangle[letters.Count];
@@ -112,6 +135,10 @@ namespace Caly.Pdf.Models
                 {
                     var letter = letters[i];
 
+                    //var dist = Distances.Euclidean(previousLetter.EndBaseLine, letter.EndBaseLine);
+                    //position += dist;
+
+                    // Assumption here is that letters are not overlapping and not too spaced
                     position += letter.BoundingBox.Width;
                     _letterPositions[i] = (float)position;
                     charsCount += letter.Value.Length;
@@ -151,27 +178,18 @@ namespace Caly.Pdf.Models
 
             Value = StringPool.Shared.GetOrAdd(chars);
 
-            switch (TextOrientation)
+            static bool IsConsistent(PdfRectangle bbox, IReadOnlyList<PdfLetter> letters)
             {
-                case TextOrientation.Horizontal:
-                    BoundingBox = GetBoundingBoxH(letters);
-                    break;
+                // If the sum of the letters width is too different from the bbox width,
+                // we don't trust knowing where the letters are based on their width
+                double expectedWidth = letters.Sum(l => l.BoundingBox.Width);
+                double delta = expectedWidth / bbox.Width;
+                if (delta < 0.8 || delta > 1.2)
+                {
+                    return false;
+                }
 
-                case TextOrientation.Rotate180:
-                    BoundingBox = GetBoundingBox180(letters);
-                    break;
-
-                case TextOrientation.Rotate90:
-                    BoundingBox = GetBoundingBox90(letters);
-                    break;
-
-                case TextOrientation.Rotate270:
-                    BoundingBox = GetBoundingBox270(letters);
-                    break;
-
-                default: // Other
-                    BoundingBox = GetBoundingBoxOther(letters);
-                    break;
+                return true;
             }
         }
 
@@ -210,7 +228,9 @@ namespace Caly.Pdf.Models
                             double endX = BoundingBox.BottomLeft.X + endPosition;
                             double startY = BoundingBox.BottomLeft.Y;
                             double endY = BoundingBox.TopLeft.Y;
-                            return new PdfRectangle(startX, startY, endX, endY);
+                            var rect = new PdfRectangle(startX, startY, endX, endY);
+                            System.Diagnostics.Debug.Assert(rect.Rotation == 0);
+                            return rect;
                         }
 
                     case TextOrientation.Rotate180:
