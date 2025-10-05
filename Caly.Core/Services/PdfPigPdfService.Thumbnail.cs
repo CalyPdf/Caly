@@ -62,15 +62,15 @@ namespace Caly.Core.Services
                 token.ThrowIfCancellationRequested();
 
                 canvas.Clear(SKColors.White);
-                canvas.DrawPicture(picture, ref scale);
+                canvas.DrawPicture(picture, in scale);
 
 #if DEBUG
                 using (var skFont = SKTypeface.Default.ToFont(tHeight / 5f, 1f))
-                using (var fontPaint = new SKPaint(skFont))
+                using (var paint = new SKPaint())
                 {
-                    fontPaint.Style = SKPaintStyle.Fill;
-                    fontPaint.Color = SKColors.Blue.WithAlpha(150);
-                    canvas.DrawText(picture.UniqueId.ToString(), tWidth / 4f, tHeight / 2f, fontPaint);
+                    paint.Style = SKPaintStyle.Fill;
+                    paint.Color = SKColors.Blue.WithAlpha(150);
+                    canvas.DrawText(picture.UniqueId.ToString(), tWidth / 4f, tHeight / 2f, skFont, paint);
                 }
 #endif
 
