@@ -33,7 +33,7 @@
 		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.12.1-alpha004" />
 		<PackageReference Include="SkiaSharp" Version="2.88.9" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.9" />
-		<PackageReference Include="System.Reactive" Version="6.0.2" />
+		<PackageReference Include="System.Reactive" Version="6.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
