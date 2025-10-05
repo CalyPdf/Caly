@@ -51,12 +51,12 @@ namespace Caly.Core.Views
         {
             try
             {
-                if (e.Data is null || !e.Data.Contains(DataFormats.Files))
+                if (!e.DataTransfer.Contains(DataFormat.File))
                 {
                     return;
                 }
 
-                var files = e.Data.GetFiles();
+                var files = e.DataTransfer.TryGetFiles();
 
                 if (files is null)
                 {
