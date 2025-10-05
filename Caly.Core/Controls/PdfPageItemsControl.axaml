@@ -33,6 +33,7 @@
 						<ScrollViewer Name="PART_ScrollViewer"
 									  VerticalScrollBarVisibility="Auto"
 									  HorizontalScrollBarVisibility="Auto"
+									  AllowAutoHide="False"
 									  Focusable="True"
 									  HorizontalAlignment="Stretch"
 									  VerticalAlignment="Stretch"
