@@ -196,13 +196,20 @@ namespace Caly.Core.Services
 
                 var picture = await GetRenderPageAsync(renderRequest.Page.PageNumber, renderRequest.Token);
 
+#if DEBUG
+                if (picture?.Item is not null)
+                {
+                    System.Diagnostics.Debug.Assert(picture.Item.CullRect.Width > 0);
+                    System.Diagnostics.Debug.Assert(picture.Item.CullRect.Height > 0);
+                }
+#endif
+                
                 renderRequest.Page.PdfPicture = picture;
 
-                if (renderRequest.Page.PdfPicture?.Item is not null)
+                if (!renderRequest.Page.IsSizeSet() && renderRequest.Page.PdfPicture?.Item is not null)
                 {
                     renderRequest.Page.Width = renderRequest.Page.PdfPicture.Item.CullRect.Width;
                     renderRequest.Page.Height = renderRequest.Page.PdfPicture.Item.CullRect.Height;
-                    renderRequest.Page.SetSizeSet();
                 }
             }
             finally
@@ -238,7 +245,6 @@ namespace Caly.Core.Services
                 }
 
                 await SetPageSizeAsync(renderRequest.Page, renderRequest.Token);
-                renderRequest.Page.SetSizeSet();
             }
             finally
             {
@@ -322,10 +328,12 @@ namespace Caly.Core.Services
                 {
                     if (picture is not null)
                     {
-                        // This is the first we load the page, width and height are not set yet
-                        renderRequest.Page.Width = picture.Item.CullRect.Width;
-                        renderRequest.Page.Height = picture.Item.CullRect.Height;
-                        renderRequest.Page.SetSizeSet();
+                        if (!renderRequest.Page.IsSizeSet())
+                        {
+                            // This is the first we load the page, width and height are not set yet
+                            renderRequest.Page.Width = picture.Item.CullRect.Width;
+                            renderRequest.Page.Height = picture.Item.CullRect.Height;
+                        }
 
                         await SetThumbnail(renderRequest.Page, picture.Item, renderRequest.Token);
                     }
