@@ -40,16 +40,14 @@ namespace Caly.Core.Controls
         private sealed class SkiaDrawOperation : ICustomDrawOperation
         {
             private readonly IRef<SKPicture>? _picture;
-            private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
 
             private readonly Lock _lock = new Lock();
 
-            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality)
+            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture)
             {
                 _picture = picture;
                 _visibleArea = visibleArea;
-                _filterQuality = filterQuality;
                 Bounds = bounds;
             }
 
@@ -97,20 +95,18 @@ namespace Caly.Core.Controls
 
                         using (var p = new SKPaint())
                         {
-                            p.FilterQuality = _filterQuality;
                             p.IsDither = false;
-                            p.FakeBoldText = false;
                             p.IsAntialias = false;
 
                             canvas.DrawPicture(_picture.Item, p);
 
 #if DEBUG
                             using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
-                            using (var fontPaint = new SKPaint(skFont))
+                            using (var paint = new SKPaint())
                             {
-                                fontPaint.Style = SKPaintStyle.Fill;
-                                fontPaint.Color = SKColors.Blue.WithAlpha(100);
-                                canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
+                                paint.Style = SKPaintStyle.Fill;
+                                paint.Color = SKColors.Blue.WithAlpha(100);
+                                canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, skFont, paint);
                             }
 #endif
                         }
@@ -184,11 +180,9 @@ namespace Caly.Core.Controls
                 return;
             }
 
-            SKRect tile = VisibleArea.Value.ToSKRect();
+            SKRect area = VisibleArea.Value.ToSKRect();
 
-            var filter = RenderOptions.GetBitmapInterpolationMode(this);
-
-            context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality()));
+            context.Custom(new SkiaDrawOperation(viewPort, area, picture));
         }
     }
 }
