@@ -271,6 +271,10 @@ namespace Caly.Core.Services
 
                 await SetPageTextLayerAsync(renderRequest.Page, renderRequest.Token);
             }
+            catch (OperationCanceledException)
+            {
+                throw; // No log
+            }
             catch (Exception ex)
             {
                 Debug.WriteExceptionToFile(ex);
