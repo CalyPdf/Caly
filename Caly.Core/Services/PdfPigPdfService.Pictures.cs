@@ -96,15 +96,15 @@ namespace Caly.Core.Services
                 float size = 9;
                 using (var drawTypeface = SKTypeface.CreateDefault())
                 using (var skFont = drawTypeface.ToFont(size))
-                using (var fontPaint = new SKPaint(skFont))
+                using (var paint = new SKPaint())
                 {
-                    fontPaint.Color = SKColors.Red;
-                    fontPaint.IsAntialias = true;
+                    paint.Color = SKColors.Red;
+                    paint.IsAntialias = true;
 
                     float lineY = size + 1;
                     foreach (var textLine in ex.ToString().Split('\n'))
                     {
-                        canvas.DrawShapedText(textLine, new SKPoint(0, lineY), fontPaint);
+                        canvas.DrawShapedText(textLine, new SKPoint(0, lineY), skFont, paint);
                         lineY += size;
                     }
                 }
