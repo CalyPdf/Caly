@@ -218,6 +218,11 @@ namespace Caly.Core.Services
         {
             Debug.ThrowOnUiThread();
 
+            if (pdfPage.IsSizeSet())
+            {
+                return;
+            }
+
             PdfPageInformation? pageInfo = await ExecuteWithLockAsync(
                 () => _document?.GetPage<PdfPageInformation>(pdfPage.PageNumber),
                 token);
@@ -226,6 +231,7 @@ namespace Caly.Core.Services
             {
                 pdfPage.Width = pageInfo.Value.Width;
                 pdfPage.Height = pageInfo.Value.Height;
+                pdfPage.SetSizeSet();
             }
         }
 
