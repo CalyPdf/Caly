@@ -145,32 +145,47 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                mw.Width = _current.Width;
-                mw.Height = _current.Height;
-                
                 try
                 {
+                    var screen = mw.Screens.ScreenFromWindow(mw) ?? mw.Screens.Primary;
+
+                    // Adjust for scale
+                    var area = screen?.WorkingArea.ToRect(screen.Scaling);
+
+                    int width = _current.Width;
+                    int height = _current.Height;
+
+                    if (area.HasValue)
+                    {
+                        if (width > area.Value.Width)
+                        {
+                            width = (int)area.Value.Width;
+                        }
+
+                        if (height > area.Value.Height)
+                        {
+                            height = (int)area.Value.Height;
+                        }
+                    }
+
+                    mw.Width = width;
+                    mw.Height = height;
+
                     if (mw.WindowStartupLocation == WindowStartupLocation.CenterScreen)
                     {
                         // Adjust window position as it looks like the top left corner is at
                         // screen center, not the center of window
-                        var screen = mw.Screens.ScreenFromWindow(mw) ?? mw.Screens.Primary;
-                        if (screen is null || mw.Width > screen.WorkingArea.Width ||
-                            mw.Height > screen.WorkingArea.Height)
+                        if (!area.HasValue)
                         {
-                            // Could not find screen or the window size is bigger than screen size
-                            // We set the window in to left corner
+                            // Could not find screen
                             mw.Position = PixelPoint.FromPoint(new Point(0, 0), screen?.Scaling ?? 1);
                             return;
                         }
 
-                        // Adjust for scale
-                        var area = screen.WorkingArea.ToRect(screen.Scaling);
-
                         // Center window
-                        double x = area.X + (area.Width - mw.Width) / 2.0;
-                        double y = area.Y + (area.Height - mw.Height) / 2.0;
-                        mw.Position = PixelPoint.FromPoint(new Point(x, y), screen.Scaling);
+                        double x = area.Value.X + (area.Value.Width - mw.Width) / 2.0;
+                        double y = area.Value.Y + (area.Value.Height - mw.Height) / 2.0;
+                        mw.Position = PixelPoint.FromPoint(new Point(x, y), screen!.Scaling);
                     }
                 }
                 catch (Exception ex)
