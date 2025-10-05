@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Pdf.Models;
@@ -53,6 +54,46 @@ namespace Caly.Core.Services
         {
             return await Task.Run(() =>
             {
+                // TODO - Move the below out of here as it reruns while indexing
+                List<int> separators = new List<int>();
+                for (int i = 0; i < text.Length; ++i)
+                {
+                    if (char.IsPunctuation(text[i]))
+                    {
+                        separators.Add(i);
+                    }
+                }
+
+                if (separators.Count > 0)
+                {
+                    int start = 0;
+                    StringBuilder sb = new StringBuilder();
+                    
+                    foreach (var i in separators)
+                    {
+                        if (i != 0)
+                        {
+                            sb.Append(text, start, i - start);
+                            sb.Append(WordSeparator);
+                        }
+   
+                        sb.Append(text, i, 1);
+
+                        if (i == text.Length - 1)
+                        {
+                            start = i + 1;
+                            break;
+                        }
+
+                        sb.Append(WordSeparator);
+                        start = i + 1;
+                    }
+
+                    sb.Append(text, start, text.Length - start);
+                    text = sb.ToString();
+                }
+                // END TODO
+                
                 var results = new List<TextSearchResultViewModel>();
                 var searchValue = SearchValues.Create([text], StringComparison.OrdinalIgnoreCase);
                 
@@ -93,6 +134,7 @@ namespace Caly.Core.Services
                         });
 
                         lastWordFound += word.Value.Length;
+
                     }
 
                     if (pageResults.Count > 0)
