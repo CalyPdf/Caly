@@ -42,14 +42,18 @@ namespace Caly.Core.Controls
             private readonly IRef<SKPicture>? _picture;
             private readonly SKFilterQuality _filterQuality;
             private readonly SKRect _visibleArea;
+            private readonly bool _isDarkMode;
+            private readonly SKPath _imageMask;
 
             private readonly Lock _lock = new Lock();
 
-            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality)
+            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture, SKFilterQuality filterQuality, bool isDarkMode, SKPath imageMask)
             {
                 _picture = picture;
                 _visibleArea = visibleArea;
                 _filterQuality = filterQuality;
+                _isDarkMode = isDarkMode;
+                _imageMask = imageMask;
                 Bounds = bounds;
             }
 
@@ -86,6 +90,7 @@ namespace Caly.Core.Controls
 
                     using (ISkiaSharpApiLease lease = leaseFeature.Lease())
                     {
+
                         var canvas = lease?.SkCanvas;
                         if (canvas is null)
                         {
@@ -95,24 +100,36 @@ namespace Caly.Core.Controls
                         canvas.Save();
                         canvas.ClipRect(_visibleArea);
 
-                        using (var p = new SKPaint())
-                        {
-                            p.FilterQuality = _filterQuality;
-                            p.IsDither = false;
-                            p.FakeBoldText = false;
-                            p.IsAntialias = false;
 
-                            canvas.DrawPicture(_picture.Item, p);
+                        if (_isDarkMode)
+                        {
+                            canvas = DarkModeRender.GenerateDarkModePage(canvas, _picture.Item, _imageMask, _filterQuality);    
+                        }
+                        // Original rendering (no dark mode)
+                        else
+                        {
+                            
+                            using (var p = new SKPaint())
+                            {
+                                p.FilterQuality = _filterQuality;
+                                p.IsDither = false;
+                                p.FakeBoldText = false;
+                                p.IsAntialias = false;
+
+                                canvas.DrawPicture(_picture.Item, p);
+
+
 
 #if DEBUG
-                            using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
-                            using (var fontPaint = new SKPaint(skFont))
-                            {
-                                fontPaint.Style = SKPaintStyle.Fill;
-                                fontPaint.Color = SKColors.Blue.WithAlpha(100);
-                                canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
-                            }
+                                using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
+                                using (var fontPaint = new SKPaint(skFont))
+                                {
+                                    fontPaint.Style = SKPaintStyle.Fill;
+                                    fontPaint.Color = SKColors.Blue.WithAlpha(100);
+                                    canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, fontPaint);
+                                }
 #endif
+                            }
                         }
                         canvas.Restore();
                     }
@@ -148,14 +165,38 @@ namespace Caly.Core.Controls
             set => SetValue(VisibleAreaProperty, value);
         }
 
+
+        public static readonly StyledProperty<bool> IsDarkModeProperty =
+        AvaloniaProperty.Register<SkiaPdfPageControl, bool>(nameof(IsDarkMode));
+
+        public bool IsDarkMode
+        {
+            get => GetValue(IsDarkModeProperty);
+            set => SetValue(IsDarkModeProperty, value);
+        }
+
+        public static readonly StyledProperty<SKPath> ImageMaskProperty =
+    AvaloniaProperty.Register<SkiaPdfPageControl, SKPath>(nameof(ImageMask));
+
+
+        public SKPath ImageMask
+        {
+            get => GetValue(ImageMaskProperty);
+            set => SetValue(ImageMaskProperty, value);
+        }
         static SkiaPdfPageControl()
         {
             ClipToBoundsProperty.OverrideDefaultValue<SkiaPdfPageControl>(true);
 
             AffectsRender<SkiaPdfPageControl>(PictureProperty, VisibleAreaProperty);
             AffectsMeasure<SkiaPdfPageControl>(PictureProperty, VisibleAreaProperty);
+            IsDarkModeProperty.Changed.AddClassHandler<SkiaPdfPageControl>((x, e) => x.OnDarkModeChanged(e));
         }
 
+        private void OnDarkModeChanged(AvaloniaPropertyChangedEventArgs e)
+        {
+            InvalidateVisual();
+        }
         /// <summary>
         /// This operation is executed on UI thread.
         /// </summary>
@@ -188,7 +229,7 @@ namespace Caly.Core.Controls
 
             var filter = RenderOptions.GetBitmapInterpolationMode(this);
 
-            context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality()));
+            context.Custom(new SkiaDrawOperation(viewPort, tile, picture, filter.ToSKFilterQuality(), IsDarkMode, ImageMask));
         }
     }
 }

@@ -45,4 +45,8 @@
 			<SubType>Designer</SubType>
 		</AvaloniaResource>
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Messages\" />
+	</ItemGroup>
 </Project>
