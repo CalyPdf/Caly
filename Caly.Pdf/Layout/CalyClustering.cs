@@ -1,4 +1,5 @@
-﻿using UglyToad.PdfPig.Core;
+﻿using System.Runtime.InteropServices;
+using UglyToad.PdfPig.Core;
 
 namespace Caly.Pdf.Layout
 {
@@ -69,7 +70,7 @@ namespace Caly.Pdf.Layout
             });
 
             // 2. Group indexes
-            foreach (var group in GroupIndexes(indexes, parallelOptions.CancellationToken))
+            foreach (var group in GroupIndexes(indexes))
             {
                 yield return group.Select(i => elements[i]).ToArray();
             }
@@ -136,7 +137,7 @@ namespace Caly.Pdf.Layout
             });
 
             // 2. Group indexes
-            foreach (var group in GroupIndexes(indexes, parallelOptions.CancellationToken))
+            foreach (var group in GroupIndexes(indexes))
             {
                 yield return group.Select(i => elements[i]).ToArray();
             }
@@ -202,81 +203,42 @@ namespace Caly.Pdf.Layout
             });
 
             // 2. Group indexes
-            foreach (var group in GroupIndexes(indexes, parallelOptions.CancellationToken))
+            foreach (var group in GroupIndexes(indexes))
             {
                 yield return group.Select(i => elements[i]).ToArray();
             }
         }
 
-        /// <summary>
-        /// Group elements using Depth-first search.
-        /// <para>https://en.wikipedia.org/wiki/Depth-first_search</para>
-        /// </summary>
-        /// <param name="edges">The graph. edges[i] = j indicates that there is an edge between i and j.</param>
-        /// <returns>A List of HashSets containing the grouped indexes.</returns>
-        internal static List<HashSet<int>> GroupIndexes(int[] edges, CancellationToken token)
+        internal static List<List<int>> GroupIndexes(int[] edges)
         {
-            int[][] adjacency = new int[edges.Length][];
+            // Improved thanks to https://github.com/UglyToad/PdfPig/issues/1178
+            var adjacency = new List<int>[edges.Length];
             for (int i = 0; i < edges.Length; i++)
             {
-                if (i % 100 == 0)
-                {
-                    token.ThrowIfCancellationRequested();
-                }
-
-                HashSet<int> matches = new HashSet<int>();
-                if (edges[i] != -1) matches.Add(edges[i]);
-                for (int j = 0; j < edges.Length; j++)
-                {
-                    if (edges[j] == i) matches.Add(j);
-                }
-                adjacency[i] = matches.ToArray();
+                adjacency[i] = new List<int>();
             }
 
-            List<HashSet<int>> groupedIndexes = new List<HashSet<int>>();
+            // one pass O(n) 
+            for (int i = 0; i < edges.Length; i++)
+            {
+                int j = edges[i];
+                if (j != -1)
+                {
+                    // i <-> j
+                    adjacency[i].Add(j);
+                    adjacency[j].Add(i);
+                }
+            }
+
+            List<List<int>> groupedIndexes = new List<List<int>>();
             bool[] isDone = new bool[edges.Length];
 
             for (int p = 0; p < edges.Length; p++)
             {
-                if (isDone[p]) continue;
-                groupedIndexes.Add(DfsIterative(p, adjacency, ref isDone));
-            }
-            return groupedIndexes;
-        }
-
-        /// <summary>
-        /// Group elements using Depth-first search.
-        /// <para>https://en.wikipedia.org/wiki/Depth-first_search</para>
-        /// </summary>
-        /// <param name="edges">The graph. edges[i] = [j, k, l, ...] indicates that there is an edge between i and each element j, k, l, ...</param>
-        /// <returns>A List of HashSets containing the grouped indexes.</returns>
-        internal static List<HashSet<int>> GroupIndexes(int[][] edges)
-        {
-            int[][] adjacency = new int[edges.Length][];
-            for (int i = 0; i < edges.Length; i++)
-            {
-                HashSet<int> matches = new HashSet<int>();
-                for (int j = 0; j < edges[i].Length; j++)
+                if (isDone[p])
                 {
-                    if (edges[i][j] != -1) matches.Add(edges[i][j]);
+                    continue;
                 }
-
-                for (int j = 0; j < edges.Length; j++)
-                {
-                    for (int k = 0; k < edges[j].Length; k++)
-                    {
-                        if (edges[j][k] == i) matches.Add(j);
-                    }
-                }
-                adjacency[i] = matches.ToArray();
-            }
-
-            List<HashSet<int>> groupedIndexes = new List<HashSet<int>>();
-            bool[] isDone = new bool[edges.Length];
-
-            for (int p = 0; p < edges.Length; p++)
-            {
-                if (isDone[p]) continue;
                 groupedIndexes.Add(DfsIterative(p, adjacency, ref isDone));
             }
             return groupedIndexes;
@@ -286,26 +248,33 @@ namespace Caly.Pdf.Layout
         /// Depth-first search
         /// <para>https://en.wikipedia.org/wiki/Depth-first_search</para>
         /// </summary>
-        private static HashSet<int> DfsIterative(int s, int[][] adj, ref bool[] isDone)
+        private static List<int> DfsIterative(int s, List<int>[] adj, ref bool[] isDone)
         {
-            HashSet<int> group = new HashSet<int>();
+            List<int> group = new List<int>();
             Stack<int> S = new Stack<int>();
             S.Push(s);
 
+            isDone[s] = true;
             while (S.Count > 0)
             {
                 var u = S.Pop();
-                if (!isDone[u])
+                group.Add(u);
+
+                var currentAdj = CollectionsMarshal.AsSpan(adj[u]);
+                
+                for (int i = 0; i < currentAdj.Length; ++i)
                 {
-                    group.Add(u);
-                    isDone[u] = true;
-                    foreach (var v in adj[u])
+                    var v = currentAdj[i];
+                    ref bool done = ref isDone[v];
+                    if (!done)
                     {
                         S.Push(v);
+                        done = true;
                     }
                 }
             }
             return group;
         }
+
     }
 }

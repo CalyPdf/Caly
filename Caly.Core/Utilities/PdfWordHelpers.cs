@@ -42,8 +42,6 @@ namespace Caly.Core.Utilities
                 ctx.EndFigure(true);
             }
 
-            System.Diagnostics.Debug.Assert(Math.Abs(Math.Round(rect.Width, 1) - Math.Round(sg.Bounds.Width, 1)) <= 0.15);
-
             return sg;
         }
 

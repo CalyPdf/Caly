@@ -26,7 +26,7 @@ namespace Caly.Benchmarks
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<HighestOneBitBenchmark>();
+            var summary = BenchmarkRunner.Run<NearestNeighbourWordExtractorBenchmarks>();
             Console.ReadKey();
         }
     }

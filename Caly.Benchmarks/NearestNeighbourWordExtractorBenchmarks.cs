@@ -24,52 +24,43 @@ using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
-using UglyToad.PdfPig.DocumentLayoutAnalysis;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace Caly.Benchmarks
 {
     [MemoryDiagnoser]
-    public class DocstrumBenchmarks
+    public class NearestNeighbourWordExtractorBenchmarks
     {
-        private const string _path = "fseprd1102849.pdf";
-        //private const string _path = "2559 words.pdf";
+        //private const string _path = "fseprd1102849.pdf";
+        private const string _path = "2559 words.pdf";
 
-        private readonly Word[] _words;
-        private readonly PdfWord[] _calyWords;
+        private readonly Letter[] _letters;
+        private readonly PdfLetter[] _calyLetters;
 
-        public DocstrumBenchmarks()
+        public NearestNeighbourWordExtractorBenchmarks()
         {
             using (var doc = PdfDocument.Open(_path))
             {
                 doc.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
 
                 var page = doc.GetPage(1);
-                _words = NearestNeighbourWordExtractor.Instance.GetWords(page.Letters).ToArray();
+                _letters = page.Letters.ToArray();
 
                 var layer = doc.GetPage<PageTextLayerContent>(1);
-                _calyWords = CalyNNWordExtractor.Instance.GetWords(layer.Letters, CancellationToken.None).ToArray();
+                _calyLetters = layer.Letters.ToArray();
             }
         }
 
         [Benchmark(Baseline = true)]
-        public IReadOnlyList<TextBlock> PdfPig()
+        public IReadOnlyList<Word> PdfPig()
         {
-            return DocstrumBoundingBoxes.Instance.GetBlocks(_words);
+            return NearestNeighbourWordExtractor.Instance.GetWords(_letters).ToArray();
         }
 
         [Benchmark]
-        public IReadOnlyList<PdfTextBlock> Caly()
+        public IReadOnlyList<PdfWord> Caly()
         {
-            return CalyDocstrum.Instance.GetBlocks(_calyWords, CancellationToken.None);
+            return CalyNNWordExtractor.Instance.GetWords(_calyLetters, CancellationToken.None).ToArray();
         }
-
-
-        //[Benchmark]
-        //public IReadOnlyList<PdfTextBlock> Caly2()
-        //{
-        //    return CalyDocstrum2.Instance.GetBlocks(_calyWords); //, CancellationToken.None);
-        //}
     }
 }
