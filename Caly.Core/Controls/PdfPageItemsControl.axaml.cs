@@ -421,8 +421,6 @@ public sealed class PdfPageItemsControl : ItemsControl
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromLogicalTree(e);
-
-        ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
         
         if (Scroll is not null)
         {
@@ -483,13 +481,47 @@ public sealed class PdfPageItemsControl : ItemsControl
     {
         base.OnLoaded(e);
         ItemsPanelRoot!.DataContextChanged += ItemsPanelRoot_DataContextChanged;
-        ItemsPanelRoot.Loaded += ItemsPanelRoot_Loaded;
+        ItemsPanelRoot.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
     }
 
-    private void ItemsPanelRoot_Loaded(object? sender, RoutedEventArgs e)
+    protected override void OnUnloaded(RoutedEventArgs e)
     {
-        ItemsPanelRoot!.Loaded -= ItemsPanelRoot_Loaded;
-        SetPagesVisibility();
+        base.OnUnloaded(e);
+        ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
+        ItemsPanelRoot.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+    }
+
+    /// <summary>
+    /// The number of first layout updates to listen to.
+    /// </summary>
+    private int _layoutUpdateCount = 5;
+    private void ItemsPanelRoot_LayoutUpdated(object? sender, EventArgs e)
+    {
+        // When ItemsPanelRoot is first loaded, there is a chance that a container
+        // (i.e. the second page) is realised after the last SetPagesVisibility()
+        // call. When this happens the page will not be rendered because it
+        // is seen as 'not visible'.
+        // To prevent that we listen to the first layout updates and check visibility.
+
+        if (GetMaxPageIndex() > 0)
+        {
+            // We have enough containers realised, we can stop listening to layout updates.
+            _layoutUpdateCount = 0;
+        }
+        
+        if (_layoutUpdateCount == 0)
+        {
+            ItemsPanelRoot!.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+        }
+        
+        try
+        {
+            SetPagesVisibility();
+        }
+        finally
+        {
+            _layoutUpdateCount--;
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -735,6 +767,8 @@ public sealed class PdfPageItemsControl : ItemsControl
         int minPageIndex = GetMinPageIndex();
         int maxPageIndex = GetMaxPageIndex(); // Exclusive
 
+        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: minPageIndex={minPageIndex} maxPageIndex={maxPageIndex}");
+        
         // Start with checking forward.
         // TODO - While scrolling down, the current selected page can become invisible and force
         // a full iteration if starting backward
