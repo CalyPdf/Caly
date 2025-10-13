@@ -54,7 +54,7 @@ public sealed class PdfPageItemsControl : ItemsControl
     /// <summary>
     /// The default value for the <see cref="PdfPageItemsControl.ItemsPanel"/> property.
     /// </summary>
-    private static readonly FuncTemplate<Panel?> DefaultPanel = new(() => new VirtualizingStackPanel());
+    private static readonly FuncTemplate<Panel?> DefaultPanel = new(() => new VirtualizingStackPanel() { CacheLength = 0.5 });
 
     /// <summary>
     /// Defines the <see cref="Scroll"/> property.
