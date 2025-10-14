@@ -24,7 +24,7 @@ namespace Caly.Core.Services
 
             if (!IsActive)
             {
-                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPageSize {page.PageNumber}: Skipping as not active");
+                //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPageSize {page.PageNumber}: Skipping as not active");
                 return;
             }
 
@@ -37,7 +37,7 @@ namespace Caly.Core.Services
 
         public void EnqueueRequestPicture(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPicture {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPicture {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -46,7 +46,7 @@ namespace Caly.Core.Services
 
             if (!IsActive)
             {
-                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPicture {page.PageNumber}: Skipping as not active");
+                //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPicture {page.PageNumber}: Skipping as not active");
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace Caly.Core.Services
 
         public void EnqueueRemovePicture(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRemovePicture {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRemovePicture {page.PageNumber}");
 
             var picture = page.PdfPicture;
 
@@ -85,7 +85,7 @@ namespace Caly.Core.Services
 
         public void EnqueueRequestTextLayer(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestTextLayer {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestTextLayer {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -94,7 +94,7 @@ namespace Caly.Core.Services
 
             if (!IsActive)
             {
-                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestTextLayer {page.PageNumber}: Skipping as not active");
+                //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestTextLayer {page.PageNumber}: Skipping as not active");
                 return;
             }
 
@@ -111,7 +111,7 @@ namespace Caly.Core.Services
 
         public void EnqueueRemoveTextLayer(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRemoveTextLayer {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRemoveTextLayer {page.PageNumber}");
 
             if (_textLayerTokens.TryRemove(page.PageNumber, out var cts))
             {
@@ -126,7 +126,7 @@ namespace Caly.Core.Services
 
         public void EnqueueRequestThumbnail(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestThumbnail {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestThumbnail {page.PageNumber}");
 
             if (IsDisposed())
             {
@@ -135,7 +135,7 @@ namespace Caly.Core.Services
 
             if (!IsActive)
             {
-                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestThumbnail {page.PageNumber}: Skipping as not active");
+                //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestThumbnail {page.PageNumber}: Skipping as not active");
                 return;
             }
 
@@ -149,19 +149,19 @@ namespace Caly.Core.Services
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
         }
 
         public void EnqueueRemoveThumbnail(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRemoveThumbnail {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRemoveThumbnail {page.PageNumber}");
 
             var thumbnail = page.Thumbnail;
             page.Thumbnail = null;
 
             if (_thumbnailTokens.TryRemove(page.PageNumber, out var cts))
             {
-                System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] REMOVED {page.PageNumber}");
+                //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] REMOVED {page.PageNumber}");
                 cts.Cancel();
                 cts.Dispose();
             }
@@ -174,7 +174,7 @@ namespace Caly.Core.Services
 
             thumbnail?.Dispose();
 
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] Thumbnail Count {_bitmaps.Count}");
         }
 
         #endregion
