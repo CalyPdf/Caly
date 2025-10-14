@@ -90,7 +90,7 @@ namespace Caly.Core.Controls
         {
             AffectsRender<PdfPageTextLayerControl>(PdfTextLayerProperty, SelectionChangedFlagProperty, VisibleAreaProperty);
         }
-
+        
         internal void SetIbeamCursor()
         {
             Debug.ThrowNotOnUiThread();
@@ -149,7 +149,7 @@ namespace Caly.Core.Controls
             {
                 // If the textSelectionHandler was already attached, we unsubscribe
                 _pointerDisposables?.Dispose();
-                
+
                 if (TextSelectionHandler is not null)
                 {
                     var pointerWheelChangedDisposable = this.GetObservable(PointerWheelChangedEvent, handledEventsToo: true)
@@ -164,15 +164,19 @@ namespace Caly.Core.Controls
                     var pointerReleasedDisposable = this.GetObservable(PointerReleasedEvent, handledEventsToo: false)
                         .Subscribe(TextSelectionHandler.OnPointerReleased);
 
+                    var pointerCaptureLostDisposable = this.GetObservable(PointerExitedEvent, handledEventsToo: true)
+                        .Subscribe(TextSelectionHandler.OnPointerExitedEvent);
+
                     _pointerDisposables = new CompositeDisposable(
                         pointerMovedDisposable,
                         pointerWheelChangedDisposable,
                         pointerPressedDisposable,
-                        pointerReleasedDisposable);
+                        pointerReleasedDisposable,
+                        pointerCaptureLostDisposable);
                 }
             }
         }
-
+        
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnDetachedFromVisualTree(e);

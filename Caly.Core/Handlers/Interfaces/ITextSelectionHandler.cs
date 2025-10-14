@@ -38,6 +38,8 @@ namespace Caly.Core.Handlers.Interfaces
 
         void OnPointerReleased(PointerReleasedEventArgs e);
 
+        void OnPointerExitedEvent(PointerEventArgs e);
+
         /// <summary>
         /// Add results to existing ones.
         /// </summary>

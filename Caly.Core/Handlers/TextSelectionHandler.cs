@@ -72,7 +72,7 @@ namespace Caly.Core.Handlers
         {
             Selection = new PdfTextSelection(numberOfPages);
         }
-
+        
         public void ClearSelection(PdfDocumentControl pdfDocumentControl)
         {
             Debug.ThrowNotOnUiThread();
@@ -199,6 +199,18 @@ namespace Caly.Core.Handlers
                 double dy = point1.Y - point2.Y;
                 return wX * dx * dx + wY * dy * dy;
             }
+        }
+
+        public void OnPointerExitedEvent(PointerEventArgs e)
+        {
+            Debug.ThrowNotOnUiThread();
+            
+            if (e.Source is not PdfPageTextLayerControl control)
+            {
+                return;
+            }
+            
+            HideAnnotation(control);
         }
 
 #if DEBUG
