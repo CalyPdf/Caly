@@ -26,7 +26,8 @@ namespace Caly.Core.Models
         {
             Width = 1000,
             Height = 500,
-            PaneSize = 350
+            PaneSize = 350,
+            IsDarkModeEnabled = false
         };
 
         // TODO - Add version for compatibility checks
@@ -39,9 +40,12 @@ namespace Caly.Core.Models
 
         public int PaneSize { get; set; }
 
+        public bool IsDarkModeEnabled { get; set; }
+
         public enum CalySettingsProperty
         {
-            PaneSize = 0
+            PaneSize = 0,
+            IsDarkModeEnabled = 1
         }
     }
 }

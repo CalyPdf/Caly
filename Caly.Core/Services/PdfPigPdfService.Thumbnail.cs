@@ -18,15 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Media.Imaging;
+using Avalonia.Skia;
+using Avalonia.Threading;
+using Caly.Core.Utilities;
+using Caly.Core.ViewModels;
+using SkiaSharp;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media.Imaging;
-using Avalonia.Threading;
-using Caly.Core.ViewModels;
-using SkiaSharp;
 
 namespace Caly.Core.Services
 {
@@ -55,14 +57,23 @@ namespace Caly.Core.Services
             }
 
             SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width, tHeight / (float)vm.Height);
-            
+
             using (var surface = SKSurface.Create(new SKImageInfo(tWidth, tHeight)))
-            using (var canvas = surface.Canvas)
             {
+                var canvas = surface.Canvas;
                 token.ThrowIfCancellationRequested();
 
-                canvas.Clear(SKColors.White);
-                canvas.DrawPicture(picture, ref scale);
+                // Dark mode rendering
+                if (_settingsService.GetSettings().IsDarkModeEnabled)
+                {
+                    canvas = DarkModeRender.GenerateDarkModePage(canvas, picture, vm.ImageMask.Clone(), scale: scale);
+                }
+                // Original rendering (no dark mode)
+                else
+                {
+                    canvas.Clear(SKColors.White);
+                    canvas.DrawPicture(picture, ref scale);
+                }
 
 #if DEBUG
                 using (var skFont = SKTypeface.Default.ToFont(tHeight / 5f, 1f))
