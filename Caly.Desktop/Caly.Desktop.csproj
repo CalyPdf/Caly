@@ -17,14 +17,13 @@
 	<!--https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-7-0#trimming-framework-library-features-->
 	<!--https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-8-0-->
 
-	<ItemGroup>
-		<DirectPInvoke Include="libSkiaSharp" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
-		<NativeLibrary Include="..\native\skia.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
-		<NativeLibrary Include="..\native\SkiaSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
-		<!--<NativeLibrary Include="TBD.a" Condition="!$(RuntimeIdentifier.StartsWith('win'))" />-->
+	<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+		<DirectPInvoke Include="libSkiaSharp" />
+		<NativeLibrary Include="..\native\skia.lib" />
+		<NativeLibrary Include="..\native\SkiaSharp.lib" />
 
-		<DirectPInvoke Include="libHarfBuzzSharp" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
-		<NativeLibrary Include="..\native\libHarfBuzzSharp.lib" Condition="$(RuntimeIdentifier.StartsWith('win'))" />
+		<DirectPInvoke Include="libHarfBuzzSharp" />
+		<NativeLibrary Include="..\native\libHarfBuzzSharp.lib" />
 	</ItemGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
