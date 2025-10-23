@@ -15,7 +15,7 @@ namespace Caly.Core.Services
 
         public void EnqueueRequestPageSize(PdfPageViewModel page)
         {
-            System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPageSize {page.PageNumber}");
+            //System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] EnqueueRequestPageSize {page.PageNumber}");
 
             if (IsDisposed())
             {
