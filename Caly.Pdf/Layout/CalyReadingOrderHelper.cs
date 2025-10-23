@@ -19,15 +19,20 @@ namespace Caly.Pdf.Layout
         /// <param name="words"></param>
         public static IEnumerable<PdfWord> OrderByReadingOrder(this IEnumerable<PdfWord> words)
         {
-            if (words.Count() <= 1)
+            if (words is not IReadOnlyList<PdfWord> array)
             {
-                return words;
+                array = words.ToArray();
             }
 
-            var textOrientation = words.First().TextOrientation;
+            if (array.Count <= 1)
+            {
+                return array;
+            }
+
+            var textOrientation = array[0].TextOrientation;
             if (textOrientation != TextOrientation.Other)
             {
-                foreach (var word in words)
+                foreach (var word in array)
                 {
                     if (word.TextOrientation != textOrientation)
                     {
@@ -40,23 +45,23 @@ namespace Caly.Pdf.Layout
             switch (textOrientation)
             {
                 case TextOrientation.Horizontal:
-                    return words.OrderBy(w => w.BoundingBox.BottomLeft.X);
+                    return array.OrderBy(w => w.BoundingBox.BottomLeft.X);
 
                 case TextOrientation.Rotate180:
-                    return words.OrderByDescending(w => w.BoundingBox.BottomLeft.X);
+                    return array.OrderByDescending(w => w.BoundingBox.BottomLeft.X);
 
                 case TextOrientation.Rotate90:
                     // Inverse Y axis - (0, 0) is top left
-                    return words.OrderByDescending(w => w.BoundingBox.BottomLeft.Y);
+                    return array.OrderByDescending(w => w.BoundingBox.BottomLeft.Y);
 
                 case TextOrientation.Rotate270:
                     // Inverse Y axis - (0, 0) is top left
-                    return words.OrderBy(w => w.BoundingBox.BottomLeft.Y);
+                    return array.OrderBy(w => w.BoundingBox.BottomLeft.Y);
 
                 case TextOrientation.Other:
                 default:
                     // We consider the words roughly have the same rotation.
-                    var avgAngle = words.Average(w => w.BoundingBox.Rotation);
+                    var avgAngle = array.Average(w => w.BoundingBox.Rotation);
                     if (double.IsNaN(avgAngle))
                     {
                         throw new NotFiniteNumberException("OrderByReadingOrder: NaN bounding box rotation found when ordering words.", avgAngle);
@@ -66,7 +71,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 1, 0 < θ < π/2
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = words.OrderBy(w => w.BoundingBox.BottomLeft.X)
+                        var ordered = array.OrderBy(w => w.BoundingBox.BottomLeft.X)
                             .ThenByDescending(w => w.BoundingBox.BottomLeft.Y);
                         return ordered;
                     }
@@ -75,7 +80,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 2, π/2 < θ ≤ π
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = words.OrderByDescending(w => w.BoundingBox.BottomLeft.X)
+                        var ordered = array.OrderByDescending(w => w.BoundingBox.BottomLeft.X)
                             .ThenByDescending(w => w.BoundingBox.BottomLeft.Y);
                         return ordered;
                     }
@@ -84,7 +89,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 3, -π < θ < -π/2
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = words.OrderByDescending(w => w.BoundingBox.BottomLeft.X)
+                        var ordered = array.OrderByDescending(w => w.BoundingBox.BottomLeft.X)
                             .ThenBy(w => w.BoundingBox.BottomLeft.Y);
                         return ordered;
                     }
@@ -93,7 +98,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 4, -π/2 < θ < 0
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = words.OrderBy(w => w.BoundingBox.BottomLeft.X)
+                        var ordered = array.OrderBy(w => w.BoundingBox.BottomLeft.X)
                             .ThenBy(w => w.BoundingBox.BottomLeft.Y);
                         return ordered;
                     }
@@ -109,15 +114,20 @@ namespace Caly.Pdf.Layout
         /// <param name="lines"></param>
         public static IEnumerable<PdfTextLine> OrderByReadingOrder(this IEnumerable<PdfTextLine> lines)
         {
-            if (lines.Count() <= 1)
+            if (lines is not IReadOnlyList<PdfTextLine> array)
             {
-                return lines;
+                array = lines.ToArray();
+            }
+            
+            if (array.Count <= 1)
+            {
+                return array;
             }
 
-            var textOrientation = lines.First().TextOrientation;
+            var textOrientation = array[0].TextOrientation;
             if (textOrientation != TextOrientation.Other)
             {
-                foreach (var line in lines)
+                foreach (var line in array)
                 {
                     if (line.TextOrientation != textOrientation)
                     {
@@ -131,22 +141,22 @@ namespace Caly.Pdf.Layout
             {
                 case TextOrientation.Horizontal:
                     // Inverse Y axis - (0, 0) is top left
-                    return lines.OrderBy(w => w.BoundingBox.BottomLeft.Y);
+                    return array.OrderBy(w => w.BoundingBox.BottomLeft.Y);
 
                 case TextOrientation.Rotate180:
                     // Inverse Y axis - (0, 0) is top left
-                    return lines.OrderByDescending(w => w.BoundingBox.BottomLeft.Y);
+                    return array.OrderByDescending(w => w.BoundingBox.BottomLeft.Y);
 
                 case TextOrientation.Rotate90:
-                    return lines.OrderBy(w => w.BoundingBox.BottomLeft.X);
+                    return array.OrderBy(w => w.BoundingBox.BottomLeft.X);
 
                 case TextOrientation.Rotate270:
-                    return lines.OrderByDescending(w => w.BoundingBox.BottomLeft.X);
+                    return array.OrderByDescending(w => w.BoundingBox.BottomLeft.X);
 
                 case TextOrientation.Other:
                 default:
                     // We consider the lines roughly have the same rotation.
-                    var avgAngle = lines.Average(w => w.BoundingBox.Rotation);
+                    var avgAngle = array.Average(w => w.BoundingBox.Rotation);
                     if (double.IsNaN(avgAngle))
                     {
                         throw new NotFiniteNumberException("OrderByReadingOrder: NaN bounding box rotation found when ordering lines.", avgAngle);
@@ -156,7 +166,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 1, 0 < θ < π/2
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = lines.OrderBy(w => w.BoundingBox.BottomLeft.Y).ThenBy(w => w.BoundingBox.BottomLeft.X);
+                        var ordered = array.OrderBy(w => w.BoundingBox.BottomLeft.Y).ThenBy(w => w.BoundingBox.BottomLeft.X);
                         return ordered;
                     }
                     
@@ -164,7 +174,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 2, π/2 < θ ≤ π
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = lines.OrderByDescending(w => w.BoundingBox.BottomLeft.X).ThenByDescending(w => w.BoundingBox.BottomLeft.Y);
+                        var ordered = array.OrderByDescending(w => w.BoundingBox.BottomLeft.X).ThenByDescending(w => w.BoundingBox.BottomLeft.Y);
                         return ordered;
                     }
                     
@@ -172,7 +182,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 3, -π < θ < -π/2
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = lines.OrderByDescending(w => w.BoundingBox.BottomLeft.Y).ThenByDescending(w => w.BoundingBox.BottomLeft.X);
+                        var ordered = array.OrderByDescending(w => w.BoundingBox.BottomLeft.Y).ThenByDescending(w => w.BoundingBox.BottomLeft.X);
                         return ordered;
                     }
                     
@@ -180,7 +190,7 @@ namespace Caly.Pdf.Layout
                     {
                         // quadrant 4, -π/2 < θ < 0
                         // Inverse Y axis - (0, 0) is top left
-                        var ordered = lines.OrderBy(w => w.BoundingBox.BottomLeft.X).ThenBy(w => w.BoundingBox.BottomLeft.Y);
+                        var ordered = array.OrderBy(w => w.BoundingBox.BottomLeft.X).ThenBy(w => w.BoundingBox.BottomLeft.Y);
                         return ordered;
                     }
 
