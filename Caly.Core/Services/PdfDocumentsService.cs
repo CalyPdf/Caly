@@ -191,7 +191,10 @@ namespace Caly.Core.Services
                 // TODO - Log error
             }
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+            // Attempt to collect garbage as much as possible
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
         }
 
         private async Task OpenLoadDocumentInternal(IStorageFile? storageFile, string? password, CancellationToken cancellationToken)
