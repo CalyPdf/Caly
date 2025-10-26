@@ -8,7 +8,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PdfPig" Version="0.1.12-alpha-20251023-35555" />
+		<PackageReference Include="PdfPig" Version="0.1.12-alpha-20251026-40bcc" />
 		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
 	</ItemGroup>
 
