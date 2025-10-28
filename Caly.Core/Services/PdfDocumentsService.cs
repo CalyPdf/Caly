@@ -251,7 +251,9 @@ namespace Caly.Core.Services
                     Task<int> openDocTask = documentViewModel.OpenDocument(storageFile, password, cancellationToken);
 
                     // We need a lock to avoid issues with tabs when opening documents in parallel
-                    _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
+                    // _mainViewModel.PdfDocuments.AddSafely(documentViewModel);
+                    // AddPdfDocument sets parent of doc and then calls AddSafely
+                    _mainViewModel.AddPdfDocument(documentViewModel);
 
                     _mainViewModel.SelectedDocumentIndex = Math.Max(0, _mainViewModel.PdfDocuments.Count - 1);
 

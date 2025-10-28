@@ -45,6 +45,7 @@ namespace Caly.Core.ViewModels
 
         internal readonly IPdfService PdfService;
         
+
         [ObservableProperty]
         private PdfTextLayer? _pdfTextLayer;
 
@@ -105,6 +106,8 @@ namespace Caly.Core.ViewModels
 
         public bool IsPortrait => Rotation == 0 || Rotation == 180;
 
+        [ObservableProperty] private SKPath _imageMask;
+
         private long _isSizeSet;
         public bool IsSizeSet()
         {
@@ -143,6 +146,7 @@ namespace Caly.Core.ViewModels
         public async Task LoadPageSizeImmediate(CancellationToken cancellationToken)
         {
             await PdfService.SetPageSizeAsync(this, cancellationToken);
+            await LoadImageMaskAsync(cancellationToken);
         }
 
         public async Task SetPageTextLayerImmediate(CancellationToken token)
@@ -170,6 +174,21 @@ namespace Caly.Core.ViewModels
         {
             App.Messenger.Send(new UnloadThumbnailMessage(this));
             return ValueTask.CompletedTask;
+        }
+
+        public async Task LoadImageMaskAsync(CancellationToken token)
+        {
+            if (PdfService is PdfPigPdfService pdfPigService)
+            {
+                try
+                {
+                    ImageMask = await pdfPigService.GenerateImageMaskAsync(PageNumber, 1.0f, token);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteExceptionToFile(ex);
+                }
+            }
         }
     }
 }
