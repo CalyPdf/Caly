@@ -28,7 +28,7 @@ using Caly.Core.ViewModels;
 
 namespace Caly.Core.Handlers.Interfaces
 {
-    public interface ITextSelectionHandler
+    public interface IPageInteractiveLayerHandler
     {
         PdfTextSelection Selection { get; }
 
@@ -64,5 +64,7 @@ namespace Caly.Core.Handlers.Interfaces
         /// Clear the current selection.
         /// </summary>
         void ClearSelection(PdfPageTextLayerControl currentTextLayer);
+
+        void UpdateInteractiveLayer(PdfPageViewModel page);
     }
 }

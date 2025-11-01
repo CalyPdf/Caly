@@ -33,7 +33,7 @@ namespace Caly.Core.ViewModels
         [ObservableProperty] private int _pageNumber;
         [ObservableProperty] private int? _wordIndex;
         [ObservableProperty] private int? _wordCount;
-        [ObservableProperty] private IReadOnlyList<PdfWord>? _word;
+        //[ObservableProperty] private IReadOnlyList<PdfWord>? _word;
         [ObservableProperty] private ObservableCollection<TextSearchResultViewModel>? _nodes;
 
         public override string ToString()

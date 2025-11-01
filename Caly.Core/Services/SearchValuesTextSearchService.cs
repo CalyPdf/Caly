@@ -135,6 +135,7 @@ namespace Caly.Core.Services
                 }
 
                 var pageResults = new List<TextSearchResultViewModel>();
+                /*
                 var currentPage = pdfDocument.Pages[pageKvp.Key - 1];
 
                 PdfTextLayer? textLayer = currentPage.PdfTextLayer;
@@ -149,6 +150,7 @@ namespace Caly.Core.Services
                         throw new NullReferenceException($"Text layer for page {pageKvp.Key} is null.");
                     }
                 }
+                */
 
                 while (lastWordFound < pageText.Length)
                 {
@@ -164,6 +166,7 @@ namespace Caly.Core.Services
                     
                     var wordIndex = pageText.AsSpan(0, lastWordFound).Count(WordSeparator);
 
+                    /*
                     PdfWord[] words = new PdfWord[count];
                     var firstWord = textLayer[wordIndex];
                     words[0] = firstWord;
@@ -172,16 +175,18 @@ namespace Caly.Core.Services
                     {
                         words[i] = textLayer[wordIndex + i];
                     }
+                    */
 
                     pageResults.Add(new TextSearchResultViewModel()
                     {
                         PageNumber = pageKvp.Key,
                         ItemType = SearchResultItemType.Word,
-                        Word = words,
-                        WordIndex = wordIndex
+                        //Word = words,
+                        WordIndex = wordIndex,
+                        WordCount = count
                     });
 
-                    lastWordFound += firstWord.Value.Length;
+                    lastWordFound += 1; //firstWord.Value.Length;
                 }
 
                 if (pageResults.Count > 0)

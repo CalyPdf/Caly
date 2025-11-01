@@ -88,7 +88,7 @@ namespace Caly.Core.ViewModels
         [ObservableProperty]
         private bool _selectionChangedFlag;
 
-        public ITextSelectionHandler TextSelectionHandler => PdfService.TextSelectionHandler!;
+        public IPageInteractiveLayerHandler PageInteractiveLayerHandler => PdfService.PageInteractiveLayerHandler!;
 
         public bool IsPageVisible => VisibleArea.HasValue;
 
@@ -136,7 +136,7 @@ namespace Caly.Core.ViewModels
 
         public PdfPageViewModel(int pageNumber, IPdfService pdfService)
         {
-            ArgumentNullException.ThrowIfNull(pdfService?.TextSelectionHandler, nameof(pdfService.TextSelectionHandler));
+            ArgumentNullException.ThrowIfNull(pdfService?.PageInteractiveLayerHandler, nameof(pdfService.PageInteractiveLayerHandler));
             PageNumber = pageNumber;
             PdfService = pdfService;
         }
@@ -156,7 +156,7 @@ namespace Caly.Core.ViewModels
             Dispatcher.UIThread.Invoke(() => PdfTextLayer = null);
         }
 
-        public void FlagSelectionChanged()
+        public void FlagInteractiveLayerChanged()
         {
             Debug.ThrowNotOnUiThread();
             SelectionChangedFlag = !SelectionChangedFlag;

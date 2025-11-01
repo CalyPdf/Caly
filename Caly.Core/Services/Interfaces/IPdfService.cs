@@ -32,7 +32,7 @@ namespace Caly.Core.Services.Interfaces
     {
         bool IsActive { get; internal set; }
 
-        ITextSelectionHandler? TextSelectionHandler { get; }
+        IPageInteractiveLayerHandler? PageInteractiveLayerHandler { get; }
         
         int NumberOfPages { get; }
 
