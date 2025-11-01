@@ -26,14 +26,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Caly.Core.ViewModels
 {
-    [DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({Score}), Children {Nodes?.Count}")]
+    [DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({WordCount}), Children {Nodes?.Count}")]
     public sealed partial class TextSearchResultViewModel : ViewModelBase
     {
         [ObservableProperty] private SearchResultItemType _itemType;
         [ObservableProperty] private int _pageNumber;
         [ObservableProperty] private int? _wordIndex;
+        [ObservableProperty] private int? _wordCount;
         [ObservableProperty] private IReadOnlyList<PdfWord>? _word;
-        [ObservableProperty] private double? _score;
         [ObservableProperty] private ObservableCollection<TextSearchResultViewModel>? _nodes;
 
         public override string ToString()
@@ -46,7 +46,7 @@ namespace Caly.Core.ViewModels
         }
     }
 
-    public enum SearchResultItemType
+    public enum SearchResultItemType : byte
     {
         Unspecified = 0,
         Word = 1,
