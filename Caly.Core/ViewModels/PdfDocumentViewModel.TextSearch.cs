@@ -20,7 +20,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,14 +45,20 @@ namespace Caly.Core.ViewModels
 
         public bool BuildingIndex => BuildIndexProgress != 0 && BuildIndexProgress != 100;
 
-        [ObservableProperty] private string _searchStatus = string.Empty;
+        [ObservableProperty]
+        private string _searchStatus = string.Empty;
 
-        [ObservableProperty] private string? _textSearch;
+        [ObservableProperty]
+        private string? _textSearch;
 
-        [ObservableProperty] private ObservableCollection<TextSearchResultViewModel> _searchResults = [];
-        [ObservableProperty] private HierarchicalTreeDataGridSource<TextSearchResultViewModel> _searchResultsSource;
+        [ObservableProperty]
+        private SortedObservableCollection<TextSearchResultViewModel> _searchResults = new(m => m.PageNumber);
 
-        [ObservableProperty] private TextSearchResultViewModel? _selectedTextSearchResult;
+        [ObservableProperty]
+        private HierarchicalTreeDataGridSource<TextSearchResultViewModel> _searchResultsSource;
+
+        [ObservableProperty]
+        private TextSearchResultViewModel? _selectedTextSearchResult;
 
         async partial void OnTextSearchChanged(string? value)
         {
@@ -187,9 +192,9 @@ namespace Caly.Core.ViewModels
                     {
                         token.ThrowIfCancellationRequested();
                         indexBuildTaskComplete = indexBuildTask.IsCompleted;
-                        var searchResults = await _pdfService.SearchText(this, TextSearch, token);
+                        var searchResults = _pdfService.SearchText(this, TextSearch, pagesDone, token);
 
-                        foreach (var result in searchResults.OrderBy(r => r.PageNumber))
+                        await foreach (var result in searchResults)
                         {
                             token.ThrowIfCancellationRequested();
                             if (result.PageNumber == -1)
@@ -202,7 +207,7 @@ namespace Caly.Core.ViewModels
                                 continue;
                             }
 
-                            await Dispatcher.UIThread.InvokeAsync(() => SearchResults.AddSafely(result));
+                            await Dispatcher.UIThread.InvokeAsync(() => SearchResults.AddSortedSafely(result));
                             pagesDone.Add(result.PageNumber);
                         }
 

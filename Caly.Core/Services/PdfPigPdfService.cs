@@ -393,11 +393,11 @@ namespace Caly.Core.Services
             await _textSearchService.BuildPdfDocumentIndex(pdfDocument, progress, token);
         }
 
-        public Task<IEnumerable<TextSearchResultViewModel>> SearchText(PdfDocumentViewModel pdfDocument, string query, CancellationToken token)
+        public IAsyncEnumerable<TextSearchResultViewModel> SearchText(PdfDocumentViewModel pdfDocument, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            return _textSearchService.Search(pdfDocument, query, token);
+            return _textSearchService.Search(pdfDocument, query, pagesToSkip, token);
         }
 
         private static PdfBookmarkNode? BuildPdfBookmarkNode(BookmarkNode node, CancellationToken cancellationToken)

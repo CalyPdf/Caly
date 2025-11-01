@@ -118,6 +118,8 @@ namespace Caly.Core.Services
                 cts.Cancel();
                 cts.Dispose();
             }
+
+            page.RemovePageTextLayerImmediate();
         }
 
         #endregion

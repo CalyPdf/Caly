@@ -20,7 +20,9 @@
 
 using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Caly.Core.Handlers.Interfaces;
+using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
@@ -31,7 +33,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.Services;
 
 namespace Caly.Core.ViewModels
 {
@@ -148,6 +149,11 @@ namespace Caly.Core.ViewModels
         public async Task SetPageTextLayerImmediate(CancellationToken token)
         {
             await PdfService.SetPageTextLayerAsync(this, token);
+        }
+
+        public void RemovePageTextLayerImmediate()
+        {
+            Dispatcher.UIThread.Invoke(() => PdfTextLayer = null);
         }
 
         public void FlagSelectionChanged()

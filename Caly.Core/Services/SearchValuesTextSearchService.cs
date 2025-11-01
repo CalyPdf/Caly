@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,9 +19,11 @@ namespace Caly.Core.Services
         private const char WordSeparator = ' ';
         
         private readonly ConcurrentDictionary<int, string> _index = new ConcurrentDictionary<int, string>();
-        
+
         public void Dispose()
-        { }
+        {
+            _index.Clear();
+        }
 
         public async Task BuildPdfDocumentIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token)
         {
@@ -36,6 +39,7 @@ namespace Caly.Core.Services
                     {
                         await p.SetPageTextLayerImmediate(ct);
                         textLayer = p.PdfTextLayer;
+                        p.RemovePageTextLayerImmediate();
                     }
 
                     if (textLayer is null)
@@ -95,7 +99,7 @@ namespace Caly.Core.Services
             return text;
         }
 
-        public async Task<IEnumerable<TextSearchResultViewModel>> Search(PdfDocumentViewModel pdfDocument, string text, CancellationToken token)
+        public async IAsyncEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, [EnumeratorCancellation] CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
@@ -103,78 +107,92 @@ namespace Caly.Core.Services
 
             if (string.IsNullOrEmpty(text))
             {
-                return [];
+                yield break;
             }
 
-            return await Task.Run(() =>
-            {
-                // TODO - Move the below out of here as it reruns while indexing
-                text = CleanText(text, out int count);
-                // END TODO
-                
-                var results = new List<TextSearchResultViewModel>();
-                var searchValue = SearchValues.Create([text], StringComparison.OrdinalIgnoreCase);
-                
-                foreach (var pageKvp in _index)
-                {
-                    token.ThrowIfCancellationRequested();
+            // TODO - Move the below out of here as it reruns while indexing
+            text = CleanText(text, out int count);
+            // END TODO
 
-                    var pageResults = new List<TextSearchResultViewModel>();
-                    PdfTextLayer? textLayer = pdfDocument.Pages[pageKvp.Key - 1].PdfTextLayer;
+            var searchValue = SearchValues.Create([text], StringComparison.OrdinalIgnoreCase);
+
+            foreach (var pageKvp in _index)
+            {
+                token.ThrowIfCancellationRequested();
+
+                if (pagesToSkip.Contains(pageKvp.Key))
+                {
+                    continue;
+                }
+
+                string pageText = _index[pageKvp.Key];
+                int lastWordFound = 0;
+
+                int current = pageText.AsSpan(lastWordFound).IndexOfAny(searchValue);
+                if (current == -1)
+                {
+                    continue;
+                }
+
+                var pageResults = new List<TextSearchResultViewModel>();
+                var currentPage = pdfDocument.Pages[pageKvp.Key - 1];
+
+                PdfTextLayer? textLayer = currentPage.PdfTextLayer;
+                if (textLayer is null)
+                {
+                    await currentPage.SetPageTextLayerImmediate(token);
+                    textLayer = currentPage.PdfTextLayer;
+                    currentPage.RemovePageTextLayerImmediate();
+
                     if (textLayer is null)
                     {
                         throw new NullReferenceException($"Text layer for page {pageKvp.Key} is null.");
                     }
-
-                    string index = _index[pageKvp.Key];
-                    int lastWordFound = 0;
-
-                    while (lastWordFound < index.Length)
-                    {
-                        token.ThrowIfCancellationRequested();
-                        
-                        int current = index.AsSpan(lastWordFound).IndexOfAny(searchValue);
-                        if (current == -1)
-                        {
-                            break;
-                        }
-
-                        lastWordFound += current;
-
-                        var wordIndex = index.AsSpan(0, lastWordFound).Count(WordSeparator);
-
-                        PdfWord[] words = new PdfWord[count];
-                        var firstWord = textLayer[wordIndex];
-                        words[0] = firstWord;
-
-                        for (int i = 1; i < words.Length; ++i)
-                        {
-                            words[i] = textLayer[wordIndex + i];
-                        }
-
-                        pageResults.Add(new TextSearchResultViewModel()
-                        {
-                            PageNumber = pageKvp.Key,
-                            ItemType = SearchResultItemType.Word,
-                            Word = words,
-                            WordIndex = wordIndex
-                        });
-
-                        lastWordFound += firstWord.Value.Length;
-                    }
-
-                    if (pageResults.Count > 0)
-                    {
-                        results.Add(new TextSearchResultViewModel()
-                        {
-                            PageNumber = pageKvp.Key,
-                            Nodes = new ObservableCollection<TextSearchResultViewModel>(pageResults)
-                        });
-                    }
                 }
 
-                return results;
-            }, token);
+                while (lastWordFound < pageText.Length)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    current = pageText.AsSpan(lastWordFound).IndexOfAny(searchValue); // TODO - we do to first 1 twice
+                    if (current == -1)
+                    {
+                        break;
+                    }
+
+                    lastWordFound += current;
+                    
+                    var wordIndex = pageText.AsSpan(0, lastWordFound).Count(WordSeparator);
+
+                    PdfWord[] words = new PdfWord[count];
+                    var firstWord = textLayer[wordIndex];
+                    words[0] = firstWord;
+
+                    for (int i = 1; i < words.Length; ++i)
+                    {
+                        words[i] = textLayer[wordIndex + i];
+                    }
+
+                    pageResults.Add(new TextSearchResultViewModel()
+                    {
+                        PageNumber = pageKvp.Key,
+                        ItemType = SearchResultItemType.Word,
+                        Word = words,
+                        WordIndex = wordIndex
+                    });
+
+                    lastWordFound += firstWord.Value.Length;
+                }
+
+                if (pageResults.Count > 0)
+                {
+                    yield return new TextSearchResultViewModel()
+                    {
+                        PageNumber = pageKvp.Key,
+                        Nodes = new ObservableCollection<TextSearchResultViewModel>(pageResults)
+                    };
+                }
+            }
         }
     }
 }

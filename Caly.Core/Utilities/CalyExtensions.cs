@@ -115,6 +115,18 @@ namespace Caly.Core.Utilities
         /// <summary>
         /// Thread safe.
         /// </summary>
+        public static void AddSortedSafely<T>(this SortedObservableCollection<T> collection, T element)
+        {
+            IList list = collection;
+            lock (list.SyncRoot)
+            {
+                collection.AddSorted(element);
+            }
+        }
+
+        /// <summary>
+        /// Thread safe.
+        /// </summary>
         public static void ClearSafely<T>(this ObservableCollection<T> collection)
         {
             IList list = collection;
