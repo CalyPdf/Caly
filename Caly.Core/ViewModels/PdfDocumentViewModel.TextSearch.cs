@@ -194,7 +194,7 @@ namespace Caly.Core.ViewModels
                         indexBuildTaskComplete = indexBuildTask.IsCompleted;
                         var searchResults = _pdfService.SearchText(this, TextSearch, pagesDone, token);
 
-                        await foreach (var result in searchResults)
+                        foreach (var result in searchResults)
                         {
                             token.ThrowIfCancellationRequested();
                             if (result.PageNumber == -1)

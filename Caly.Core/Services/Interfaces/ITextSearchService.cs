@@ -30,6 +30,6 @@ namespace Caly.Core.Services.Interfaces
     {
         Task BuildPdfDocumentIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token);
 
-        IAsyncEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
+        IEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
     }
 }

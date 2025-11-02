@@ -122,7 +122,7 @@ namespace Caly.Core.Services
             return pageText.AsMemory(sampleStart, sampleLength);
         }
 
-        public async IAsyncEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, [EnumeratorCancellation] CancellationToken token)
+        public IEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
