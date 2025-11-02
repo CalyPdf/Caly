@@ -28,7 +28,14 @@ namespace Caly.Core.Services
         public async Task BuildPdfDocumentIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token)
         {
             int done = 0;
-            await Parallel.ForEachAsync(pdfDocument.Pages, token, async (p, ct) =>
+
+            var options = new ParallelOptions()
+            {
+                MaxDegreeOfParallelism = 4,
+                CancellationToken = token
+            };
+
+            await Parallel.ForEachAsync(pdfDocument.Pages, options, async (p, ct) =>
             {
                 ct.ThrowIfCancellationRequested();
                 
@@ -94,7 +101,18 @@ namespace Caly.Core.Services
                 text = sb.ToString();
             }
 
+            var span = text.AsSpan();
             count = text.AsSpan().Count(WordSeparator) + 1;
+
+            if (span.StartsWith(WordSeparator))
+            {
+                count--;
+            }
+
+            if (span.EndsWith(WordSeparator))
+            {
+                count--;
+            }
 
             return text;
         }
@@ -128,35 +146,18 @@ namespace Caly.Core.Services
                 string pageText = _index[pageKvp.Key];
                 int lastWordFound = 0;
 
-                int current = pageText.AsSpan(lastWordFound).IndexOfAny(searchValue);
-                if (current == -1)
-                {
-                    continue;
-                }
-
                 var pageResults = new List<TextSearchResultViewModel>();
+
                 /*
-                var currentPage = pdfDocument.Pages[pageKvp.Key - 1];
-
-                PdfTextLayer? textLayer = currentPage.PdfTextLayer;
-                if (textLayer is null)
-                {
-                    await currentPage.SetPageTextLayerImmediate(token);
-                    textLayer = currentPage.PdfTextLayer;
-                    currentPage.RemovePageTextLayerImmediate();
-
-                    if (textLayer is null)
-                    {
-                        throw new NullReferenceException($"Text layer for page {pageKvp.Key} is null.");
-                    }
-                }
-                */
+                 * TODO - If the page text start with the word but the word starts with a space.
+                 * The search won't be pick up
+                 */
 
                 while (lastWordFound < pageText.Length)
                 {
                     token.ThrowIfCancellationRequested();
 
-                    current = pageText.AsSpan(lastWordFound).IndexOfAny(searchValue); // TODO - we do to first 1 twice
+                    int current = pageText.AsSpan(lastWordFound).IndexOfAny(searchValue);
                     if (current == -1)
                     {
                         break;
@@ -166,22 +167,10 @@ namespace Caly.Core.Services
                     
                     var wordIndex = pageText.AsSpan(0, lastWordFound).Count(WordSeparator);
 
-                    /*
-                    PdfWord[] words = new PdfWord[count];
-                    var firstWord = textLayer[wordIndex];
-                    words[0] = firstWord;
-
-                    for (int i = 1; i < words.Length; ++i)
-                    {
-                        words[i] = textLayer[wordIndex + i];
-                    }
-                    */
-
                     pageResults.Add(new TextSearchResultViewModel()
                     {
                         PageNumber = pageKvp.Key,
                         ItemType = SearchResultItemType.Word,
-                        //Word = words,
                         WordIndex = wordIndex,
                         WordCount = count
                     });

@@ -158,13 +158,15 @@ namespace Caly.Core.ViewModels
                 .ObserveOn(Scheduler.Default)
                 .Subscribe(e =>
                 {
+                    Debug.ThrowOnUiThread();
+
                     try
                     {
                         if (PageInteractiveLayerHandler is null)
                         {
                             throw new NullReferenceException("The TextSelectionHandler is null, cannot process search results.");
                         }
-                        
+
                         switch (e.Action)
                         {
                             case NotifyCollectionChangedAction.Reset:

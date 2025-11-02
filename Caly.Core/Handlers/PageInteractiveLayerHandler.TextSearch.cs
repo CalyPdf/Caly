@@ -37,11 +37,22 @@ namespace Caly.Core.Handlers
 
         public void ClearTextSearchResults(PdfDocumentViewModel documentViewModel)
         {
+            Debug.ThrowOnUiThread();
+
             for (var p = 0; p < _searchWordsResults.Length; ++p)
             {
+                if (_searchIndexResults[p] is null)
+                {
+                    continue;
+                }
+
                 _searchIndexResults[p] = null;
-                _searchWordsResults[p] = null;
-                Dispatcher.UIThread.Invoke(documentViewModel.Pages[p].FlagInteractiveLayerChanged);
+
+                if (_searchWordsResults[p] is not null)
+                {
+                    _searchWordsResults[p] = null;
+                    Dispatcher.UIThread.Invoke(documentViewModel.Pages[p].FlagInteractiveLayerChanged);
+                }
             }
         }
 
@@ -55,7 +66,7 @@ namespace Caly.Core.Handlers
 
                     _searchIndexResults[result.PageNumber - 1] = result.Nodes
                         .Where(x => x is { ItemType: SearchResultItemType.Word, WordIndex: not null })
-                        .Select(x => new Range(new Index(x.WordIndex!.Value), new Index(x.WordIndex.Value + x.WordCount!.Value)))
+                        .Select(x => new Range(new Index(x.WordIndex!.Value), new Index(x.WordIndex.Value + x.WordCount!.Value - 1)))
                         .ToArray();
 
                     var page = documentViewModel.Pages[result.PageNumber - 1];
