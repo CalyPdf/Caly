@@ -19,7 +19,6 @@
 // SOFTWARE.
 
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -32,7 +31,6 @@ using Caly.Pdf;
 using Caly.Pdf.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UglyToad.PdfPig.Actions;
 using UglyToad.PdfPig.Core;
 
