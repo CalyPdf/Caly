@@ -147,7 +147,7 @@ namespace Caly.Core.Controls
             base.OnPropertyChanged(change);
             if (change.Property == PageInteractiveLayerHandlerProperty)
             {
-                // If the textSelectionHandler was already attached, we unsubscribe
+                // If the pageInteractiveLayerHandler was already attached, we unsubscribe
                 _pointerDisposables?.Dispose();
 
                 if (PageInteractiveLayerHandler is not null)

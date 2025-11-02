@@ -164,7 +164,7 @@ namespace Caly.Core.ViewModels
                     {
                         if (PageInteractiveLayerHandler is null)
                         {
-                            throw new NullReferenceException("The TextSelectionHandler is null, cannot process search results.");
+                            throw new NullReferenceException("The PageInteractiveLayerHandler is null, cannot process search results.");
                         }
 
                         switch (e.Action)
