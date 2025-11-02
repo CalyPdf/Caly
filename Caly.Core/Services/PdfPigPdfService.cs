@@ -56,6 +56,7 @@ namespace Caly.Core.Services
     {
         private const string PdfVersionFormat = "0.0";
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
+        private const string PdfExtension = ".pdf";
 
         private readonly ITextSearchService _textSearchService;
         
@@ -123,10 +124,11 @@ namespace Caly.Core.Services
                     return 0; // no pdf loaded
                 }
 
-                if (Path.GetExtension(storageFile.Path.LocalPath) != ".pdf" && !CalyExtensions.IsMobilePlatform())
+                if (!PdfExtension.Equals(Path.GetExtension(storageFile.Path.LocalPath), StringComparison.OrdinalIgnoreCase) && !CalyExtensions.IsMobilePlatform())
                 {
                     // TODO - Need to handle Mobile
-                    throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
+                    throw new ArgumentOutOfRangeException(
+                        $"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
                 }
 
                 _filePath = storageFile.Path;
