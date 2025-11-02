@@ -1,11 +1,9 @@
 ﻿using Caly.Core.Services.Interfaces;
 using Caly.Core.ViewModels;
-using Caly.Pdf.Models;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -102,7 +100,7 @@ namespace Caly.Core.Services
             }
 
             var span = text.AsSpan();
-            count = text.AsSpan().Count(WordSeparator) + 1;
+            count = span.Count(WordSeparator) + 1;
 
             if (span.StartsWith(WordSeparator))
             {
@@ -115,6 +113,13 @@ namespace Caly.Core.Services
             }
 
             return text;
+        }
+
+        private static ReadOnlyMemory<char> GetSampleText(string pageText, int startIndex, int length)
+        {
+            int sampleStart = Math.Max(0, startIndex - 10);
+            int sampleLength = Math.Min(length + 20, pageText.Length - sampleStart);
+            return pageText.AsMemory(sampleStart, sampleLength);
         }
 
         public async IAsyncEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, [EnumeratorCancellation] CancellationToken token)
@@ -144,7 +149,7 @@ namespace Caly.Core.Services
                 }
 
                 string pageText = _index[pageKvp.Key];
-                int lastWordFound = 0;
+                int lastSpanIndex = 0;
 
                 var pageResults = new List<TextSearchResultViewModel>();
 
@@ -153,37 +158,39 @@ namespace Caly.Core.Services
                  * The search won't be pick up
                  */
 
-                while (lastWordFound < pageText.Length)
+                while (lastSpanIndex < pageText.Length)
                 {
                     token.ThrowIfCancellationRequested();
 
-                    int current = pageText.AsSpan(lastWordFound).IndexOfAny(searchValue);
-                    if (current == -1)
+                    int currentSpanIndex = pageText.AsSpan(lastSpanIndex).IndexOfAny(searchValue);
+                    if (currentSpanIndex == -1)
                     {
                         break;
                     }
 
-                    lastWordFound += current;
+                    lastSpanIndex += currentSpanIndex;
                     
-                    var wordIndex = pageText.AsSpan(0, lastWordFound).Count(WordSeparator);
+                    var wordIndex = pageText.AsSpan(0, lastSpanIndex).Count(WordSeparator);
 
                     pageResults.Add(new TextSearchResultViewModel()
                     {
                         PageNumber = pageKvp.Key,
                         ItemType = SearchResultItemType.Word,
                         WordIndex = wordIndex,
-                        WordCount = count
+                        WordCount = count,
+                        SampleText = GetSampleText(pageText, lastSpanIndex, 20)
                     });
 
-                    lastWordFound += 1; //firstWord.Value.Length;
+                    lastSpanIndex += text.Length;
                 }
 
                 if (pageResults.Count > 0)
                 {
                     yield return new TextSearchResultViewModel()
                     {
+                        ItemType = SearchResultItemType.Unspecified,
                         PageNumber = pageKvp.Key,
-                        Nodes = new ObservableCollection<TextSearchResultViewModel>(pageResults)
+                        Nodes = pageResults
                     };
                 }
             }
