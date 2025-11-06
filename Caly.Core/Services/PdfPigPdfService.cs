@@ -59,7 +59,8 @@ namespace Caly.Core.Services
         private const string PdfExtension = ".pdf";
 
         private readonly ITextSearchService _textSearchService;
-        
+        private readonly ISettingsService _settingsService;
+
         private Stream? _fileStream;
         private PdfDocument? _document;
         private Uri? _filePath;
@@ -94,9 +95,10 @@ namespace Caly.Core.Services
         }
 #endif
 
-        public PdfPigPdfService(ITextSearchService textSearchService)
+       public PdfPigPdfService(ITextSearchService textSearchService, ISettingsService settingsService)
         {
             _textSearchService = textSearchService;
+            _settingsService = settingsService;
 
             var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
             {

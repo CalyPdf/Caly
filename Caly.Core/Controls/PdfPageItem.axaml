@@ -70,7 +70,7 @@
 								<RotateTransform Angle="{Binding Rotation}" />
 							</LayoutTransformControl.LayoutTransform>
 
-							<Grid Background="White"
+							<Grid Background="{Binding $parent[controls:PdfPageItemsControl].((vm:PdfDocumentViewModel)DataContext).IsDarkMode, Converter={StaticResource BoolToBrushConverter}}"
 								  Width="{Binding Width}"
 								  Height="{Binding Height}">
 
@@ -84,6 +84,8 @@
 													   Foreground="{DynamicResource SystemAccentColor}"/>
 
 								<controls:SkiaPdfPageControl Picture="{Binding PdfPicture}"
+															IsDarkMode="{Binding $parent[controls:PdfPageItemsControl].((vm:PdfDocumentViewModel)DataContext).IsDarkMode}"
+															 ImageMask="{Binding ImageMask}"
 															 VisibleArea="{Binding VisibleArea}"
 															 HorizontalAlignment="Stretch"
 															 VerticalAlignment="Stretch"/>

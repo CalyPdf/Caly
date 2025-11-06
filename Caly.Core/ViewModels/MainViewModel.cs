@@ -49,6 +49,8 @@ namespace Caly.Core.ViewModels
 
         [ObservableProperty] private bool _isSettingsPaneOpen;
 
+        [ObservableProperty] private bool _isDarkMode;
+
         public string Version => CalyExtensions.CalyVersion;
 
         partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
@@ -110,6 +112,7 @@ namespace Caly.Core.ViewModels
                         Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
                     }
                 });
+            SyncSettings();
         }
 
         private PdfDocumentViewModel? GetCurrentPdfDocument()
@@ -227,6 +230,37 @@ namespace Caly.Core.ViewModels
                 newIndex = lastIndex;
             }
             SelectedDocumentIndex = newIndex;
+        }
+
+        [RelayCommand]
+        public void ToggleDarkModeForAll()
+        {
+            IsDarkMode = !IsDarkMode;
+            var settingsService = App.Current?.Services?.GetService<ISettingsService>();
+            settingsService?.SetProperty(Models.CalySettings.CalySettingsProperty.IsDarkModeEnabled, IsDarkMode);
+            var doc = GetCurrentPdfDocument();
+            if (doc != null)
+            {
+                doc.ClearAllThumbnails();
+                doc.RefreshAllThumbnails();
+            }
+
+            foreach (var d in PdfDocuments)
+            {
+                d.IsDarkMode = IsDarkMode;
+            }
+        }
+
+        public void AddPdfDocument(PdfDocumentViewModel doc)
+        {
+            doc.Parent = this;
+            PdfDocuments.AddSafely(doc);
+        }
+
+        public void SyncSettings()
+        {
+            var settingsService = App.Current?.Services?.GetService<ISettingsService>();
+            IsDarkMode = settingsService?.GetSettings().IsDarkModeEnabled ?? false;
         }
     }
 }
