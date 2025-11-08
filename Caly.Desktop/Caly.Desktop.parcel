@@ -2,7 +2,10 @@
     "GeneralSettings": {
         "NetProjectPath": "Caly.Desktop.csproj",
         "ApplicationName": "Caly Pdf",
-        "Version": "0.1.5.1",
+        "Version": {
+            "$type": "msbuild",
+            "property": "Version"
+        },
         "PackageName": {
             "$type": "msbuild",
             "property": "AssemblyName"
@@ -18,6 +21,7 @@
     "Win32Settings": {
         "InstallerIcon": "../Logo/Favicon Transparent.ico",
         "InstallerLicense": "../LICENSE",
+        "InstallerRequiresAdmin": "False",
         "IncludeUninstaller": "True"
     },
     "MacOsSettings": {
