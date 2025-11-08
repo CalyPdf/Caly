@@ -40,11 +40,15 @@ namespace Caly.Core.Services
     
     internal sealed class JsonSettingsService : ISettingsService
     {
-        private const string SettingsFile = "caly_settings";
+        private const string SettingsFileName = "caly_settings";
         
         private readonly Visual? _target;
 
         private CalySettings? _current;
+
+        private static readonly string SettingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Caly");
+
+        private static readonly string SettingsFileFullPath = Path.Combine(SettingsFilePath, SettingsFileName);
 
         public JsonSettingsService(Visual target)
         {
@@ -53,6 +57,8 @@ namespace Caly.Core.Services
                 SetDefaultSettings(); // TODO - Create proper mobile class
                 return;
             }
+
+            Directory.CreateDirectory(SettingsFilePath);
 
             _target = target;
             if (_target is Window w)
@@ -243,9 +249,9 @@ namespace Caly.Core.Services
 
         private void HandleCorruptedFile()
         {
-            if (File.Exists(SettingsFile))
+            if (File.Exists(SettingsFileFullPath))
             {
-                File.Delete(SettingsFile);
+                File.Delete(SettingsFileFullPath);
             }
 
             SetDefaultSettings();
@@ -288,11 +294,11 @@ namespace Caly.Core.Services
 
             try
             {
-                if (!File.Exists(SettingsFile))
+                if (!File.Exists(SettingsFileFullPath))
                 {
                     SetDefaultSettings();
 
-                    using (FileStream createStream = File.Create(SettingsFile))
+                    using (FileStream createStream = File.Create(SettingsFileFullPath))
                     {
                         JsonSerializer.Serialize(createStream, _current, SourceGenerationContext.Default.CalySettings);
                     }
@@ -300,7 +306,7 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                using (FileStream createStream = File.OpenRead(SettingsFile))
+                using (FileStream createStream = File.OpenRead(SettingsFileFullPath))
                 {
                     _current = JsonSerializer.Deserialize(createStream, SourceGenerationContext.Default.CalySettings);
                     ValidateSetting(_current);
@@ -328,18 +334,18 @@ namespace Caly.Core.Services
 
             try
             {
-                if (!File.Exists(SettingsFile))
+                if (!File.Exists(SettingsFileFullPath))
                 {
                     SetDefaultSettings();
 
-                    await using (FileStream createStream = File.Create(SettingsFile))
+                    await using (FileStream createStream = File.Create(SettingsFileFullPath))
                     {
                         await JsonSerializer.SerializeAsync(createStream, _current, SourceGenerationContext.Default.CalySettings);
                     }
                     return;
                 }
 
-                await using (FileStream createStream = File.OpenRead(SettingsFile))
+                await using (FileStream createStream = File.OpenRead(SettingsFileFullPath))
                 {
                     _current = await JsonSerializer.DeserializeAsync(createStream, SourceGenerationContext.Default.CalySettings);
                     ValidateSetting(_current);
@@ -367,7 +373,7 @@ namespace Caly.Core.Services
             {
                 try
                 {
-                    using (FileStream createStream = File.Create(SettingsFile))
+                    using (FileStream createStream = File.Create(SettingsFileFullPath))
                     {
                         JsonSerializer.Serialize(createStream, _current, SourceGenerationContext.Default.CalySettings);
                     }
@@ -397,7 +403,7 @@ namespace Caly.Core.Services
             {
                 try
                 {
-                    await using (FileStream createStream = File.Create(SettingsFile))
+                    await using (FileStream createStream = File.Create(SettingsFileFullPath))
                     {
                         await JsonSerializer.SerializeAsync(createStream, _current, SourceGenerationContext.Default.CalySettings);
                     }
