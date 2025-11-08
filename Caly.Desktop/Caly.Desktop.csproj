@@ -11,25 +11,13 @@
 		<Version>0.1.5.1</Version>
 		<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
 		<Deterministic>true</Deterministic>
+		<Configurations>Debug;Release;AOT</Configurations>
 	</PropertyGroup>
 
-	<!--https://learn.microsoft.com/en-gb/dotnet/core/deploying/native-aot/optimizing-->
-	<!--https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-7-0#trimming-framework-library-features-->
-	<!--https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-8-0-->
-
-	<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
-		<DirectPInvoke Include="libSkiaSharp" />
-		<NativeLibrary Include="..\native\skia.lib" />
-		<NativeLibrary Include="..\native\SkiaSharp.lib" />
-
-		<DirectPInvoke Include="libHarfBuzzSharp" />
-		<NativeLibrary Include="..\native\libHarfBuzzSharp.lib" />
-	</ItemGroup>
-	
-	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<!-- Only for Release config to allow Avalonia design mode -->
+	<!-- Begin AOT publish -->
+	<PropertyGroup Condition="'$(Configuration)'=='AOT'">
 		<PublishAot>true</PublishAot>
-		<OptimizationPreference>Speed</OptimizationPreference>
+		<OptimizationPreference>Size</OptimizationPreference>
 
 		<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
 		<IlcTrimMetadata>true</IlcTrimMetadata>
@@ -54,6 +42,26 @@
 		<StackTraceSupport>false</StackTraceSupport>
 	</PropertyGroup>
 
+	<!-- Begin Link Static libs -->
+	<ItemGroup Condition="'$(Configuration)'=='AOT' And $(RuntimeIdentifier.StartsWith('win'))">
+		<DirectPInvoke Include="libSkiaSharp" />
+		<NativeLibrary Include="..\native\skia.lib" />
+		<NativeLibrary Include="..\native\SkiaSharp.lib" />
+
+		<DirectPInvoke Include="libHarfBuzzSharp" />
+		<NativeLibrary Include="..\native\libHarfBuzzSharp.lib" />
+	</ItemGroup>
+
+	<Target Condition="'$(Configuration)'=='AOT' And $(RuntimeIdentifier.StartsWith('win'))" Name="DeleteLinkedLibAfterPublish" AfterTargets="Publish">
+		<ItemGroup>
+			<FilesToDelete Include="$(PublishDir)libHarfBuzzSharp.dll;$(PublishDir)libSkiaSharp.dll;$(PublishDir)av_libglesv2.dll;" />
+		</ItemGroup>
+		<Delete Files="@(FilesToDelete)" />
+		<Message Text="Deleted Linked dlls" Importance="high" />
+	</Target>
+	<!-- End Link Static libs -->
+	<!-- End AOT publish -->
+
 	<PropertyGroup>
 		<IlcGenerateMapFile>true</IlcGenerateMapFile>
 		<IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>
@@ -68,9 +76,17 @@
 		<AssemblyOriginatorKeyFile>Caly.Desktop.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
+	<Target Name="DeletePdbAfterPublish" AfterTargets="Publish">
+		<ItemGroup>
+			<FilesToDelete Include="$(PublishDir)*.pdb;" />
+		</ItemGroup>
+		<Delete Files="@(FilesToDelete)" />
+		<Message Text="Deleted PDB files" Importance="high" />
+	</Target>
+
 	<ItemGroup>
 		<PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
-		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.0.4" />
+		<PackageReference Condition="'$(Configuration)'=='Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.0.4" />
 	</ItemGroup>
 
 	<ItemGroup>

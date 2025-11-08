@@ -1,0 +1,34 @@
+{
+    "GeneralSettings": {
+        "NetProjectPath": "Caly.Desktop.csproj",
+        "ApplicationName": "Caly Pdf",
+        "Version": "0.1.5.1",
+        "PackageName": {
+            "$type": "msbuild",
+            "property": "AssemblyName"
+        },
+        "AssemblyName": {
+            "$type": "msbuild",
+            "property": "AssemblyName"
+        }
+    },
+    "LinuxSettings": {
+        "CreateBinSymlink": "True"
+    },
+    "Win32Settings": {
+        "InstallerIcon": "../Logo/Favicon Transparent.ico",
+        "InstallerLicense": "../LICENSE",
+        "IncludeUninstaller": "True"
+    },
+    "MacOsSettings": {
+        "CreateBundle": true,
+        "BundleIdentifier": "com.CompanyName.Caly",
+        "SigningCredentialsType": "AdHoc"
+    },
+    "PublishSettings": {
+        "PublishSingleFile": "True",
+        "PublishTrimmed": "True",
+        "PublishReadyToRun": "True",
+        "ExtraBuildProperties": {}
+    }
+}
