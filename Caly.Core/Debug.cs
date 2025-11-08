@@ -22,11 +22,15 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Avalonia;
+using Caly.Core.Services;
 
 namespace Caly.Core
 {
     public static class Debug
     {
+        private static readonly string LogFilePath = Path.Combine(JsonSettingsService.SettingsFilePath, "logs");
+
+
         [Conditional("DEBUG")]
         public static void ThrowOnUiThread()
         {
@@ -48,13 +52,16 @@ namespace Caly.Core
         //[Conditional("DEBUG")]
         public static void WriteExceptionToFile(Exception? exception)
         {
+            Directory.CreateDirectory(LogFilePath);
+
+            string logFile = Path.Combine(LogFilePath, $"{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid()}.txt");
             if (exception is null)
             {
-                File.WriteAllText($"error_caly_{Guid.NewGuid()}.txt", "Received null exception");
+                File.WriteAllText(logFile, "Received null exception");
                 return;
             }
 
-            File.WriteAllText($"error_caly_{Guid.NewGuid()}.txt", exception.ToString());
+            File.WriteAllText(logFile, exception.ToString());
         }
 
         /// <summary>
