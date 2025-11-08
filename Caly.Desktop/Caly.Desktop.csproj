@@ -16,8 +16,9 @@
 
 	<!-- Begin AOT publish -->
 	<PropertyGroup Condition="'$(Configuration)'=='AOT'">
+		<Optimize>True</Optimize>
 		<PublishAot>true</PublishAot>
-		<OptimizationPreference>Size</OptimizationPreference>
+		<OptimizationPreference>Speed</OptimizationPreference>
 
 		<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
 		<IlcTrimMetadata>true</IlcTrimMetadata>
@@ -68,7 +69,7 @@
 		<IlcGenerateMstatFile>true</IlcGenerateMstatFile>
 		<IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
 	</PropertyGroup>
-
+	
 	<PropertyGroup Label="Avalonia">
 		<AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>..\Caly.Core\Assets\caly-logo.ico</ApplicationIcon>
