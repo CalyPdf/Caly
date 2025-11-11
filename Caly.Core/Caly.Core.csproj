@@ -29,7 +29,7 @@
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
-		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.12.1-alpha008-skia3" />
+		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.12.1-alpha009-skia3" />
 		<PackageReference Include="SkiaSharp" Version="3.119.1" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
 		<PackageReference Include="System.Reactive" Version="6.1.0" />
