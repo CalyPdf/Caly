@@ -28,7 +28,7 @@ using Caly.Core.ViewModels;
 
 namespace Caly.Core.Services.Interfaces
 {
-    public interface IPdfService : IAsyncDisposable, IDisposable
+    public interface IPdfService : IAsyncDisposable
     {
         bool IsActive { get; internal set; }
 

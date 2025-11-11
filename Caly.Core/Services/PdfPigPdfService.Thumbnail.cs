@@ -88,8 +88,6 @@ namespace Caly.Core.Services
                     }
                 }
             }
-
-            //System.Diagnostics.Debug.WriteLine($"[RENDER] Thumbnail Count {_bitmaps.Count}");
         }
 
         public void ClearAllThumbnail()

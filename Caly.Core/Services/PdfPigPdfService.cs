@@ -91,6 +91,11 @@ namespace Caly.Core.Services
             {
                 throw new InvalidOperationException("Should only be called in Design mode.");
             }
+
+            _textSearchService = null!;
+            _requestsWriter = null!;
+            _requestsReader = null!;
+            _processingLoopTask = Task.CompletedTask;
         }
 #endif
 
@@ -334,7 +339,7 @@ namespace Caly.Core.Services
 
             if (rawDate.StartsWith("D:"))
             {
-                rawDate = rawDate.Substring(2, rawDate.Length - 2);
+                rawDate = rawDate[2..];
             }
 
             if (UglyToad.PdfPig.Util.DateFormatHelper.TryParseDateTimeOffset(rawDate, out DateTimeOffset offset))
@@ -488,11 +493,6 @@ namespace Caly.Core.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[INFO] ERROR DisposeAsync for {FileName}: {ex.Message}");
             }
-        }
-
-        public void Dispose()
-        {
-            DisposeAsync().GetAwaiter().GetResult();
         }
     }
 }

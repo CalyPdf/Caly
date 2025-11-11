@@ -125,8 +125,15 @@ namespace Caly.Core.ViewModels
                 throw new InvalidOperationException("Should only be called in Design mode.");
             }
 
+            _loadPagesTask = null!;
+            _searchResultsDisposable = null!;
+            _loadPropertiesTask = null!;
+            _loadBookmarksTask = null!;
+            _buildSearchIndex = null!;
+            _searchResultsSource = null!;
+
             _pdfService = new PdfPigPdfService(new SearchValuesTextSearchService());
-            _settingsService = new JsonSettingsService(null);
+            _settingsService = new JsonSettingsService(null!);
             _paneSize = 50;
 
             IsPasswordProtected = _pdfService.IsPasswordProtected;

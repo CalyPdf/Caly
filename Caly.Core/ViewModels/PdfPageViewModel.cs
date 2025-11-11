@@ -123,14 +123,12 @@ namespace Caly.Core.ViewModels
         /// </summary>
         public PdfPageViewModel()
         {
-            if (Avalonia.Controls.Design.IsDesignMode)
-            {
-                //PdfService = DummyPdfPageService.Instance; // TODO
-            }
-            else
+            if (!Avalonia.Controls.Design.IsDesignMode)
             {
                 throw new InvalidOperationException($"{typeof(PdfPageViewModel)} empty constructor should only be called in design mode");
             }
+
+            PdfService = null!;
         }
 #endif
 
