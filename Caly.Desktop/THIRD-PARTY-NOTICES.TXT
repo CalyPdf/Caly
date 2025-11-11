@@ -1,223 +1,245 @@
 ﻿Auto-generated with https://github.com/pleonex/ThirdLicense
 
-License notice for Avalonia.Desktop (v11.2.1)
+License notice for Avalonia.Desktop (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia (v11.2.1)
+License notice for AvaloniaUI.DiagnosticsSupport (v2.0.4)
 ------------------------------------
-
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
-
-https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
-
-Copyright 2013-2024 © The AvaloniaUI Project
-
-Licensed under MIT
-
-Available at https://licenses.nuget.org/MIT
-
-
-License notice for Avalonia.Angle.Windows.Natives (v2.1.22045.20230930)
-------------------------------------
-
-https://github.com/AvaloniaUI/angle/ at 26406952a84f41c4be1e762884cda61fd2e022a9
 
 https://avaloniaui.net/
 
-Copyright 2013-2023 © The AvaloniaUI Project
+Copyright 2019-2025 © AvaloniaUI OÜ
+
+
+License notice for Avalonia (v11.3.8)
+------------------------------------
+
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
+
+https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
+
+Copyright 2013-2025 © The AvaloniaUI Project
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Avalonia.Angle.Windows.Natives (v2.1.25547.20250602)
+------------------------------------
+
+https://github.com/AvaloniaUI/angle/ at cb8b4e1307a9d8f5ff56b8c5973bea4158ffead8
+
+https://avaloniaui.net/
+
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Available at https://aka.ms/deprecateLicenseUrl
 
 LICENSE
 
 
-License notice for Avalonia.BuildServices (v0.0.29)
+License notice for Avalonia.Controls.ColorPicker (v11.3.8)
 ------------------------------------
 
-
-License notice for Avalonia.Controls.ColorPicker (v11.2.1)
-------------------------------------
-
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Controls.DataGrid (v11.2.1)
+License notice for Avalonia.Controls.TreeDataGrid (v11.1.1)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia.Controls.TreeDataGrid at 0cb3b3a5cba5efb1da0477694a4636ca680abf08
+
+Copyright © AvaloniaUI 2025
+
+
+License notice for Avalonia.Diagnostics (v11.3.8)
+------------------------------------
+
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Diagnostics (v11.2.1)
+License notice for Avalonia.Fonts.Inter (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Fonts.Inter (v11.2.1)
+License notice for Avalonia.FreeDesktop (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.FreeDesktop (v11.2.1)
+License notice for Avalonia.Native (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Native (v11.2.1)
+License notice for Avalonia.Remote.Protocol (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Remote.Protocol (v11.2.1)
+License notice for Avalonia.Skia (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Skia (v11.2.1)
+License notice for Avalonia.Themes.Fluent (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Themes.Fluent (v11.2.1)
+License notice for Avalonia.Themes.Simple (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Themes.Simple (v11.2.1)
+License notice for Avalonia.Win32 (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.Win32 (v11.2.1)
+License notice for Avalonia.X11 (v11.3.8)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/AvaloniaUI/Avalonia/ at 6dd9eb473b74a56cc42e5bc118cfe918b48a940b
 
 https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
 
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2013-2025 © The AvaloniaUI Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Avalonia.X11 (v11.2.1)
+License notice for Caly.Tabalonia (v11.3.2.2)
 ------------------------------------
 
-https://github.com/AvaloniaUI/Avalonia/ at e0438ac2fe67479bf966c7498ba7a82413a5b376
+https://github.com/CalyPdf/Caly.Tabalonia at 94bf92e69c3d1ec5a1f0ab36e13048ba267a7a13
 
-https://avaloniaui.net/?utm_source=nuget&utm_medium=referral&utm_content=project_homepage_link
-
-Copyright 2013-2024 © The AvaloniaUI Project
+Copyright 2022-2025 © The Tabalonia Project
 
 Licensed under MIT
 
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for CommunityToolkit.Mvvm (v8.3.2)
+License notice for CommunityToolkit.HighPerformance (v8.4.0)
 ------------------------------------
 
-https://github.com/CommunityToolkit/dotnet at 5320d4f621e145c60ef4180ea66fe57f12f0f58a
+https://github.com/CommunityToolkit/dotnet at 638b41dad30dffabb123a39aa38eabc7e3721371
+
+(c) .NET Foundation and Contributors. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for CommunityToolkit.Mvvm (v8.4.0)
+------------------------------------
+
+https://github.com/CommunityToolkit/dotnet at 638b41dad30dffabb123a39aa38eabc7e3721371
 
 (c) .NET Foundation and Contributors. All rights reserved.
 
@@ -240,48 +262,10 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for HarfBuzzSharp (v7.3.0.2)
+License notice for HarfBuzzSharp (v8.3.1.2)
 ------------------------------------
 
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
-
-https://go.microsoft.com/fwlink/?linkid=868515
-
-Copyright © Microsoft Corporation. All rights reserved.
-
-License available at https://go.microsoft.com/fwlink/?linkid=868514
-
-
-License notice for HarfBuzzSharp.NativeAssets.Linux (v7.3.0.2)
-------------------------------------
-
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
-
-https://go.microsoft.com/fwlink/?linkid=868515
-
-Copyright © Microsoft Corporation. All rights reserved.
-
-License available at https://go.microsoft.com/fwlink/?linkid=868514
-
-
-License notice for HarfBuzzSharp.NativeAssets.macOS (v7.3.0.2)
-------------------------------------
-
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
-
-https://go.microsoft.com/fwlink/?linkid=868515
-
-Copyright © Microsoft Corporation. All rights reserved.
-
-License available at https://go.microsoft.com/fwlink/?linkid=868514
-
-
-License notice for HarfBuzzSharp.NativeAssets.WebAssembly (v7.3.0.3-preview.2.2)
-------------------------------------
-
-https://github.com/mono/SkiaSharp at eed06a83bea2a92b006c7cc7d9959689fb7b38c1
-
-https://go.microsoft.com/fwlink/?linkid=868515
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
 
 Copyright © Microsoft Corporation. All rights reserved.
 
@@ -290,28 +274,52 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for HarfBuzzSharp.NativeAssets.Win32 (v7.3.0.2)
+License notice for HarfBuzzSharp.NativeAssets.Linux (v8.3.1.1)
 ------------------------------------
 
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
-
-https://go.microsoft.com/fwlink/?linkid=868515
+https://go.microsoft.com/fwlink/?linkid=868515 at 64f24b1cddb68d30ec0ac6b661964178fc21d5ec
 
 Copyright © Microsoft Corporation. All rights reserved.
 
-License available at https://go.microsoft.com/fwlink/?linkid=868514
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
 
 
-License notice for Lifti.Core (v6.3.0)
+License notice for HarfBuzzSharp.NativeAssets.macOS (v8.3.1.2)
 ------------------------------------
 
-https://github.com/mikegoatly/lifti at b66b0d48ff9aa19241edf6d97d7a52739ec66ce4
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
 
-Mike Goatly
+Copyright © Microsoft Corporation. All rights reserved.
 
-Available at https://aka.ms/deprecateLicenseUrl
+Licensed under MIT
 
-LICENSE
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for HarfBuzzSharp.NativeAssets.WebAssembly (v8.3.1.1)
+------------------------------------
+
+https://go.microsoft.com/fwlink/?linkid=868515 at 64f24b1cddb68d30ec0ac6b661964178fc21d5ec
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for HarfBuzzSharp.NativeAssets.Win32 (v8.3.1.2)
+------------------------------------
+
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
 
 
 License notice for MicroCom.Runtime (v0.11.0)
@@ -326,10 +334,10 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Microsoft.Extensions.DependencyInjection (v9.0.0)
+License notice for Microsoft.Extensions.DependencyInjection (v9.0.9)
 ------------------------------------
 
-https://github.com/dotnet/runtime at 9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3
+https://github.com/dotnet/runtime at 893c2ebbd49952ca49e93298148af2d95a61a0a4
 
 https://dot.net/
 
@@ -340,10 +348,10 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Microsoft.Extensions.DependencyInjection.Abstractions (v9.0.0)
+License notice for Microsoft.Extensions.DependencyInjection.Abstractions (v9.0.9)
 ------------------------------------
 
-https://github.com/dotnet/runtime at 9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3
+https://github.com/dotnet/runtime at 893c2ebbd49952ca49e93298148af2d95a61a0a4
 
 https://dot.net/
 
@@ -354,27 +362,107 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for PdfPig (v0.1.9)
+License notice for Microsoft.Extensions.Logging.Abstractions (v8.0.0)
 ------------------------------------
 
-https://github.com/UglyToad/PdfPig at eb9a191e0d6beb27d67b89912473d9733cbb2f27
+https://github.com/dotnet/runtime at 5535e31a712343a63f5d7d796cd874e563e5ac14
+
+https://dot.net/
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for Microsoft.IO.RecyclableMemoryStream (v3.0.1)
+------------------------------------
+
+https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream at e29a28387da9018fa9605a1dcb3f7a0435aa9974
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for PdfPig (v0.1.12-alpha-20251107-599ce)
+------------------------------------
+
+https://github.com/UglyToad/PdfPig at 599ce04bef756a6a831b65956e9b5d445d063bde
 
 Licensed under Apache-2.0
 
 Available at https://licenses.nuget.org/Apache-2.0
 
 
-License notice for PdfPig.Rendering.Skia (v0.1.9.3)
+License notice for PdfPig.Filters.Dct.JpegLibrary (v0.1.11)
 ------------------------------------
 
-https://github.com/BobLd/PdfPig.Rendering.Skia at f2456c0e2a1ea08e0befe1ac6695c23f39f8227e
+https://github.com/BobLd/UglyToad.PdfPig.Filters.Dct.JpegLibrary at 1f9351f8c9548fe5be6a82a406a69494fbdfea6e
 
 Licensed under Apache-2.0
 
 Available at https://licenses.nuget.org/Apache-2.0
 
 
-License notice for SkiaSharp (v2.88.9)
+License notice for PdfPig.Filters.Jbig2.PdfboxJbig2 (v0.1.11)
+------------------------------------
+
+https://github.com/BobLd/UglyToad.PdfPig.Filters.Jbig2.PdfboxJbig2 at fd361db0077e4f3b2f7d104bac647e18b6728d8d
+
+Licensed under Apache-2.0
+
+Available at https://licenses.nuget.org/Apache-2.0
+
+
+License notice for PdfPig.Filters.Jpx.OpenJpeg (v0.1.11.3)
+------------------------------------
+
+https://github.com/BobLd/UglyToad.PdfPig.Filters.Jpx.OpenJpeg at bf5c16368c91aa8edcf015c0b4a707ab69d2504f
+
+Licensed under BSD-2-Clause
+
+Available at https://licenses.nuget.org/BSD-2-Clause
+
+
+License notice for PdfPig.Rendering.Skia (v0.1.12.1-alpha009-skia3)
+------------------------------------
+
+https://github.com/BobLd/PdfPig.Rendering.Skia at 45e839d48c6e9d5311dd5b83f350148991ff3268
+
+Licensed under Apache-2.0
+
+Available at https://licenses.nuget.org/Apache-2.0
+
+
+License notice for SkiaSharp (v3.119.1)
+------------------------------------
+
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for SkiaSharp.HarfBuzz (v3.119.1)
+------------------------------------
+
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
+
+Copyright © Microsoft Corporation. All rights reserved.
+
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
+
+
+License notice for SkiaSharp.NativeAssets.Linux (v2.88.9)
 ------------------------------------
 
 https://github.com/mono/SkiaSharp at 9699cdf046a989423a5e5eca68e7fd813486d81c
@@ -388,31 +476,31 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for SkiaSharp.HarfBuzz (v2.88.8)
+License notice for SkiaSharp.NativeAssets.Linux.NoDependencies (v3.119.1)
 ------------------------------------
 
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
-
-https://go.microsoft.com/fwlink/?linkid=868515
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
 
 Copyright © Microsoft Corporation. All rights reserved.
 
-License available at https://go.microsoft.com/fwlink/?linkid=868514
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
 
 
-License notice for SkiaSharp.NativeAssets.Linux (v2.88.8)
+License notice for SkiaSharp.NativeAssets.macOS (v3.119.1)
 ------------------------------------
 
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
-
-https://go.microsoft.com/fwlink/?linkid=868515
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
 
 Copyright © Microsoft Corporation. All rights reserved.
 
-License available at https://go.microsoft.com/fwlink/?linkid=868514
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
 
 
-License notice for SkiaSharp.NativeAssets.Linux.NoDependencies (v2.88.9)
+License notice for SkiaSharp.NativeAssets.WebAssembly (v2.88.9)
 ------------------------------------
 
 https://github.com/mono/SkiaSharp at 9699cdf046a989423a5e5eca68e7fd813486d81c
@@ -426,12 +514,10 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for SkiaSharp.NativeAssets.macOS (v2.88.9)
+License notice for SkiaSharp.NativeAssets.Win32 (v3.119.1)
 ------------------------------------
 
-https://github.com/mono/SkiaSharp at 9699cdf046a989423a5e5eca68e7fd813486d81c
-
-https://go.microsoft.com/fwlink/?linkid=868515
+https://go.microsoft.com/fwlink/?linkid=868515 at cc78b5933d23e6383db5d246e70db915770d55d6
 
 Copyright © Microsoft Corporation. All rights reserved.
 
@@ -440,24 +526,12 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for SkiaSharp.NativeAssets.WebAssembly (v2.88.8)
+License notice for System.Diagnostics.DiagnosticSource (v8.0.1)
 ------------------------------------
 
-https://github.com/mono/SkiaSharp at 7af1d0840a381c0ce7ef2877454a88dbb2949686
+https://github.com/dotnet/runtime at 2d7eea252964e69be94cb9c847b371b23e4dd470
 
-https://go.microsoft.com/fwlink/?linkid=868515
-
-Copyright © Microsoft Corporation. All rights reserved.
-
-License available at https://go.microsoft.com/fwlink/?linkid=868514
-
-
-License notice for SkiaSharp.NativeAssets.Win32 (v2.88.9)
-------------------------------------
-
-https://github.com/mono/SkiaSharp at 9699cdf046a989423a5e5eca68e7fd813486d81c
-
-https://go.microsoft.com/fwlink/?linkid=868515
+https://dot.net/
 
 Copyright © Microsoft Corporation. All rights reserved.
 
@@ -480,10 +554,10 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for System.Reactive (v6.0.1)
+License notice for System.Reactive (v6.1.0)
 ------------------------------------
 
-https://github.com/dotnet/reactive at 1cfc6465d1c9c6144d5b4e6420240f2767c8f85c
+https://github.com/dotnet/reactive at f4da16f15a3cde97f178396ea6e3489cc893651f
 
 Copyright (c) .NET Foundation and Contributors.
 
@@ -492,22 +566,24 @@ Licensed under MIT
 Available at https://licenses.nuget.org/MIT
 
 
-License notice for Tabalonia (v0.10.4)
+License notice for System.Text.Json (v8.0.5)
 ------------------------------------
 
-https://github.com/egorozh/Tabalonia at 4f5e6f84413a611c3f1e1f9490c97501fb40b5aa
+https://github.com/dotnet/runtime at 81cabf2857a01351e5ab578947c7403a5b128ad1
 
-Copyright 2022-2024 © The Tabalonia Project
+https://dot.net/
 
-Available at https://aka.ms/deprecateLicenseUrl
+Copyright © Microsoft Corporation. All rights reserved.
 
-LICENSE
+Licensed under MIT
+
+Available at https://licenses.nuget.org/MIT
 
 
-License notice for Tmds.DBus.Protocol (v0.20.0)
+License notice for Tmds.DBus.Protocol (v0.21.2)
 ------------------------------------
 
-https://github.com/tmds/Tmds.DBus.git at db7af5a46d316dda9886663fd3a006f6199343e1
+https://github.com/tmds/Tmds.DBus.git at f0b2c29f57bdc7efaeccaa61ca9f13e9a0eebff7
 
 Tom Deseyn
 
