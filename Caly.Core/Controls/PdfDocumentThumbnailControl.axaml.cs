@@ -24,6 +24,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
@@ -102,12 +103,44 @@ namespace Caly.Core.Controls
                 App.Messenger.Send(new UnloadThumbnailMessage(vm));
             }
         }
-        
+
+        private void LoadVisibleThumbnailMessage()
+        {
+            // Check thumbnails visibility
+            if (_listBox?.Parent is not ScrollViewer sv)
+            {
+                return;
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                Rect viewPort = sv.GetViewportRect();
+
+                foreach (ListBoxItem listBoxItem in _listBox.GetRealizedContainers().OfType<ListBoxItem>())
+                {
+                    if (listBoxItem.DataContext is PdfPageViewModel vm &&
+                        viewPort.Intersects(listBoxItem.Bounds) &&
+                        vm.Thumbnail is null)
+                    {
+                        App.Messenger.Send(new LoadThumbnailMessage(vm)); // Load image
+                    }
+                }
+            }, DispatcherPriority.Loaded);
+
+            // We use Loaded priority to ensure the layout is updated before checking the visibility
+        }
+
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if (change.Property == IsVisibleProperty && _listBox is not null)
+
+            if (change.Property == IsVisibleProperty)
             {
+                if (_listBox is null)
+                {
+                    return;
+                }
+                
                 if (change is { OldValue: false, NewValue: true })
                 {
                     // Thumbnails control becomes visible
@@ -121,21 +154,6 @@ namespace Caly.Core.Controls
                     {
                         _isScrollingToPage = false;
                     }
-
-                    // Check thumbnails visibility
-                    if (_listBox.Parent is not ScrollViewer sv)
-                    {
-                        return;
-                    }
-
-                    Rect viewPort = sv.GetViewportRect();
-                    foreach (ListBoxItem listBoxItem in _listBox.GetRealizedContainers().OfType<ListBoxItem>())
-                    {
-                        if (listBoxItem.DataContext is PdfPageViewModel vm && viewPort.Intersects(listBoxItem.Bounds))
-                        {
-                            App.Messenger.Send(new LoadThumbnailMessage(vm)); // Load image
-                        }
-                    }
                 }
                 else if (change is { OldValue: true, NewValue: false })
                 {
@@ -145,6 +163,16 @@ namespace Caly.Core.Controls
                         vm.ClearAllThumbnails();
                     }
                 }
+            }
+            else if (change.Property == BoundsProperty)
+            {
+                // Also handles IsVisibleProperty changes from false to true
+                if (_listBox is null || !IsVisible || change.GetNewValue<Rect>().IsEmpty())
+                {
+                    return;
+                }
+
+                LoadVisibleThumbnailMessage();
             }
         }
     }
