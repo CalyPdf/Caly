@@ -39,7 +39,7 @@ namespace Caly.Core.Services
 #if DEBUG
             if (Avalonia.Controls.Design.IsDesignMode)
             {
-                _storageProvider = storageProvider;
+                _storageProvider = storageProvider!;
                 return;
             }
 #endif

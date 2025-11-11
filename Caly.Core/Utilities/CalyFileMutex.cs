@@ -23,7 +23,7 @@ using System.IO;
 
 namespace Caly.Core.Utilities
 {
-    // Known issue with named System.Threading.Mutex on Linux/MacOS with AOT
+    // Known issue with named System.Threading.Mutex on Linux/macOS with AOT
     // See https://github.com/dotnet/runtime/issues/110348
     // https://www.martyndavis.com/?p=440
 
@@ -33,7 +33,7 @@ namespace Caly.Core.Utilities
     /// <summary>
     /// File mutex implementation to ensure cross-platform compatibility.
     /// <para>
-    /// Known issue with named System.Threading.Mutex on Linux/MacOS with AOT.
+    /// Known issue with named System.Threading.Mutex on Linux/macOS with AOT.
     /// See <see href="https://github.com/dotnet/runtime/issues/110348"/> and
     /// <see href="https://www.martyndavis.com/?p=440"/>
     /// </para>
@@ -54,6 +54,11 @@ namespace Caly.Core.Utilities
             // Same signature as default System.Threading.Mutex
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="timeout">Not in use.</param>
+        /// <param name="b">Not in use.</param>
         public bool WaitOne(TimeSpan timeout, bool b)
         {
             // Same signature as default System.Threading.Mutex

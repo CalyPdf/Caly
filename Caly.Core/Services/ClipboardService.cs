@@ -61,7 +61,7 @@ namespace Caly.Core.Services
 #if DEBUG
             if (Avalonia.Controls.Design.IsDesignMode)
             {
-                _clipboard = clipboard;
+                _clipboard = clipboard!;
                 return;
             }
 #endif

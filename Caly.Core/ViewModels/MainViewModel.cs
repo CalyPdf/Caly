@@ -170,7 +170,7 @@ namespace Caly.Core.ViewModels
             await CloseDocumentInternal(vm);
         }
 
-        private async Task CloseDocumentInternal(PdfDocumentViewModel vm)
+        private static async Task CloseDocumentInternal(PdfDocumentViewModel vm)
         {
             IPdfDocumentsService pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()
                 ?? throw new NullReferenceException($"Missing {nameof(IPdfDocumentsService)} instance.");
