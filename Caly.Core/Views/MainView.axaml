@@ -43,7 +43,7 @@
 
 		</SplitView>
 
-		<DockPanel Grid.Row="1" Margin="0,0,0,5">
+		<DockPanel Grid.Row="1" Margin="0">
 			<ToggleButton DockPanel.Dock="Left"
                           VerticalAlignment="Stretch"
                           Background="Transparent"
