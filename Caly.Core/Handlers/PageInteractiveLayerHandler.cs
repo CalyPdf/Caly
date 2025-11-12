@@ -200,7 +200,8 @@ namespace Caly.Core.Handlers
             {
                 return;
             }
-            
+
+            control.SetDefaultCursor();
             HideAnnotation(control);
         }
 
