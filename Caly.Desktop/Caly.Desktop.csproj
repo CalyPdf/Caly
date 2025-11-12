@@ -12,6 +12,8 @@
 		<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
 		<Deterministic>true</Deterministic>
 		<Configurations>Debug;Release;AOT</Configurations>
+		<SignAssembly>True</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\Caly.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
 	<!-- Begin AOT publish -->
@@ -19,7 +21,6 @@
 		<PublishAot>true</PublishAot>
 		<Optimize>True</Optimize>
 		<OptimizationPreference>Speed</OptimizationPreference>
-
 		<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
 		<IlcTrimMetadata>true</IlcTrimMetadata>
 
@@ -73,8 +74,6 @@
 	<PropertyGroup Label="Avalonia">
 		<AvaloniaUseCompiledBindingsByDefault>True</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>..\Caly.Core\Assets\caly-logo.ico</ApplicationIcon>
-		<SignAssembly>True</SignAssembly>
-		<AssemblyOriginatorKeyFile>Caly.Desktop.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
 	<Target Name="DeletePdbAfterPublish" AfterTargets="Publish">
