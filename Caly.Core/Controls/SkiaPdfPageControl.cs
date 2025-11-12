@@ -32,6 +32,26 @@ using SkiaSharp;
 
 namespace Caly.Core.Controls
 {
+    /*
+     * We render the SKPicture directly on the Avalonia Skia canvas, i.e. we don't rasterize it to a bitmap first.
+     *
+     * This is different from other PDF Viewers where the PDF page is rendered to a bitmap first and then the bitmap
+     * is drawn on the canvas, taking in account the visible area and the scale.
+     *
+     * By doing so, we avoid complex logic to know "when" to rasterize the PDF page to a bitmap and at which scale.
+     *
+     * The downside is that the SKPicture rendering is done on the Render thread, which can lead to lags in the app,
+     * depending on the complexity of the PDF page.
+     *
+     * However, since SKPicture is a vector representation, it scales well and looks sharp at any zoom level.
+     *
+     * -> One question is whether the SKPicture rendering can take in account the visible area to optimize
+     * the rendering, i.e. we would clip the picture to the visible area. The benefit of doing so in unclear.
+     * One drawback of clipping the SKPicture is that a SkiaDrawOperation object needs to be created on each render,
+     * i.e. every time the visible area changes.
+     * Not doing so allows to reuse the same SkiaDrawOperation object as long as the Picture property does not change.
+     */
+
     /// <summary>
     /// Skia Pdf page control.
     /// </summary>
@@ -40,22 +60,29 @@ namespace Caly.Core.Controls
         private sealed class SkiaDrawOperation : ICustomDrawOperation
         {
             private readonly IRef<SKPicture>? _picture;
-            private readonly SKRect _visibleArea;
+            private readonly SKPaint _paint;
 
             private readonly Lock _lock = new Lock();
 
-            public SkiaDrawOperation(Rect bounds, SKRect visibleArea, IRef<SKPicture>? picture)
+            public SkiaDrawOperation(Rect bounds, IRef<SKPicture>? picture)
             {
                 _picture = picture;
-                _visibleArea = visibleArea;
                 Bounds = bounds;
+
+                _paint = new SKPaint()
+                {
+                    IsDither = false,
+                    IsAntialias = false
+                };
             }
 
             public void Dispose()
             {
+                System.Diagnostics.Debug.WriteLine($"Disposing SkiaDrawOperation {DateTime.UtcNow:O}");
                 lock (_lock)
                 {
                     _picture?.Dispose();
+                    _paint.Dispose();
                 }
             }
 
@@ -91,25 +118,18 @@ namespace Caly.Core.Controls
                         }
 
                         canvas.Save();
-                        canvas.ClipRect(_visibleArea);
-
-                        using (var p = new SKPaint())
-                        {
-                            p.IsDither = false;
-                            p.IsAntialias = false;
-
-                            canvas.DrawPicture(_picture.Item, p);
+                        // The canvas could be clipped here: canvas.ClipRect(_visibleArea);
+                        canvas.DrawPicture(_picture.Item, _paint);
 
 #if DEBUG
-                            using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
-                            using (var paint = new SKPaint())
-                            {
-                                paint.Style = SKPaintStyle.Fill;
-                                paint.Color = SKColors.Blue.WithAlpha(100);
-                                canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, skFont, paint);
-                            }
-#endif
+                        using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
+                        using (var paint = new SKPaint())
+                        {
+                            paint.Style = SKPaintStyle.Fill;
+                            paint.Color = SKColors.Blue.WithAlpha(100);
+                            canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, skFont, paint);
                         }
+#endif
                         canvas.Restore();
                     }
                 }
@@ -148,8 +168,8 @@ namespace Caly.Core.Controls
         {
             ClipToBoundsProperty.OverrideDefaultValue<SkiaPdfPageControl>(true);
 
-            AffectsRender<SkiaPdfPageControl>(PictureProperty, VisibleAreaProperty);
-            AffectsMeasure<SkiaPdfPageControl>(PictureProperty, VisibleAreaProperty);
+            AffectsRender<SkiaPdfPageControl>(PictureProperty);
+            AffectsMeasure<SkiaPdfPageControl>(PictureProperty);
         }
 
         /// <summary>
@@ -180,9 +200,8 @@ namespace Caly.Core.Controls
                 return;
             }
 
-            SKRect area = VisibleArea.Value.ToSKRect();
-
-            context.Custom(new SkiaDrawOperation(viewPort, area, picture));
+            System.Diagnostics.Debug.WriteLine($"Creating SkiaDrawOperation {DateTime.UtcNow:O}");
+            context.Custom(new SkiaDrawOperation(viewPort, picture));
         }
     }
 }
