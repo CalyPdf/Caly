@@ -239,10 +239,16 @@ namespace Caly.Core.Handlers
                 // We need to add back this step (1 scroll step is 50, see link below)
                 // https://github.com/AvaloniaUI/Avalonia/blob/dadc9ab69284bb228ad460f36d5442b4eee4a82a/src/Avalonia.Controls/Presenters/ScrollContentPresenter.cs#L684
 
-                // TODO - The hack does not work when zoomed
+                var adjPoint = new Point(50, 50);
+                var matrix = control.GetLayoutTransformMatrix();
 
-                double x = Math.Max(loc.X - we.Delta.X * 50.0, 0);
-                double y = Math.Max(loc.Y - we.Delta.Y * 50.0, 0);
+                if (!matrix.IsIdentity && matrix.TryInvert(out var inverted))
+                {
+                    adjPoint = inverted.Transform(adjPoint);
+                }
+
+                double x = Math.Max(loc.X - we.Delta.X * adjPoint.X, 0);
+                double y = Math.Max(loc.Y - we.Delta.Y * adjPoint.Y, 0);
 
                 loc = new Point(x, y);
 

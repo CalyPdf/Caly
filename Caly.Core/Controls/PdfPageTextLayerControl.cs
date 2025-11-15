@@ -90,7 +90,14 @@ namespace Caly.Core.Controls
         {
             AffectsRender<PdfPageTextLayerControl>(PdfTextLayerProperty, SelectionChangedFlagProperty, VisibleAreaProperty);
         }
-        
+
+        internal Matrix GetLayoutTransformMatrix()
+        {
+            return this.FindAncestorOfType<PdfPageItemsControl>()?
+                .LayoutTransform?
+                .LayoutTransform?.Value ?? Matrix.Identity;
+        }
+
         internal void SetIbeamCursor()
         {
             Debug.ThrowNotOnUiThread();
