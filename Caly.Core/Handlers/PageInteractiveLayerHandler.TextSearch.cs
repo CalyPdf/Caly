@@ -35,7 +35,7 @@ namespace Caly.Core.Handlers
         private readonly IReadOnlyList<PdfWord>?[] _searchWordsResults;
         private readonly IReadOnlyList<Range>?[] _searchIndexResults;
 
-        public void ClearTextSearchResults(PdfDocumentViewModel documentViewModel)
+        public void ClearTextSearchResults(DocumentViewModel documentViewModel)
         {
             Debug.ThrowOnUiThread();
 
@@ -56,7 +56,7 @@ namespace Caly.Core.Handlers
             }
         }
 
-        public void AddTextSearchResults(PdfDocumentViewModel documentViewModel, IReadOnlyCollection<TextSearchResultViewModel> searchResults)
+        public void AddTextSearchResults(DocumentViewModel documentViewModel, IReadOnlyCollection<TextSearchResultViewModel> searchResults)
         {
             if (searchResults.Count > 0)
             {

@@ -42,7 +42,7 @@ namespace Caly.Core.Services
         {
             public required AsyncServiceScope Scope { get; init; }
 
-            public required PdfDocumentViewModel ViewModel { get; init; }
+            public required DocumentViewModel ViewModel { get; init; }
         }
 
         private readonly MainViewModel _mainViewModel;
@@ -164,7 +164,7 @@ namespace Caly.Core.Services
             return count;
         }
 
-        public async Task CloseUnloadDocument(PdfDocumentViewModel? document)
+        public async Task CloseUnloadDocument(DocumentViewModel? document)
         {
             Debug.ThrowOnUiThread();
 
@@ -235,7 +235,7 @@ namespace Caly.Core.Services
 
                 var scope = App.Current!.Services!.CreateAsyncScope();
 
-                var documentViewModel = scope.ServiceProvider.GetRequiredService<PdfDocumentViewModel>();
+                var documentViewModel = scope.ServiceProvider.GetRequiredService<DocumentViewModel>();
                 documentViewModel.FileName = $"Opening '{Path.GetFileNameWithoutExtension(storageFile.Path.LocalPath)}'...";
                 
                 var docRecord = new PdfDocumentRecord()

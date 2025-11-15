@@ -27,7 +27,11 @@ using Caly.Core.ViewModels;
 
 namespace Caly.Core.Controls;
 
-public sealed partial class PdfDocumentsTabsControl : UserControl
+/// <summary>
+/// Control that represents all open PDF documents, together with the top and left navigation panels.
+/// Each PDF document is displayed in a tab.
+/// </summary>
+public sealed partial class DocumentsTabsControl : UserControl
 {
     private const int MaxPaneLength = 500;
     private const int MinPaneLength = 200;
@@ -37,7 +41,7 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
 
     private SplitView? _splitView;
 
-    public PdfDocumentsTabsControl()
+    public DocumentsTabsControl()
     {
         InitializeComponent();
     }
@@ -137,7 +141,7 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
             return;
         }
 
-        if (sender is TextBox { DataContext: PdfDocumentViewModel vm })
+        if (sender is TextBox { DataContext: DocumentViewModel vm })
         {
             if (int.TryParse(vm.SelectedPageIndexString, out int pageNumber))
             {
@@ -171,13 +175,13 @@ public sealed partial class PdfDocumentsTabsControl : UserControl
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (!e.WidthChanged ||
-            sender is not PdfDocumentsTabsControl tabsControl ||
+            sender is not DocumentsTabsControl tabsControl ||
             e.NewSize.Width > e.PreviousSize.Width)
         {
             return;
         }
 
-        if (GetSplitView()?.DataContext is not PdfDocumentViewModel vm || !vm.IsDocumentPaneOpen)
+        if (GetSplitView()?.DataContext is not DocumentViewModel vm || !vm.IsDocumentPaneOpen)
         {
             return;
         }

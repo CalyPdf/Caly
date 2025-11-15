@@ -6,14 +6,14 @@
 	<Design.PreviewWith>
 		<StackPanel Width="400" Spacing="10">
 			<StackPanel Background="{DynamicResource SystemRegionBrush}">
-				<controls:PdfSearchPanelControl />
+				<controls:FullSearchPanelControl />
 			</StackPanel>
 		</StackPanel>
 	</Design.PreviewWith>
 
-	<ControlTheme x:Key="{x:Type controls:PdfSearchPanelControl}"
-                  TargetType="controls:PdfSearchPanelControl"
-                  x:DataType="viewModels:PdfDocumentViewModel">
+	<ControlTheme x:Key="{x:Type controls:FullSearchPanelControl}"
+                  TargetType="controls:FullSearchPanelControl"
+                  x:DataType="viewModels:DocumentViewModel">
 		<Setter Property="Template">
 			<ControlTemplate>
 

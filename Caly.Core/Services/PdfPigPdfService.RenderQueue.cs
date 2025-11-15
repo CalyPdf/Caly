@@ -13,7 +13,7 @@ namespace Caly.Core.Services
 
         #region Picture
 
-        public void EnqueueRequestPageSize(PdfPageViewModel page)
+        public void EnqueueRequestPageSize(PageViewModel page)
         {
             if (IsDisposed() || !IsActive)
             {
@@ -27,7 +27,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public void EnqueueRequestPicture(PdfPageViewModel page)
+        public void EnqueueRequestPicture(PageViewModel page)
         {
             if (IsDisposed() || !IsActive)
             {
@@ -45,7 +45,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public void EnqueueRemovePicture(PdfPageViewModel page)
+        public void EnqueueRemovePicture(PageViewModel page)
         {
             var picture = page.PdfPicture;
 
@@ -63,7 +63,7 @@ namespace Caly.Core.Services
 
         #region Text layer
 
-        public void EnqueueRequestTextLayer(PdfPageViewModel page)
+        public void EnqueueRequestTextLayer(PageViewModel page)
         {
             if (IsDisposed() || !IsActive)
             {
@@ -81,7 +81,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public void EnqueueRemoveTextLayer(PdfPageViewModel page)
+        public void EnqueueRemoveTextLayer(PageViewModel page)
         {
             if (_textLayerTokens.TryRemove(page.PageNumber, out var cts))
             {
@@ -96,7 +96,7 @@ namespace Caly.Core.Services
 
         #region Thumbnail
 
-        public void EnqueueRequestThumbnail(PdfPageViewModel page)
+        public void EnqueueRequestThumbnail(PageViewModel page)
         {
             if (IsDisposed() || !IsActive)
             {
@@ -114,7 +114,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public void EnqueueRemoveThumbnail(PdfPageViewModel page)
+        public void EnqueueRemoveThumbnail(PageViewModel page)
         {
             var thumbnail = page.Thumbnail;
             page.Thumbnail = null;

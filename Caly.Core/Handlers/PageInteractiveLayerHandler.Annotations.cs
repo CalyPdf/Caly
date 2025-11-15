@@ -29,7 +29,7 @@ namespace Caly.Core.Handlers
 {
     public sealed partial class PageInteractiveLayerHandler
     {
-        private static void ShowAnnotation(PdfPageTextLayerControl control, PdfAnnotation annotation)
+        private static void ShowAnnotation(PageInteractiveLayerControl control, PdfAnnotation annotation)
         {
             if (FlyoutBase.GetAttachedFlyout(control) is not Flyout attachedFlyout)
             {
@@ -67,7 +67,7 @@ namespace Caly.Core.Handlers
             attachedFlyout.ShowAt(control);
         }
 
-        private static void HideAnnotation(PdfPageTextLayerControl control)
+        private static void HideAnnotation(PageInteractiveLayerControl control)
         {
             if (FlyoutBase.GetAttachedFlyout(control) is Flyout attachedFlyout)
             {

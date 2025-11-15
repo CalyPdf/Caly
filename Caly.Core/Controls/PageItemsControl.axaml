@@ -7,14 +7,14 @@
 	<Design.PreviewWith>
 		<StackPanel Width="400" Spacing="10">
 			<StackPanel Background="{DynamicResource SystemRegionBrush}">
-				<controls:PdfPageItemsControl />
+				<controls:PageItemsControl />
 			</StackPanel>
 		</StackPanel>
 	</Design.PreviewWith>
 
-    <ControlTheme x:Key="{x:Type controls:PdfPageItemsControl}"
-                  TargetType="controls:PdfPageItemsControl"
-                  x:DataType="vm:PdfDocumentViewModel">
+    <ControlTheme x:Key="{x:Type controls:PageItemsControl}"
+                  TargetType="controls:PageItemsControl"
+                  x:DataType="vm:DocumentViewModel">
 
         <Setter Property="MinZoomLevel" Value="{Binding MinZoomLevel}"/>
 		<Setter Property="MaxZoomLevel" Value="{Binding MaxZoomLevel}"/>

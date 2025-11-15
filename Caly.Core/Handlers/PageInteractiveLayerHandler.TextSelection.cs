@@ -30,7 +30,7 @@ namespace Caly.Core.Handlers
     {
         private static readonly Color _selectionColor = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
 
-        public void ClearSelection(PdfDocumentControl pdfDocumentControl)
+        public void ClearSelection(DocumentControl documentControl)
         {
             Debug.ThrowNotOnUiThread();
             int start = Selection.GetStartPageIndex();
@@ -41,7 +41,7 @@ namespace Caly.Core.Handlers
             Selection.ResetSelection();
 
             if (start == -1 || end == -1 ||
-                pdfDocumentControl.DataContext is not PdfDocumentViewModel docVm)
+                documentControl.DataContext is not DocumentViewModel docVm)
             {
                 return;
             }
@@ -52,13 +52,13 @@ namespace Caly.Core.Handlers
             }
         }
 
-        public void ClearSelection(PdfPageTextLayerControl currentTextLayer)
+        public void ClearSelection(PageInteractiveLayerControl currentTextLayer)
         {
             Debug.ThrowNotOnUiThread();
 
-            PdfDocumentControl pdfDocumentControl = currentTextLayer.FindAncestorOfType<PdfDocumentControl>() ??
-                                                    throw new NullReferenceException($"{typeof(PdfDocumentControl)} not found.");
-            ClearSelection(pdfDocumentControl);
+            DocumentControl documentControl = currentTextLayer.FindAncestorOfType<DocumentControl>() ??
+                                                    throw new NullReferenceException($"{typeof(DocumentControl)} not found.");
+            ClearSelection(documentControl);
         }
     }
 }

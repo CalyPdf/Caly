@@ -30,8 +30,8 @@ using Avalonia.Skia;
 using Caly.Core.Utilities;
 using SkiaSharp;
 
-namespace Caly.Core.Controls
-{
+namespace Caly.Core.Controls;
+
     /*
      * We render the SKPicture directly on the Avalonia Skia canvas, i.e. we don't rasterize it to a bitmap first.
      *
@@ -127,7 +127,8 @@ namespace Caly.Core.Controls
                         {
                             paint.Style = SKPaintStyle.Fill;
                             paint.Color = SKColors.Blue.WithAlpha(100);
-                            canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f, _picture.Item.CullRect.Height / 2f, skFont, paint);
+                            canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f,
+                                _picture.Item.CullRect.Height / 2f, skFont, paint);
                         }
 #endif
                         canvas.Restore();
@@ -204,4 +205,3 @@ namespace Caly.Core.Controls
             context.Custom(new SkiaDrawOperation(viewPort, picture));
         }
     }
-}

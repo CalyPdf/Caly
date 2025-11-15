@@ -37,196 +37,200 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using Tabalonia.Controls;
 
-namespace Caly.Core.ViewModels
+namespace Caly.Core.ViewModels;
+
+public sealed partial class MainViewModel : ViewModelBase
 {
-    public sealed partial class MainViewModel : ViewModelBase
+    private readonly IDisposable _documentCollectionDisposable;
+
+    public ObservableCollection<DocumentViewModel> PdfDocuments { get; } = new();
+
+    [ObservableProperty] private int _selectedDocumentIndex;
+
+    [ObservableProperty] private bool _isSettingsPaneOpen;
+
+    public string Version => CalyExtensions.CalyVersion;
+
+    partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
     {
-        private readonly IDisposable _documentCollectionDisposable;
-
-        public ObservableCollection<PdfDocumentViewModel> PdfDocuments { get; } = new();
-
-        [ObservableProperty] private int _selectedDocumentIndex;
-
-        [ObservableProperty] private bool _isSettingsPaneOpen;
-
-        public string Version => CalyExtensions.CalyVersion;
-
-        partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
+        System.Diagnostics.Debug.WriteLine($"Selected Document Index changed from {oldValue} to {newValue}.");
+        var currentDoc = GetCurrentPdfDocument();
+        if (currentDoc is null)
         {
-            System.Diagnostics.Debug.WriteLine($"Selected Document Index changed from {oldValue} to {newValue}.");
-            var currentDoc = GetCurrentPdfDocument();
-            if (currentDoc is null)
-            {
-                return;
-            }
-
-            App.Messenger.Send(new SelectedDocumentChangedMessage(currentDoc));
+            return;
         }
 
-        public MainViewModel()
-        {
-            // TODO - Dispose to unsubscribe
-            _documentCollectionDisposable = PdfDocuments
-                .GetWeakCollectionChangedObservable()
-                .ObserveOn(Scheduler.Default)
-                .Subscribe(async e =>
+        App.Messenger.Send(new SelectedDocumentChangedMessage(currentDoc));
+    }
+
+    public MainViewModel()
+    {
+        // TODO - Dispose to unsubscribe
+        _documentCollectionDisposable = PdfDocuments
+            .GetWeakCollectionChangedObservable()
+            .ObserveOn(Scheduler.Default)
+            .Subscribe(async e =>
+            {
+                Debug.ThrowOnUiThread();
+
+                // NB: Tabalonia uses a Remove + Add when moving tabs
+                try
                 {
-                    Debug.ThrowOnUiThread();
-
-                    // NB: Tabalonia uses a Remove + Add when moving tabs
-                    try
+                    if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems?.Count > 0)
                     {
-                        if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems?.Count > 0)
+                        foreach (var newDoc in e.NewItems.OfType<DocumentViewModel>())
                         {
-                            foreach (var newDoc in e.NewItems.OfType<PdfDocumentViewModel>())
+                            if (newDoc.WaitOpenAsync is null)
                             {
-                                if (newDoc.WaitOpenAsync is null)
-                                {
-                                    throw new Exception("WaitOpenAsync is null");
-                                }
+                                throw new Exception("WaitOpenAsync is null");
+                            }
 
-                                await newDoc.WaitOpenAsync; // Make sure the doc is open before proceeding
-                                await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask, newDoc.LoadPropertiesTask);
-                            }
-                        }
-                        else if (e.Action == NotifyCollectionChangedAction.Remove)
-                        {
-                            if (PdfDocuments.Count == 0)
-                            {
-                                // We want to clear any possible reference to the last PdfDocumentViewModel.
-                                // The collection keeps a reference of the last document in e.OldItems
-                                // We trigger a NotifyCollectionChangedAction.Reset to flush
-                                PdfDocuments.Clear();
-                            }
+                            await newDoc.WaitOpenAsync; // Make sure the doc is open before proceeding
+                            await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask,
+                                newDoc.LoadPropertiesTask);
                         }
                     }
-                    catch (OperationCanceledException)
+                    else if (e.Action == NotifyCollectionChangedAction.Remove)
                     {
-                        // No op
+                        if (PdfDocuments.Count == 0)
+                        {
+                            // We want to clear any possible reference to the last PdfDocumentViewModel.
+                            // The collection keeps a reference of the last document in e.OldItems
+                            // We trigger a NotifyCollectionChangedAction.Reset to flush
+                            PdfDocuments.Clear();
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteExceptionToFile(ex);
-                        Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
-                    }
-                });
-        }
-
-        private PdfDocumentViewModel? GetCurrentPdfDocument()
-        {
-            try
-            {
-                return (SelectedDocumentIndex < 0 || PdfDocuments.Count == 0) ? null : PdfDocuments[SelectedDocumentIndex];
-            }
-            catch (Exception e)
-            {
-                Debug.WriteExceptionToFile(e);
-                return null;
-            }
-        }
-
-        [RelayCommand]
-        private async Task OpenFile(CancellationToken token)
-        {
-            try
-            {
-                var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>();
-                if (pdfDocumentsService is null)
-                {
-                    throw new NullReferenceException($"Missing {nameof(IPdfDocumentsService)} instance.");
                 }
+                catch (OperationCanceledException)
+                {
+                    // No op
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteExceptionToFile(ex);
+                    Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
+                }
+            });
+    }
 
-                await pdfDocumentsService.OpenLoadDocument(token);
-            }
-            catch (OperationCanceledException)
-            {
-                // No op
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteExceptionToFile(ex);
-                Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
-            }
-        }
-        
-        [RelayCommand]
-        private async Task CloseTab(object tabItem)
+    private DocumentViewModel? GetCurrentPdfDocument()
+    {
+        try
         {
-            // TODO - Finish proper dispose / unload of document on close 
-            if (((DragTabItem)tabItem)?.DataContext is PdfDocumentViewModel vm)
-            {
-                await CloseDocumentInternal(vm);
-            }
+            return (SelectedDocumentIndex < 0 || PdfDocuments.Count == 0) ? null : PdfDocuments[SelectedDocumentIndex];
         }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
+    }
 
-        [RelayCommand]
-        private async Task CloseDocument(CancellationToken token)
+    [RelayCommand]
+    private async Task OpenFile(CancellationToken token)
+    {
+        try
         {
-            PdfDocumentViewModel? vm = GetCurrentPdfDocument();
-            if (vm is null)
+            var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>();
+            if (pdfDocumentsService is null)
             {
-                return;
+                throw new NullReferenceException($"Missing {nameof(IPdfDocumentsService)} instance.");
             }
+
+            await pdfDocumentsService.OpenLoadDocument(token);
+        }
+        catch (OperationCanceledException)
+        {
+            // No op
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteExceptionToFile(ex);
+            Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
+        }
+    }
+
+    [RelayCommand]
+    private async Task CloseTab(object tabItem)
+    {
+        // TODO - Finish proper dispose / unload of document on close 
+        if (((DragTabItem)tabItem)?.DataContext is DocumentViewModel vm)
+        {
             await CloseDocumentInternal(vm);
         }
+    }
 
-        private static async Task CloseDocumentInternal(PdfDocumentViewModel vm)
+    [RelayCommand]
+    private async Task CloseDocument(CancellationToken token)
+    {
+        DocumentViewModel? vm = GetCurrentPdfDocument();
+        if (vm is null)
         {
-            IPdfDocumentsService pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()
-                ?? throw new NullReferenceException($"Missing {nameof(IPdfDocumentsService)} instance.");
-
-            await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(vm));
+            return;
         }
 
-        [RelayCommand]
-        private void ActivateSearchTextTab()
+        await CloseDocumentInternal(vm);
+    }
+
+    private static async Task CloseDocumentInternal(DocumentViewModel vm)
+    {
+        IPdfDocumentsService pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()
+                                                   ?? throw new NullReferenceException(
+                                                       $"Missing {nameof(IPdfDocumentsService)} instance.");
+
+        await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(vm));
+    }
+
+    [RelayCommand]
+    private void ActivateSearchTextTab()
+    {
+        GetCurrentPdfDocument()?.ActivateSearchTextTabCommand.Execute(null);
+    }
+
+    [RelayCommand]
+    private Task CopyText(CancellationToken token)
+    {
+        DocumentViewModel? vm = GetCurrentPdfDocument();
+        return vm is null ? Task.CompletedTask : vm.CopyTextCommand.ExecuteAsync(null);
+    }
+
+    [RelayCommand]
+    private void ActivateNextDocument()
+    {
+        int lastIndex = PdfDocuments.Count - 1;
+
+        if (lastIndex <= 0)
         {
-            GetCurrentPdfDocument()?.ActivateSearchTextTabCommand.Execute(null);
+            return;
         }
 
-        [RelayCommand]
-        private Task CopyText(CancellationToken token)
+        int newIndex = SelectedDocumentIndex + 1;
+
+        if (newIndex > lastIndex)
         {
-            PdfDocumentViewModel? vm = GetCurrentPdfDocument();
-            return vm is null ? Task.CompletedTask : vm.CopyTextCommand.ExecuteAsync(null);
+            newIndex = 0;
         }
 
-        [RelayCommand]
-        private void ActivateNextDocument()
+        SelectedDocumentIndex = newIndex;
+    }
+
+    [RelayCommand]
+    private void ActivatePreviousDocument()
+    {
+        int lastIndex = PdfDocuments.Count - 1;
+
+        if (lastIndex <= 0)
         {
-            int lastIndex = PdfDocuments.Count - 1;
-
-            if (lastIndex <= 0)
-            {
-                return;
-            }
-
-            int newIndex = SelectedDocumentIndex + 1;
-
-            if (newIndex > lastIndex)
-            {
-                newIndex = 0;
-            }
-            SelectedDocumentIndex = newIndex;
+            return;
         }
 
-        [RelayCommand]
-        private void ActivatePreviousDocument()
+        int newIndex = SelectedDocumentIndex - 1;
+
+        if (newIndex < 0)
         {
-            int lastIndex = PdfDocuments.Count - 1;
-
-            if (lastIndex <= 0)
-            {
-                return;
-            }
-
-            int newIndex = SelectedDocumentIndex - 1;
-
-            if (newIndex < 0)
-            {
-                newIndex = lastIndex;
-            }
-            SelectedDocumentIndex = newIndex;
+            newIndex = lastIndex;
         }
+
+        SelectedDocumentIndex = newIndex;
     }
 }

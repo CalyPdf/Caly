@@ -4,12 +4,12 @@
                     xmlns:vm="clr-namespace:Caly.Core.ViewModels">
 
     <Design.PreviewWith>
-        <controls:PdfPageThumbnailControl Height="500" Width="180" />
+        <controls:ThumbnailControl Height="500" Width="180" />
     </Design.PreviewWith>
 
-    <ControlTheme x:Key="{x:Type controls:PdfPageThumbnailControl}"
-                  TargetType="controls:PdfPageThumbnailControl"
-                  x:DataType="vm:PdfPageViewModel">
+    <ControlTheme x:Key="{x:Type controls:ThumbnailControl}"
+                  TargetType="controls:ThumbnailControl"
+                  x:DataType="vm:PageViewModel">
         <Setter Property="Thumbnail" Value="{Binding Thumbnail}"/>
 
         <Setter Property="Template">

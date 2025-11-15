@@ -21,39 +21,38 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Caly.Core.ViewModels
+namespace Caly.Core.ViewModels;
+
+public partial class DocumentViewModel : IAsyncDisposable, IDisposable
 {
-    public partial class PdfDocumentViewModel : IAsyncDisposable, IDisposable
+    public async ValueTask DisposeAsync()
     {
-        public async ValueTask DisposeAsync()
+        Debug.ThrowOnUiThread();
+
+        await Parallel.ForEachAsync(Pages, (p, _) => p.DisposeAsync());
+
+        Pages.Clear();
+        Bookmarks?.Clear();
+
+        _cts.Dispose();
+
+        _searchResultsDisposable.Dispose();
+
+        if (SearchResultsSource?.RowSelection is not null)
         {
-            Debug.ThrowOnUiThread();
-
-            await Parallel.ForEachAsync(Pages, (p, _) => p.DisposeAsync());
-
-            Pages.Clear();
-            Bookmarks?.Clear();
-
-            _cts.Dispose();
-
-            _searchResultsDisposable.Dispose();
-
-            if (SearchResultsSource?.RowSelection is not null)
-            {
-                SearchResultsSource.RowSelection.SelectionChanged -= TextSearchSelectionChanged;
-            }
-
-            if (BookmarksSource?.RowSelection is not null)
-            {
-                BookmarksSource.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
-            }
-
-            SearchResults.Clear();
+            SearchResultsSource.RowSelection.SelectionChanged -= TextSearchSelectionChanged;
         }
 
-        public void Dispose()
+        if (BookmarksSource?.RowSelection is not null)
         {
-            DisposeAsync().GetAwaiter().GetResult();
+            BookmarksSource.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
         }
+
+        SearchResults.Clear();
+    }
+
+    public void Dispose()
+    {
+        DisposeAsync().GetAwaiter().GetResult();
     }
 }

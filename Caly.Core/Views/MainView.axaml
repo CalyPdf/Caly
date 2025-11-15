@@ -34,11 +34,11 @@
 
             <!-- Settings Pane -->
             <SplitView.Pane>
-                <controls:CalySettingsControl/>
+                <controls:SettingsControl/>
 			</SplitView.Pane>
 
 			<SplitView.Content>
-				<controls:PdfDocumentsTabsControl/>
+				<controls:DocumentsTabsControl/>
 			</SplitView.Content>
 
 		</SplitView>

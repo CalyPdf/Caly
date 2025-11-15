@@ -22,7 +22,7 @@ namespace Caly.Core.Services
             _index.Clear();
         }
 
-        public async Task BuildPdfDocumentIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token)
+        public async Task BuildPdfDocumentIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token)
         {
             int done = 0;
 
@@ -32,7 +32,7 @@ namespace Caly.Core.Services
                 CancellationToken = token
             };
 
-            await Parallel.ForEachAsync(pdfDocument.Pages, options, async (p, ct) =>
+            await Parallel.ForEachAsync(document.Pages, options, async (p, ct) =>
             {
                 ct.ThrowIfCancellationRequested();
                 
@@ -121,7 +121,7 @@ namespace Caly.Core.Services
             return pageText.AsMemory(sampleStart, sampleLength);
         }
 
-        public IEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
+        public IEnumerable<TextSearchResultViewModel> Search(DocumentViewModel document, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
