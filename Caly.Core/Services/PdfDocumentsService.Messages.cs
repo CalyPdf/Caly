@@ -39,7 +39,7 @@ namespace Caly.Core.Services
 
         private void HandleCopyToClipboardRequestMessage(object r, CopyToClipboardRequestMessage m)
         {
-            m.Reply(_clipboardService.SetAsync(m.PdfDocument, m.Token));
+            m.Reply(_clipboardService.SetAsync(m.Document, m.Token));
         }
 
         private void HandleSelectedDocumentChangedMessage(object r, SelectedDocumentChangedMessage m)

@@ -41,7 +41,7 @@ namespace Caly.Core.Models
     /// </para>
     /// See <see href="https://developer.mozilla.org/en-US/docs/Web/API/Selection"/>.
     /// </summary>
-    public sealed partial class PdfTextSelection
+    public sealed partial class TextSelection
     {
         /*
          * Note: Anchor and focus should not be confused with the start and end positions of a selection.
@@ -139,7 +139,7 @@ namespace Caly.Core.Models
         public int NumberOfPages;
 #endif
 
-        public PdfTextSelection(int numberOfPages)
+        public TextSelection(int numberOfPages)
         {
             _selectedWords = new IReadOnlyList<PdfWord>[numberOfPages];
 #if DEBUG
@@ -336,7 +336,7 @@ namespace Caly.Core.Models
             return word.IndexInPage >= AnchorWord!.IndexInPage && word.IndexInPage <= FocusWord!.IndexInPage;
         }
 
-        public void SelectWordsInRange(PdfPageViewModel pageViewModel)
+        public void SelectWordsInRange(PageViewModel pageViewModel)
         {
             if (pageViewModel.PdfTextLayer is null || pageViewModel.PdfTextLayer.Count == 0)
             {

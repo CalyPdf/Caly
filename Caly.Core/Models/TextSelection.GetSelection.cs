@@ -27,7 +27,7 @@ using Caly.Pdf.Models;
 
 namespace Caly.Core.Models
 {
-    public partial class PdfTextSelection
+    public partial class TextSelection
     {
         public IEnumerable<int> GetSelectedPagesIndexes()
         {
@@ -71,7 +71,7 @@ namespace Caly.Core.Models
         /// <param name="page">The page view model. It will be used to set the page selection if need be.</param>
         /// <param name="token"></param>
         private async IAsyncEnumerable<T> GetPageSelectionAsAsync<T>(int pageNumber, Func<PdfWord, T> processFull,
-            Func<PdfWord, int, int, T> processPartial, PdfPageViewModel page, [EnumeratorCancellation] CancellationToken token)
+            Func<PdfWord, int, int, T> processPartial, PageViewModel page, [EnumeratorCancellation] CancellationToken token)
         {
             // TODO - merge words on same line
 
@@ -240,7 +240,7 @@ namespace Caly.Core.Models
         /// <param name="document">The document view model. It will be used to load the text layer if not already loaded.</param>
         /// <param name="token"></param>
         public async IAsyncEnumerable<T> GetDocumentSelectionAsAsync<T>(Func<PdfWord, T> processFull,
-            Func<PdfWord, int, int, T> processPartial, PdfDocumentViewModel document, [EnumeratorCancellation] CancellationToken token)
+            Func<PdfWord, int, int, T> processPartial, DocumentViewModel document, [EnumeratorCancellation] CancellationToken token)
         {
             System.Diagnostics.Debug.Assert(IsValid);
 

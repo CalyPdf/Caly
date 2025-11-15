@@ -24,26 +24,24 @@ using CommunityToolkit.Mvvm.Messaging;
 using Caly.Core.Models;
 using Caly.Core.Services;
 
-namespace Caly.Core.ViewModels
+namespace Caly.Core.ViewModels;
+
+public partial class ViewModelBase : ObservableObject
 {
-    public partial class ViewModelBase : ObservableObject
+    [ObservableProperty] private ExceptionViewModel? _exception;
+
+    partial void OnExceptionChanging(ExceptionViewModel? value)
     {
-        [ObservableProperty]
-        private ExceptionViewModel? _exception;
-
-        partial void OnExceptionChanging(ExceptionViewModel? value)
+        if (value is null)
         {
-            if (value is null)
-            {
-                return;
-            }
-
-            App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
-            {
-                Title = "Critical error",
-                Message = value.Message,
-                Type = NotificationType.Error
-            }));
+            return;
         }
+
+        App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
+        {
+            Title = "Critical error",
+            Message = value.Message,
+            Type = NotificationType.Error
+        }));
     }
 }

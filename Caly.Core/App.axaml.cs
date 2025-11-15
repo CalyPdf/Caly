@@ -129,7 +129,7 @@ namespace Caly.Core
 
             services.AddScoped<IPdfService, PdfPigPdfService>();
             services.AddScoped<ITextSearchService, SearchValuesTextSearchService>();
-            services.AddScoped<PdfDocumentViewModel>();
+            services.AddScoped<DocumentViewModel>();
 
             OverrideRegisteredServices(services);
 

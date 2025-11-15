@@ -32,9 +32,9 @@ namespace Caly.Core.Services
 {
     internal sealed partial class PdfPigPdfService
     {
-        private readonly ConcurrentDictionary<int, PdfPageViewModel> _bitmaps = new();
+        private readonly ConcurrentDictionary<int, PageViewModel> _bitmaps = new();
         
-        private async Task SetThumbnail(PdfPageViewModel vm, SKPicture picture, CancellationToken token)
+        private async Task SetThumbnail(PageViewModel vm, SKPicture picture, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
             

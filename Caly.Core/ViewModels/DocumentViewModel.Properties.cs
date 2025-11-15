@@ -1,4 +1,4 @@
-// Copyright (c) 2025 BobLd
+﻿// Copyright (c) 2025 BobLd
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,23 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Avalonia;
-using Avalonia.Controls.Primitives;
+using System;
+using System.Threading.Tasks;
+using Caly.Pdf.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Caly.Core.Controls;
+namespace Caly.Core.ViewModels;
 
-public sealed class PdfDocumentPropertiesControl : TemplatedControl
+public partial class DocumentViewModel
 {
-    private const int DefaultFirstColumnWidth = 95;
+    private readonly Lazy<Task> _loadPropertiesTask;
+    public Task LoadPropertiesTask => _loadPropertiesTask.Value;
 
-    /// <summary>
-    /// Defines the <see cref="FirstColumnWidth"/> property.
-    /// </summary>
-    public static readonly StyledProperty<int> FirstColumnWidthProperty = AvaloniaProperty.Register<PdfDocumentPropertiesControl, int>(nameof(FirstColumnWidth), DefaultFirstColumnWidth);
+    [ObservableProperty] private PdfDocumentProperties? _properties;
 
-    public int FirstColumnWidth
+    private async Task LoadProperties()
     {
-        get => GetValue(FirstColumnWidthProperty);
-        set => SetValue(FirstColumnWidthProperty, value);
+        _cts.Token.ThrowIfCancellationRequested();
+        await Task.Run(() => _pdfService.SetDocumentPropertiesAsync(this, _cts.Token));
     }
 }

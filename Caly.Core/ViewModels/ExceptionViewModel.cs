@@ -21,24 +21,23 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Caly.Core.ViewModels
+namespace Caly.Core.ViewModels;
+
+public sealed class ExceptionViewModel : ObservableObject
 {
-    public sealed class ExceptionViewModel : ObservableObject
+    public Exception Exception { get; }
+
+    public string Message => Exception.Message;
+
+    public string StackTrace => Exception.StackTrace ?? string.Empty;
+
+    public ExceptionViewModel(Exception exception)
     {
-        public Exception Exception { get; }
+        Exception = exception;
+    }
 
-        public string Message => Exception.Message;
-
-        public string StackTrace => Exception.StackTrace ?? string.Empty;
-
-        public ExceptionViewModel(Exception exception)
-        {
-            Exception = exception;
-        }
-
-        public override string ToString()
-        {
-            return Exception.ToString();
-        }
+    public override string ToString()
+    {
+        return Exception.ToString();
     }
 }

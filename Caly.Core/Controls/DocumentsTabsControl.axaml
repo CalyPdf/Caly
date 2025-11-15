@@ -6,7 +6,7 @@
              xmlns:controls="clr-namespace:Caly.Core.Controls"
              xmlns:tabalonia="clr-namespace:Tabalonia.Controls;assembly=Tabalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Caly.Core.Controls.PdfDocumentsTabsControl"
+             x:Class="Caly.Core.Controls.DocumentsTabsControl"
              x:DataType="vm:MainViewModel"
              SizeChanged="OnSizeChanged">
 
@@ -29,7 +29,7 @@
 			</DataTemplate>
 		</TabControl.ItemTemplate>
 		<TabControl.ContentTemplate>
-			<DataTemplate x:DataType="vm:PdfDocumentViewModel">
+			<DataTemplate x:DataType="vm:DocumentViewModel">
 
 				<Grid RowDefinitions="30,*">
 
@@ -200,7 +200,7 @@
 													</PathIcon.RenderTransform>
 												</PathIcon>
 											</TabItem.Header>
-											<controls:PdfDocumentThumbnailControl IsVisible="{Binding IsDocumentPaneOpen}" />
+											<controls:ThumbnailsControl IsVisible="{Binding IsDocumentPaneOpen}" />
 										</TabItem>
 
 										<!-- Bookmarks tab -->
@@ -232,7 +232,7 @@
 												</PathIcon>
 											</TabItem.Header>
 
-											<controls:PdfSearchPanelControl/>
+											<controls:FullSearchPanelControl/>
 										</TabItem>
 
 										<!-- Doc information tab -->
@@ -245,7 +245,7 @@
 												</PathIcon>
 											</TabItem.Header>
 
-											<controls:PdfDocumentPropertiesControl/>
+											<controls:DocumentPropertiesControl/>
 
 										</TabItem>
 
@@ -269,7 +269,7 @@
 
 						<!-- Document control -->
 						<SplitView.Content>
-							<controls:PdfDocumentControl />
+							<controls:DocumentControl />
 						</SplitView.Content>
 
 					</SplitView>

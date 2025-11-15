@@ -58,7 +58,7 @@ namespace Caly.Core.Utilities
 
         // See:
         // - MainView.axaml
-        // - PdfPageItem.axaml
-        // - PdfPageItemsControl.axaml
+        // - PageItem.axaml
+        // - PageItemsControl.axaml
     }
 }

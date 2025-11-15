@@ -30,17 +30,20 @@ using Caly.Core.ViewModels;
 
 namespace Caly.Core.Controls;
 
+/// <summary>
+/// Control that represents the full search panel for searching text within a PDF document.
+/// </summary>
 [TemplatePart("PART_TextBoxSearch", typeof(TextBox))]
-public sealed class PdfSearchPanelControl : TemplatedControl
+public sealed class FullSearchPanelControl : TemplatedControl
 {
     private TextBox? _textBoxSearch;
 
-    public PdfSearchPanelControl()
+    public FullSearchPanelControl()
     {
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            DataContext = new PdfDocumentViewModel();
+            DataContext = new DocumentViewModel();
         }
 #endif
     }

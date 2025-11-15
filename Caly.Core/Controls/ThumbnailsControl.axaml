@@ -4,13 +4,13 @@
         xmlns:vm="clr-namespace:Caly.Core.ViewModels">
 
     <Design.PreviewWith>
-		<controls:PdfDocumentThumbnailControl
-            x:DataType="vm:PdfDocumentViewModel"
+		<controls:ThumbnailsControl
+            x:DataType="vm:DocumentViewModel"
             Width="200"
             Height="400" />
 	</Design.PreviewWith>
 
-	<ControlTheme x:Key="{x:Type controls:PdfDocumentThumbnailControl}" TargetType="controls:PdfDocumentThumbnailControl" x:DataType="vm:PdfDocumentViewModel">
+	<ControlTheme x:Key="{x:Type controls:ThumbnailsControl}" TargetType="controls:ThumbnailsControl" x:DataType="vm:DocumentViewModel">
 		<Setter Property="Template">
 			<ControlTemplate>
 
@@ -35,13 +35,13 @@
 						</ListBox.Styles>
                  
 						<ListBox.ItemTemplate>
-							<DataTemplate x:DataType="vm:PdfPageViewModel">
+							<DataTemplate x:DataType="vm:PageViewModel">
 								<DockPanel HorizontalAlignment="Center">
 									<Grid DockPanel.Dock="Top"
                                           Margin="2,3,2,0"
                                           Width="{Binding ThumbnailWidth}"
                                           Height="{Binding ThumbnailHeight}">
-										<controls:PdfPageThumbnailControl
+										<controls:ThumbnailControl
                                             VisibleArea="{Binding VisibleArea}"
 											ThumbnailWidth="{Binding ThumbnailWidth}"
                                             ThumbnailHeight="{Binding ThumbnailHeight}"

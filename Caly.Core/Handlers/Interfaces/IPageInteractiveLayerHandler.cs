@@ -30,7 +30,7 @@ namespace Caly.Core.Handlers.Interfaces
 {
     public interface IPageInteractiveLayerHandler
     {
-        PdfTextSelection Selection { get; }
+        TextSelection Selection { get; }
 
         void OnPointerMoved(PointerEventArgs e);
 
@@ -43,28 +43,28 @@ namespace Caly.Core.Handlers.Interfaces
         /// <summary>
         /// Add results to existing ones.
         /// </summary>
-        void AddTextSearchResults(PdfDocumentViewModel documentViewModel, IReadOnlyCollection<TextSearchResultViewModel> searchResults);
+        void AddTextSearchResults(DocumentViewModel documentViewModel, IReadOnlyCollection<TextSearchResultViewModel> searchResults);
 
         /// <summary>
         /// Clear current results.
         /// </summary>
-        void ClearTextSearchResults(PdfDocumentViewModel documentViewModel);
+        void ClearTextSearchResults(DocumentViewModel documentViewModel);
 
         /// <summary>
         /// TODO - Should not be in selection handler.
         /// </summary>
-        void RenderPage(PdfPageTextLayerControl control, DrawingContext context, Rect visibleArea);
+        void RenderPage(PageInteractiveLayerControl control, DrawingContext context, Rect visibleArea);
 
         /// <summary>
         /// Clear the current selection.
         /// </summary>
-        void ClearSelection(PdfDocumentControl pdfDocumentControl);
+        void ClearSelection(DocumentControl documentControl);
 
         /// <summary>
         /// Clear the current selection.
         /// </summary>
-        void ClearSelection(PdfPageTextLayerControl currentTextLayer);
+        void ClearSelection(PageInteractiveLayerControl currentTextLayer);
 
-        void UpdateInteractiveLayer(PdfPageViewModel page);
+        void UpdateInteractiveLayer(PageViewModel page);
     }
 }

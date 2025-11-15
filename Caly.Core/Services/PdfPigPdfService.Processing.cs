@@ -58,13 +58,13 @@ namespace Caly.Core.Services
 
         private sealed class RenderRequest
         {
-            public PdfPageViewModel Page { get; }
+            public PageViewModel Page { get; }
 
             public RenderRequestTypes Type { get; }
 
             public CancellationToken Token { get; }
 
-            public RenderRequest(PdfPageViewModel page, RenderRequestTypes type, CancellationToken token)
+            public RenderRequest(PageViewModel page, RenderRequestTypes type, CancellationToken token)
             {
                 Page = page;
                 Type = type;

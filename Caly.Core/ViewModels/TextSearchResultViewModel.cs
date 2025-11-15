@@ -22,43 +22,42 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Caly.Core.ViewModels
+namespace Caly.Core.ViewModels;
+
+[DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({WordCount}), Children {Nodes?.Count}")]
+public sealed class TextSearchResultViewModel : ViewModelBase
 {
-    [DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({WordCount}), Children {Nodes?.Count}")]
-    public sealed class TextSearchResultViewModel : ViewModelBase
+    public required SearchResultItemType ItemType { get; init; }
+
+    public required int PageNumber { get; init; }
+
+    public int? WordIndex { get; init; }
+
+    public int? WordCount { get; init; }
+
+    public IReadOnlyList<TextSearchResultViewModel>? Nodes { get; init; }
+
+    public ReadOnlyMemory<char> SampleText { get; init; }
+
+    public override string ToString()
     {
-        public required SearchResultItemType ItemType { get; init; }
-
-        public required int PageNumber { get; init; }
-
-        public int? WordIndex { get; init; }
-
-        public int? WordCount { get; init; }
-
-        public IReadOnlyList<TextSearchResultViewModel>? Nodes { get; init; }
-
-        public ReadOnlyMemory<char> SampleText { get; init; }
-
-        public override string ToString()
+        if (!SampleText.IsEmpty)
         {
-            if (!SampleText.IsEmpty)
-            {
-                return $"...{SampleText}...";
-            }
-
-            if (Nodes is null)
-            {
-                return $"{WordIndex} [{ItemType}]";
-            }
-
-            return $"{PageNumber} ({Nodes.Count})";
+            return $"...{SampleText}...";
         }
-    }
 
-    public enum SearchResultItemType : byte
-    {
-        Unspecified = 0,
-        Word = 1,
-        Annotation = 2,
+        if (Nodes is null)
+        {
+            return $"{WordIndex} [{ItemType}]";
+        }
+
+        return $"{PageNumber} ({Nodes.Count})";
     }
+}
+
+public enum SearchResultItemType : byte
+{
+    Unspecified = 0,
+    Word = 1,
+    Annotation = 2,
 }

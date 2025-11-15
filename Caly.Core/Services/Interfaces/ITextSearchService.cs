@@ -28,8 +28,8 @@ namespace Caly.Core.Services.Interfaces
 {
     public interface ITextSearchService : IDisposable
     {
-        Task BuildPdfDocumentIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token);
+        Task BuildPdfDocumentIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token);
 
-        IEnumerable<TextSearchResultViewModel> Search(PdfDocumentViewModel pdfDocument, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
+        IEnumerable<TextSearchResultViewModel> Search(DocumentViewModel document, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
     }
 }

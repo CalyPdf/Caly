@@ -221,28 +221,28 @@ namespace Caly.Core.Services
             }
         }
 
-        public async Task SetPageSizeAsync(PdfPageViewModel pdfPage, CancellationToken token)
+        public async Task SetPageSizeAsync(PageViewModel page, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            if (pdfPage.IsSizeSet())
+            if (page.IsSizeSet())
             {
                 return;
             }
 
             PdfPageInformation? pageInfo = await ExecuteWithLockAsync(
-                () => _document?.GetPage<PdfPageInformation>(pdfPage.PageNumber),
+                () => _document?.GetPage<PdfPageInformation>(page.PageNumber),
                 token);
 
             if (pageInfo.HasValue && !token.IsCancellationRequested)
             {
-                pdfPage.Width = pageInfo.Value.Width;
-                pdfPage.Height = pageInfo.Value.Height;
-                pdfPage.SetSizeSet();
+                page.Width = pageInfo.Value.Width;
+                page.Height = pageInfo.Value.Height;
+                page.SetSizeSet();
             }
         }
 
-        public async Task SetPageTextLayerAsync(PdfPageViewModel page, CancellationToken token)
+        public async Task SetPageTextLayerAsync(PageViewModel page, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
@@ -271,7 +271,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public ValueTask SetDocumentPropertiesAsync(PdfDocumentViewModel document, CancellationToken token)
+        public ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
@@ -350,7 +350,7 @@ namespace Caly.Core.Services
             return rawDate;
         }
 
-        public async Task SetPdfBookmark(PdfDocumentViewModel pdfDocument, CancellationToken token)
+        public async Task SetPdfBookmark(DocumentViewModel document, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
             if (_document is null)
@@ -386,23 +386,23 @@ namespace Caly.Core.Services
                     }
                 }
 
-                Dispatcher.UIThread.Invoke(() => pdfDocument.Bookmarks = bookmarksItems);
+                Dispatcher.UIThread.Invoke(() => document.Bookmarks = bookmarksItems);
             }
             catch (OperationCanceledException) { }
         }
 
-        public async Task BuildIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token)
+        public async Task BuildIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            await _textSearchService.BuildPdfDocumentIndex(pdfDocument, progress, token);
+            await _textSearchService.BuildPdfDocumentIndex(document, progress, token);
         }
 
-        public IEnumerable<TextSearchResultViewModel> SearchText(PdfDocumentViewModel pdfDocument, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
+        public IEnumerable<TextSearchResultViewModel> SearchText(DocumentViewModel document, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            return _textSearchService.Search(pdfDocument, query, pagesToSkip, token);
+            return _textSearchService.Search(document, query, pagesToSkip, token);
         }
 
         private static PdfBookmarkNode? BuildPdfBookmarkNode(BookmarkNode node, CancellationToken cancellationToken)

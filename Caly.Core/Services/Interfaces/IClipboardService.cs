@@ -29,7 +29,7 @@ namespace Caly.Core.Services.Interfaces
         /// <summary>
         /// Set clipboard.
         /// </summary>
-        Task<bool> SetAsync(PdfDocumentViewModel document, CancellationToken token);
+        Task<bool> SetAsync(DocumentViewModel document, CancellationToken token);
 
         /// <summary>
         /// Set clipboard.

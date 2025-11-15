@@ -48,6 +48,6 @@ namespace Caly.Core.Services.Interfaces
         /// </summary>
         Task OpenLoadDocument(string? path, CancellationToken cancellationToken);
 
-        Task CloseUnloadDocument(PdfDocumentViewModel? document);
+        Task CloseUnloadDocument(DocumentViewModel? document);
     }
 }

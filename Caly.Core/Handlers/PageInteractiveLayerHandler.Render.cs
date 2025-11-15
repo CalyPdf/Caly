@@ -39,7 +39,7 @@ namespace Caly.Core.Handlers
         }
 #endif
 
-        public void RenderPage(PdfPageTextLayerControl control, DrawingContext context, Rect visibleArea)
+        public void RenderPage(PageInteractiveLayerControl control, DrawingContext context, Rect visibleArea)
         {
             var pdfVisibleArea = visibleArea.ToPdfRectangle();
 #if DEBUG

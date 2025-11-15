@@ -50,32 +50,32 @@ namespace Caly.Core.Services.Interfaces
         /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
         Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token);
 
-        ValueTask SetDocumentPropertiesAsync(PdfDocumentViewModel page, CancellationToken token);
+        ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token);
         
-        Task SetPdfBookmark(PdfDocumentViewModel pdfDocument, CancellationToken token);
+        Task SetPdfBookmark(DocumentViewModel document, CancellationToken token);
 
-        Task BuildIndex(PdfDocumentViewModel pdfDocument, IProgress<int> progress, CancellationToken token);
+        Task BuildIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token);
 
-        IEnumerable<TextSearchResultViewModel> SearchText(PdfDocumentViewModel pdfDocument, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
+        IEnumerable<TextSearchResultViewModel> SearchText(DocumentViewModel document, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
 
-        Task SetPageSizeAsync(PdfPageViewModel page, CancellationToken token);
+        Task SetPageSizeAsync(PageViewModel page, CancellationToken token);
 
-        Task SetPageTextLayerAsync(PdfPageViewModel page, CancellationToken token);
+        Task SetPageTextLayerAsync(PageViewModel page, CancellationToken token);
 
-        void EnqueueRequestPageSize(PdfPageViewModel page);
+        void EnqueueRequestPageSize(PageViewModel page);
         
-        void EnqueueRequestPicture(PdfPageViewModel page);
+        void EnqueueRequestPicture(PageViewModel page);
 
-        void EnqueueRemovePicture(PdfPageViewModel page);
+        void EnqueueRemovePicture(PageViewModel page);
         
-        void EnqueueRequestThumbnail(PdfPageViewModel page);
+        void EnqueueRequestThumbnail(PageViewModel page);
 
-        void EnqueueRemoveThumbnail(PdfPageViewModel page);
+        void EnqueueRemoveThumbnail(PageViewModel page);
 
         void ClearAllThumbnail();
         
-        void EnqueueRequestTextLayer(PdfPageViewModel page);
+        void EnqueueRequestTextLayer(PageViewModel page);
 
-        void EnqueueRemoveTextLayer(PdfPageViewModel page);
+        void EnqueueRemoveTextLayer(PageViewModel page);
     }
 }

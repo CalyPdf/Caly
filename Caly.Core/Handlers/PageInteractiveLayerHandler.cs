@@ -55,16 +55,16 @@ namespace Caly.Core.Handlers
 
         private Point? _startPointerPressed;
 
-        public PdfTextSelection Selection { get; }
+        public TextSelection Selection { get; }
 
         public PageInteractiveLayerHandler(int numberOfPages)
         {
-            Selection = new PdfTextSelection(numberOfPages);
+            Selection = new TextSelection(numberOfPages);
             _searchWordsResults = new IReadOnlyList<PdfWord>[numberOfPages];
             _searchIndexResults = new IReadOnlyList<Range>[numberOfPages];
         }
 
-        public void UpdateInteractiveLayer(PdfPageViewModel page)
+        public void UpdateInteractiveLayer(PageViewModel page)
         {
             if (page.PdfTextLayer is null || page.PdfTextLayer.Count == 0)
             {
@@ -95,17 +95,17 @@ namespace Caly.Core.Handlers
             Dispatcher.UIThread.Invoke(page.FlagInteractiveLayerChanged);
         }
 
-        private static bool TrySwitchCapture(PdfPageTextLayerControl currentTextLayer, PointerEventArgs e)
+        private static bool TrySwitchCapture(PageInteractiveLayerControl currentTextLayer, PointerEventArgs e)
         {
-            PdfPageItem? endPdfPage = currentTextLayer.FindAncestorOfType<PdfDocumentControl>()?.GetPdfPageItemOver(e);
-            if (endPdfPage is null)
+            PageItem? endPage = currentTextLayer.FindAncestorOfType<DocumentControl>()?.GetPageItemOver(e);
+            if (endPage is null)
             {
                 // Cursor is not over any page, do nothing
                 return false;
             }
 
-            PdfPageTextLayerControl endTextLayer = endPdfPage.TextLayer ??
-                                                   throw new NullReferenceException($"{typeof(PdfPageTextLayerControl)} not found.");
+            PageInteractiveLayerControl endTextLayer = endPage.TextLayer ??
+                                                   throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
 
             e.Pointer.Capture(endTextLayer); // Switch capture to new page
             return true;
@@ -196,7 +196,7 @@ namespace Caly.Core.Handlers
         {
             Debug.ThrowNotOnUiThread();
             
-            if (e.Source is not PdfPageTextLayerControl control)
+            if (e.Source is not PageInteractiveLayerControl control)
             {
                 return;
             }
@@ -224,7 +224,7 @@ namespace Caly.Core.Handlers
             }
 
             // Needs to be on UI thread to access
-            if (e.Source is not PdfPageTextLayerControl control || control.PdfTextLayer is null)
+            if (e.Source is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
             {
                 return;
             }
@@ -267,9 +267,9 @@ namespace Caly.Core.Handlers
             }
         }
 
-        private void HandleMouseMoveSelection(PdfPageTextLayerControl control, PointerEventArgs e, Point loc)
+        private void HandleMouseMoveSelection(PageInteractiveLayerControl control, PointerEventArgs e, Point loc)
         {
-            if (_isMultipleClickSelection || control.DataContext is not PdfPageViewModel cvm)
+            if (_isMultipleClickSelection || control.DataContext is not PageViewModel cvm)
             {
                 return;
             }
@@ -334,12 +334,12 @@ namespace Caly.Core.Handlers
             // Check for change of focus page
             if (focusPageIndex != -1 && focusPageIndex != Selection.FocusPageIndex)
             {
-                PdfDocumentControl pdfDocumentControl = control.FindAncestorOfType<PdfDocumentControl>() ??
-                                                        throw new ArgumentNullException($"{typeof(PdfDocumentControl)} not found.");
+                DocumentControl documentControl = control.FindAncestorOfType<DocumentControl>() ??
+                                                        throw new ArgumentNullException($"{typeof(DocumentControl)} not found.");
 
-                if (pdfDocumentControl.DataContext is not PdfDocumentViewModel docVm)
+                if (documentControl.DataContext is not DocumentViewModel docVm)
                 {
-                    throw new ArgumentNullException($"DataContext {typeof(PdfDocumentViewModel)} not set.");
+                    throw new ArgumentNullException($"DataContext {typeof(DocumentViewModel)} not set.");
                 }
 
                 // Focus page has changed
@@ -361,7 +361,7 @@ namespace Caly.Core.Handlers
         /// <summary>
         /// Handle mouse hover over words, links or others
         /// </summary>
-        private static void HandleMouseMoveOver(PdfPageTextLayerControl control, Point loc)
+        private static void HandleMouseMoveOver(PageInteractiveLayerControl control, Point loc)
         {
             PdfAnnotation? annotation = control.PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
 
@@ -401,9 +401,9 @@ namespace Caly.Core.Handlers
             }
         }
 
-        private void HandleMultipleClick(PdfPageTextLayerControl control, PointerPressedEventArgs e, PdfWord word)
+        private void HandleMultipleClick(PageInteractiveLayerControl control, PointerPressedEventArgs e, PdfWord word)
         {
-            if (control.PdfTextLayer is null || control.DataContext is not PdfPageViewModel vm)
+            if (control.PdfTextLayer is null || control.DataContext is not PageViewModel vm)
             {
                 return;
             }
@@ -454,7 +454,7 @@ namespace Caly.Core.Handlers
         {
             Debug.ThrowNotOnUiThread();
 
-            if (e.Source is not PdfPageTextLayerControl control || control.PdfTextLayer is null)
+            if (e.Source is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
             {
                 return;
             }
@@ -514,7 +514,7 @@ namespace Caly.Core.Handlers
                 return;
             }
 
-            if (e.Source is not PdfPageTextLayerControl control || control.PdfTextLayer is null)
+            if (e.Source is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
             {
                 return;
             }
@@ -556,7 +556,7 @@ namespace Caly.Core.Handlers
                                 var dest = goToAction?.Destination;
                                 if (dest is not null)
                                 {
-                                    var documentControl = control.FindAncestorOfType<PdfDocumentControl>();
+                                    var documentControl = control.FindAncestorOfType<DocumentControl>();
                                     documentControl?.GoToPage(dest.PageNumber);
                                     return;
                                 }

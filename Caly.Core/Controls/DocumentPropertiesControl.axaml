@@ -6,14 +6,14 @@
 	<Design.PreviewWith>
 		<StackPanel Width="400" Spacing="10">
 			<StackPanel Background="{DynamicResource SystemRegionBrush}">
-				<controls:PdfDocumentPropertiesControl />
+				<controls:DocumentPropertiesControl />
 			</StackPanel>
 		</StackPanel>
 	</Design.PreviewWith>
 
-	<ControlTheme x:Key="{x:Type controls:PdfDocumentPropertiesControl}"
-				  TargetType="controls:PdfDocumentPropertiesControl"
-				  x:DataType="vm:PdfDocumentViewModel">
+	<ControlTheme x:Key="{x:Type controls:DocumentPropertiesControl}"
+				  TargetType="controls:DocumentPropertiesControl"
+				  x:DataType="vm:DocumentViewModel">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<DockPanel>

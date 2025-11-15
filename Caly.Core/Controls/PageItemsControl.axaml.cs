@@ -41,9 +41,12 @@ using Tabalonia.Controls;
 
 namespace Caly.Core.Controls;
 
+/// <summary>
+/// Control that displays the PDF document pages.
+/// </summary>
 [TemplatePart("PART_ScrollViewer", typeof(ScrollViewer))]
 [TemplatePart("PART_LayoutTransformControl", typeof(LayoutTransformControl))]
-public sealed class PdfPageItemsControl : ItemsControl
+public sealed class PageItemsControl : ItemsControl
 {
     private const double _zoomFactor = 1.1;
 
@@ -52,7 +55,7 @@ public sealed class PdfPageItemsControl : ItemsControl
     private bool _isTabDragging = false;
 
     /// <summary>
-    /// The default value for the <see cref="PdfPageItemsControl.ItemsPanel"/> property.
+    /// The default value for the <see cref="PageItemsControl.ItemsPanel"/> property.
     /// </summary>
     private static readonly FuncTemplate<Panel?> DefaultPanel = new(() => new VirtualizingStackPanel()
     {
@@ -64,48 +67,48 @@ public sealed class PdfPageItemsControl : ItemsControl
     /// <summary>
     /// Defines the <see cref="Scroll"/> property.
     /// </summary>
-    public static readonly DirectProperty<PdfPageItemsControl, ScrollViewer?> ScrollProperty =
-        AvaloniaProperty.RegisterDirect<PdfPageItemsControl, ScrollViewer?>(nameof(Scroll), o => o.Scroll);
+    public static readonly DirectProperty<PageItemsControl, ScrollViewer?> ScrollProperty =
+        AvaloniaProperty.RegisterDirect<PageItemsControl, ScrollViewer?>(nameof(Scroll), o => o.Scroll);
 
     /// <summary>
     /// Defines the <see cref="LayoutTransform"/> property.
     /// </summary>
-    public static readonly DirectProperty<PdfPageItemsControl, LayoutTransformControl?> LayoutTransformControlProperty =
-        AvaloniaProperty.RegisterDirect<PdfPageItemsControl, LayoutTransformControl?>(nameof(LayoutTransform), o => o.LayoutTransform);
+    public static readonly DirectProperty<PageItemsControl, LayoutTransformControl?> LayoutTransformControlProperty =
+        AvaloniaProperty.RegisterDirect<PageItemsControl, LayoutTransformControl?>(nameof(LayoutTransform), o => o.LayoutTransform);
 
     /// <summary>
     /// Defines the <see cref="PageCount"/> property.
     /// </summary>
-    public static readonly StyledProperty<int> PageCountProperty = AvaloniaProperty.Register<PdfPageItemsControl, int>(nameof(PageCount));
+    public static readonly StyledProperty<int> PageCountProperty = AvaloniaProperty.Register<PageItemsControl, int>(nameof(PageCount));
 
     /// <summary>
     /// Defines the <see cref="SelectedPageIndex"/> property. Starts at 1.
     /// </summary>
-    public static readonly StyledProperty<int?> SelectedPageIndexProperty = AvaloniaProperty.Register<PdfPageItemsControl, int?>(nameof(SelectedPageIndex), 1, defaultBindingMode: BindingMode.TwoWay);
+    public static readonly StyledProperty<int?> SelectedPageIndexProperty = AvaloniaProperty.Register<PageItemsControl, int?>(nameof(SelectedPageIndex), 1, defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="MinZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> MinZoomLevelProperty = AvaloniaProperty.Register<PdfPageItemsControl, double>(nameof(MinZoomLevel));
+    public static readonly StyledProperty<double> MinZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(MinZoomLevel));
 
     /// <summary>
     /// Defines the <see cref="MaxZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> MaxZoomLevelProperty = AvaloniaProperty.Register<PdfPageItemsControl, double>(nameof(MaxZoomLevel), 1);
+    public static readonly StyledProperty<double> MaxZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(MaxZoomLevel), 1);
 
     /// <summary>
     /// Defines the <see cref="ZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PdfPageItemsControl, double>(nameof(ZoomLevel), 1, defaultBindingMode: BindingMode.TwoWay);
+    public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1, defaultBindingMode: BindingMode.TwoWay);
     
     private ScrollViewer? _scroll;
     private LayoutTransformControl? _layoutTransform;
     private TabsControl? _tabsControl;
 
-    static PdfPageItemsControl()
+    static PageItemsControl()
     {
-        ItemsPanelProperty.OverrideDefaultValue<PdfPageItemsControl>(DefaultPanel);
-        KeyboardNavigation.TabNavigationProperty.OverrideDefaultValue(typeof(PdfPageItemsControl),
+        ItemsPanelProperty.OverrideDefaultValue<PageItemsControl>(DefaultPanel);
+        KeyboardNavigation.TabNavigationProperty.OverrideDefaultValue(typeof(PageItemsControl),
             KeyboardNavigationMode.Once);
     }
     
@@ -165,10 +168,10 @@ public sealed class PdfPageItemsControl : ItemsControl
     /// </summary>
     /// <param name="pageNumber">The page number. Starts at 1.</param>
     /// <returns>The page control, or <c>null</c> if not found.</returns>
-    public PdfPageItem? GetPdfPageItem(int pageNumber)
+    public PageItem? GetPageItem(int pageNumber)
     {
-        System.Diagnostics.Debug.WriteLine($"GetPdfPageItem {pageNumber}.");
-        if (ContainerFromIndex(pageNumber - 1) is PdfPageItem presenter)
+        System.Diagnostics.Debug.WriteLine($"GetPageItem {pageNumber}.");
+        if (ContainerFromIndex(pageNumber - 1) is PageItem presenter)
         {
             return presenter;
         }
@@ -195,8 +198,8 @@ public sealed class PdfPageItemsControl : ItemsControl
         base.PrepareContainerForItemOverride(container, item, index);
 
         if (_isTabDragging ||
-            container is not PdfPageItem ||
-            item is not PdfPageViewModel vm)
+            container is not PageItem ||
+            item is not PageViewModel vm)
         {
             System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
             return;
@@ -210,12 +213,12 @@ public sealed class PdfPageItemsControl : ItemsControl
     {
         base.ClearContainerForItemOverride(container);
         
-        if (container is not PdfPageItem cp)
+        if (container is not PageItem cp)
         {
             return;
         }
 
-        if (cp.DataContext is PdfPageViewModel vm)
+        if (cp.DataContext is PageViewModel vm)
         {
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: doc vm: {this.DataContext}");
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: page vm: {vm}");
@@ -223,7 +226,7 @@ public sealed class PdfPageItemsControl : ItemsControl
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: HasRealisedItems: {HasRealisedItems()}");
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: IsPageRealised: {IsPageRealised(vm)}");
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsView?.Count: {ItemsView?.Count}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsSource: {(ItemsSource as ObservableCollection<PdfPageViewModel>)?.Count}");
+            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsSource: {(ItemsSource as ObservableCollection<PageViewModel>)?.Count}");
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride:  vm.VisibleArea: {vm.VisibleArea}");
 
             if (vm.VisibleArea.HasValue)
@@ -238,33 +241,33 @@ public sealed class PdfPageItemsControl : ItemsControl
                 // rendered. The page picture, text and visibility
                 // will not be correct. To fix that, we do that once
                 // when the layout is updated.
-                cp.LayoutUpdated += PdfPageItemLayoutUpdated;
+                cp.LayoutUpdated += PageItemLayoutUpdated;
             }
         }
     }
 
-    private void PdfPageItemLayoutUpdated(object? sender, EventArgs e)
+    private void PageItemLayoutUpdated(object? sender, EventArgs e)
     {
-        if (sender is not PdfPageItem cp)
+        if (sender is not PageItem cp)
         {
             return;
         }
 
-        System.Diagnostics.Debug.WriteLine($"PdfPageItemLayoutUpdated: {cp.DataContext}");
+        System.Diagnostics.Debug.WriteLine($"PageItemLayoutUpdated: {cp.DataContext}");
 
-        cp.LayoutUpdated -= PdfPageItemLayoutUpdated; // Only once
+        cp.LayoutUpdated -= PageItemLayoutUpdated; // Only once
 
         SetPagesVisibility();
     }
 
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
     {
-        return new PdfPageItem();
+        return new PageItem();
     }
 
     protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey)
     {
-        return NeedsContainer<PdfPageItem>(item, out recycleKey);
+        return NeedsContainer<PageItem>(item, out recycleKey);
     }
 
     /// <summary>
@@ -292,7 +295,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         return PageCount;
     }
 
-    public PdfPageItem? GetPdfPageItemOver(PointerEventArgs e)
+    public PageItem? GetPageItemOver(PointerEventArgs e)
     {
         if (Presenter is null)
         {
@@ -305,7 +308,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         // Quick reject
         if (!Presenter.Bounds.Contains(point))
         {
-            System.Diagnostics.Debug.WriteLine("GetPdfPageItemOver Quick reject.");
+            System.Diagnostics.Debug.WriteLine("GetPageItemOver Quick reject.");
             return null;
         }
 
@@ -317,9 +320,9 @@ public sealed class PdfPageItemsControl : ItemsControl
         bool isAfterSelectedPage = false;
 
         // Check selected current page
-        if (ContainerFromIndex(startIndex) is PdfPageItem presenter)
+        if (ContainerFromIndex(startIndex) is PageItem presenter)
         {
-            System.Diagnostics.Debug.WriteLine($"GetPdfPageItemOver page {startIndex + 1}.");
+            System.Diagnostics.Debug.WriteLine($"GetPageItemOver page {startIndex + 1}.");
             if (presenter.Bounds.Contains(point))
             {
                 return presenter;
@@ -333,8 +336,8 @@ public sealed class PdfPageItemsControl : ItemsControl
             // Start with checking forward
             for (int p = startIndex + 1; p < maxPageIndex; ++p)
             {
-                System.Diagnostics.Debug.WriteLine($"GetPdfPageItemOver page {p + 1}.");
-                if (ContainerFromIndex(p) is not PdfPageItem cp)
+                System.Diagnostics.Debug.WriteLine($"GetPageItemOver page {p + 1}.");
+                if (ContainerFromIndex(p) is not PageItem cp)
                 {
                     continue;
                 }
@@ -355,8 +358,8 @@ public sealed class PdfPageItemsControl : ItemsControl
             // Continue with checking backward
             for (int p = startIndex - 1; p >= minPageIndex; --p)
             {
-                System.Diagnostics.Debug.WriteLine($"GetPdfPageItemOver page {p + 1}.");
-                if (ContainerFromIndex(p) is not PdfPageItem cp)
+                System.Diagnostics.Debug.WriteLine($"GetPageItemOver page {p + 1}.");
+                if (ContainerFromIndex(p) is not PageItem cp)
                 {
                     continue;
                 }
@@ -473,7 +476,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         _isTabDragging = false;
         foreach (Control cp in GetRealizedContainers())
         {
-            if (cp.DataContext is PdfPageViewModel vm)
+            if (cp.DataContext is PageViewModel vm)
             {
                 vm.VisibleArea = null;
                 App.Messenger.Send(new LoadPageMessage(vm));
@@ -534,7 +537,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         base.OnPropertyChanged(change);
         if (change.Property == ItemsSourceProperty)
         {
-            if (change.OldValue is not IEnumerable<PdfPageViewModel> items)
+            if (change.OldValue is not IEnumerable<PageViewModel> items)
             {
                 return;
             }
@@ -556,12 +559,12 @@ public sealed class PdfPageItemsControl : ItemsControl
 
             if (ItemsPanelRoot is VirtualizingStackPanel panel)
             {
-                // This is a hack to ensure PdfPageItem that belongs to not Active documents are not visible
+                // This is a hack to ensure PageItem that belongs to not Active documents are not visible
                 // See https://github.com/CalyPdf/Caly/issues/11
-                var children = panel.Children.OfType<PdfPageItem>().ToArray();
+                var children = panel.Children.OfType<PageItem>().ToArray();
                 foreach (var child in children)
                 {
-                    if (child is { IsVisible: true, DataContext: PdfPageViewModel { PdfService.IsActive: false } })
+                    if (child is { IsVisible: true, DataContext: PageViewModel { PdfService.IsActive: false } })
                     {
                         child.SetCurrentValue(Visual.IsVisibleProperty, false);
                     }
@@ -595,7 +598,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         return false;
     }
 
-    private bool IsPageRealised(PdfPageViewModel vm)
+    private bool IsPageRealised(PageViewModel vm)
     {
         var index = ItemsView.IndexOf(vm);
         if (index >= 0 && ItemsPanelRoot is VirtualizingStackPanel vsp)
@@ -608,7 +611,7 @@ public sealed class PdfPageItemsControl : ItemsControl
 
     private void SetPagesVisibility()
     {
-        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {(DataContext as PdfDocumentViewModel)}");
+        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {(DataContext as DocumentViewModel)}");
 
         if (_isSettingPageVisibility || _isTabDragging)
         {
@@ -659,7 +662,7 @@ public sealed class PdfPageItemsControl : ItemsControl
         {
             isPageVisible = false;
 
-            if (ContainerFromIndex(p) is not PdfPageItem { Content: PdfPageViewModel vm } cp)
+            if (ContainerFromIndex(p) is not PageItem { Content: PageViewModel vm } cp)
             {
                 // Page is not realised
                 return !isPreviousPageVisible;

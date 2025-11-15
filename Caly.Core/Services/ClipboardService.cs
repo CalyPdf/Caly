@@ -80,13 +80,13 @@ namespace Caly.Core.Services
                    !_noSpaceBefore.Contains(currentCategory);
         }
 
-        public async Task<bool> SetAsync(PdfDocumentViewModel document, CancellationToken token)
+        public async Task<bool> SetAsync(DocumentViewModel document, CancellationToken token)
         {
             // TODO - Check use of tasks here
 
             ArgumentNullException.ThrowIfNull(document.PageInteractiveLayerHandler, nameof(document.PageInteractiveLayerHandler));
 
-            PdfTextSelection selection = document.PageInteractiveLayerHandler.Selection;
+            TextSelection selection = document.PageInteractiveLayerHandler.Selection;
 
             if (!selection.IsValid)
             {

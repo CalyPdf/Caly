@@ -26,36 +26,35 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Caly.Core.ViewModels
-{
-    public partial class PdfDocumentViewModel
-    {
-        [RelayCommand(CanExecute = nameof(CanCopyText))]
-        private async Task CopyText(CancellationToken token)
-        {
-            try
-            {
-                if (PageInteractiveLayerHandler?.Selection.IsValid != true)
-                {
-                    return;
-                }
+namespace Caly.Core.ViewModels;
 
-                bool success = await App.Messenger.Send(new CopyToClipboardRequestMessage(this, token));
-                if (!success)
-                {
-                    // TODO - Error
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteExceptionToFile(ex);
-                Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
-            }
-        }
-        
-        private bool CanCopyText()
+public partial class DocumentViewModel
+{
+    [RelayCommand(CanExecute = nameof(CanCopyText))]
+    private async Task CopyText(CancellationToken token)
+    {
+        try
         {
-            return PageInteractiveLayerHandler?.Selection.IsValid == true;
+            if (PageInteractiveLayerHandler?.Selection.IsValid != true)
+            {
+                return;
+            }
+
+            bool success = await App.Messenger.Send(new CopyToClipboardRequestMessage(this, token));
+            if (!success)
+            {
+                // TODO - Error
+            }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteExceptionToFile(ex);
+            Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
+        }
+    }
+
+    private bool CanCopyText()
+    {
+        return PageInteractiveLayerHandler?.Selection.IsValid == true;
     }
 }
