@@ -129,6 +129,8 @@ namespace Caly.Core.Services
 
         private async Task ProcessPictureRequest(RenderRequest renderRequest)
         {
+            Debug.ThrowOnUiThread();
+
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [PICTURE] Start process {renderRequest.Page.PageNumber}");
 
             try
@@ -170,6 +172,8 @@ namespace Caly.Core.Services
 
         private async Task ProcessPageSizeRequest(RenderRequest renderRequest)
         {
+            Debug.ThrowOnUiThread();
+
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [SIZE] Start process {renderRequest.Page.PageNumber}");
 
             // No cancel possible
@@ -204,6 +208,8 @@ namespace Caly.Core.Services
 
         private async Task ProcessTextLayerRequest(RenderRequest renderRequest)
         {
+            Debug.ThrowOnUiThread();
+
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [TEXT] Start process {renderRequest.Page.PageNumber}");
 
             try
@@ -240,6 +246,8 @@ namespace Caly.Core.Services
 
         private async Task ProcessThumbnailRequest(RenderRequest renderRequest)
         {
+            Debug.ThrowOnUiThread();
+
             System.Diagnostics.Debug.WriteLine($"[{GetLogFileName()}] [RENDER] [THUMBNAIL] Start process {renderRequest.Page.PageNumber}");
 
             try
