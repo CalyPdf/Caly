@@ -19,12 +19,10 @@
 // SOFTWARE.
 
 using Avalonia.Collections;
-using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.ObjectModel;
@@ -50,18 +48,6 @@ public sealed partial class MainViewModel : ViewModelBase
     [ObservableProperty] private bool _isSettingsPaneOpen;
 
     public string Version => CalyExtensions.CalyVersion;
-
-    partial void OnSelectedDocumentIndexChanged(int oldValue, int newValue)
-    {
-        System.Diagnostics.Debug.WriteLine($"Selected Document Index changed from {oldValue} to {newValue}.");
-        var currentDoc = GetCurrentPdfDocument();
-        if (currentDoc is null)
-        {
-            return;
-        }
-
-        App.Messenger.Send(new SelectedDocumentChangedMessage(currentDoc));
-    }
 
     public MainViewModel()
     {
