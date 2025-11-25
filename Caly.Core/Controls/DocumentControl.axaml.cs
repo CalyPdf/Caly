@@ -28,8 +28,10 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
+using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace Caly.Core.Controls;
 
@@ -155,7 +157,16 @@ public sealed class DocumentControl : CalyTemplatedControl
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == SelectedPageIndexProperty)
+        if (change.Property == DataContextProperty)
+        {
+            System.Diagnostics.Debug.WriteLine($"Active Document changed from '{change.OldValue}' to '{change.NewValue}'.");
+
+            if (change.NewValue is DocumentViewModel vm)
+            {
+                App.Messenger.Send(new SelectedDocumentChangedMessage(vm));
+            }
+        }
+        else if (change.Property == SelectedPageIndexProperty)
         {
             if (change.NewValue is int p)
             {
