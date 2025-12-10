@@ -260,7 +260,7 @@
                                       PointerExited="Resize_OnPointerExited"
                                       PointerPressed="Resize_OnPointerPressed"
                                       PointerReleased="Resize_OnPointerReleased">
-                                    <Rectangle Width="{DynamicResource MenuFlyoutSeparatorThemeHeight}"
+                                    <Rectangle Width="{DynamicResource CalySplitViewHandleWidth}"
                                                HorizontalAlignment="Center"
                                                Fill="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"/>
                                 </Grid>

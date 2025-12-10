@@ -92,7 +92,6 @@ namespace Caly.Core.Services
             using (var recorder = new SKPictureRecorder())
             using (var canvas = recorder.BeginRecording(SKRect.Create(width, height)))
             {
-//#if DEBUG
                 float size = 9;
                 using (var drawTypeface = SKTypeface.CreateDefault())
                 using (var skFont = drawTypeface.ToFont(size))
@@ -108,7 +107,6 @@ namespace Caly.Core.Services
                         lineY += size;
                     }
                 }
-//#endif
 
                 canvas.Flush();
 
