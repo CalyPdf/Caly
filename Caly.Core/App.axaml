@@ -1,17 +1,13 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:tabalonia="clr-namespace:Tabalonia.Themes.Custom;assembly=Tabalonia"
-             xmlns:converters="clr-namespace:Caly.Core.Converters"
              x:Class="Caly.Core.App"
              RequestedThemeVariant="Dark">
 
 	<Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-				<ResourceDictionary>
-                    <converters:ZeroPageIndexConverter x:Key="zeroPageIndexConverter"/>
-                    <x:Double x:Key="ControlContentThemeFontSize">12</x:Double>
-				</ResourceDictionary>
+                <ResourceInclude Source="avares://Caly.Core/CalyTheme.axaml"/>
 
 				<ResourceInclude Source="avares://Caly.Core/Controls/DocumentControl.axaml"/>
                 <ResourceInclude Source="avares://Caly.Core/Controls/DocumentPropertiesControl.axaml"/>
