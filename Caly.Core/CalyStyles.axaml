@@ -1,0 +1,22 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!-- Add Controls for Previewer Here -->
+        </Border>
+    </Design.PreviewWith>
+
+    <!-- Change delays for all ScrollViewers -->
+    <Style Selector="ScrollViewer /template/ ScrollBar#PART_VerticalScrollBar">
+        <Setter Property="ShowDelay" Value="0:0:0.1" />
+        <Setter Property="HideDelay" Value="0:0:0.5" />
+    </Style>
+
+    <Style Selector="ScrollViewer /template/ ScrollBar#PART_HorizontalScrollBar">
+        <Setter Property="ShowDelay" Value="0:0:0.1" />
+        <Setter Property="HideDelay" Value="0:0:0.5" />
+    </Style>
+    <!-- End change delays for all ScrollViewers -->
+
+</Styles>

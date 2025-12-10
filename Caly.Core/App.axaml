@@ -38,5 +38,7 @@
 
 		<StyleInclude Source="avares://Caly.Core/Assets/Icons.axaml"/>
         <StyleInclude Source="avares://AvaloniaProgressRing/Styles/ProgressRing.xaml"/>
+        <StyleInclude Source="avares://Caly.Core/CalyStyles.axaml"/>
+
 	</Application.Styles>
 </Application>
