@@ -36,6 +36,7 @@ namespace Caly.Pdf.PageFactories
 {
     public sealed class TextLayerFactory : BasePageFactory<PageTextLayerContent>
     {
+        private readonly TransformationMatrix _scale;
         public TextLayerFactory(IPdfTokenScanner pdfScanner,
             IResourceStore resourceStore,
             ILookupFilterProvider filterProvider,
@@ -44,9 +45,21 @@ namespace Caly.Pdf.PageFactories
             : base(pdfScanner,
                 resourceStore,
                 filterProvider,
-                new TextOnlyPageContentParser(TextOnlyGraphicsStateOperationFactory.Instance, parsingOptions.UseLenientParsing),
+                new TextOnlyPageContentParser(TextOnlyGraphicsStateOperationFactory.Instance,
+                    parsingOptions.UseLenientParsing),
                 parsingOptions)
-        { }
+        {
+            // We store the PPI scale as an indirect object so that it can be accessed in the TextLayerFactory.
+            // This is very hacky but PdfPig does not provide a better way to pass such information
+            // to the PageFactory for the moment.
+            // TODO - to remove.
+            double ppiScale = 1;
+            if (pdfScanner.Get(CalyPdfHelper.FakePpiReference)?.Data is NumericToken ppi)
+            {
+                ppiScale = ppi.Double;
+            }
+            _scale = TransformationMatrix.GetScaleMatrix(ppiScale, ppiScale);
+        }
 
         protected override PageTextLayerContent ProcessPage(int pageNumber, DictionaryToken dictionary,
             NamedDestinations namedDestinations, MediaBox mediaBox,
@@ -56,6 +69,10 @@ namespace Caly.Pdf.PageFactories
         {
             // Special case where cropbox is outside mediabox: use cropbox instead of intersection
             var effectiveCropBox = mediaBox.Bounds.Intersect(cropBox.Bounds) ?? cropBox.Bounds;
+
+            // Scale to desired PPI
+            effectiveCropBox = _scale.Transform(effectiveCropBox);
+            initialMatrix = initialMatrix.Multiply(in _scale);
 
             var annotationProvider = new AnnotationProvider(PdfScanner,
                 dictionary,

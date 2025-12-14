@@ -166,8 +166,8 @@ namespace Caly.Core.Services
 
                 if (!renderRequest.Page.IsSizeSet() && renderRequest.Page.PdfPicture?.Item is not null)
                 {
-                    renderRequest.Page.Width = renderRequest.Page.PdfPicture.Item.CullRect.Width;
-                    renderRequest.Page.Height = renderRequest.Page.PdfPicture.Item.CullRect.Height;
+                    renderRequest.Page.Width = renderRequest.Page.PdfPicture.Item.CullRect.Width * PpiScale;
+                    renderRequest.Page.Height = renderRequest.Page.PdfPicture.Item.CullRect.Height * PpiScale;
                 }
             }
             finally
@@ -274,8 +274,8 @@ namespace Caly.Core.Services
                         if (!renderRequest.Page.IsSizeSet())
                         {
                             // This is the first we load the page, width and height are not set yet
-                            renderRequest.Page.Width = picture.Item.CullRect.Width;
-                            renderRequest.Page.Height = picture.Item.CullRect.Height;
+                            renderRequest.Page.Width = picture.Item.CullRect.Width * PpiScale;
+                            renderRequest.Page.Height = picture.Item.CullRect.Height * PpiScale;
                         }
 
                         await SetThumbnail(renderRequest.Page, picture.Item, renderRequest.Token);

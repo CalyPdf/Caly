@@ -30,6 +30,8 @@ namespace Caly.Core.Services.Interfaces
 {
     public interface IPdfService : IAsyncDisposable
     {
+        double PpiScale { get; }
+
         bool IsActive { get; internal set; }
 
         IPageInteractiveLayerHandler? PageInteractiveLayerHandler { get; }
