@@ -459,3 +459,4 @@ $RECYCLE.BIN/
 /Caly.Core/caly_settings
 *.lib
 */.avalonia-build-tasks
+/dotnet-install.sh

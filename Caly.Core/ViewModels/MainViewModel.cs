@@ -137,12 +137,12 @@ public sealed partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task CloseTab(object tabItem)
+    private async Task CloseTab(object tabItem, CancellationToken token)
     {
         // TODO - Finish proper dispose / unload of document on close 
         if (((DragTabItem)tabItem)?.DataContext is DocumentViewModel vm)
         {
-            await CloseDocumentInternal(vm);
+            await CloseDocumentInternal(vm, token);
         }
     }
 
@@ -155,16 +155,13 @@ public sealed partial class MainViewModel : ViewModelBase
             return;
         }
 
-        await CloseDocumentInternal(vm);
+        await CloseDocumentInternal(vm, token);
     }
 
-    private static async Task CloseDocumentInternal(DocumentViewModel vm)
+    private static async Task CloseDocumentInternal(DocumentViewModel vm, CancellationToken token)
     {
-        IPdfDocumentsService pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()
-                                                   ?? throw new NullReferenceException(
-                                                       $"Missing {nameof(IPdfDocumentsService)} instance.");
-
-        await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(vm));
+        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()!;
+        await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(vm), token);
     }
 
     [RelayCommand]
