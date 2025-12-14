@@ -20,8 +20,13 @@
 
 namespace Caly.Pdf
 {
-    internal static class CalyPdfHelper
+    public static class CalyPdfHelper
     {
+        private const int NUMBER_OFFSET = sizeof(ushort) * 8;
+        private static readonly long MAX_OBJECT_NUMBER = (long)(Math.Pow(2, sizeof(long) * 8 - NUMBER_OFFSET) - 1) / 2;
+
+        public static readonly UglyToad.PdfPig.Core.IndirectReference FakePpiReference = new(-MAX_OBJECT_NUMBER, ushort.MaxValue);
+
         public static bool IsPunctuation(this ReadOnlySpan<char> text)
         {
             for (int i = 0; i < text.Length; ++i)

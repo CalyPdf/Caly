@@ -54,7 +54,8 @@ namespace Caly.Core.Services
                 tHeight = vm.ThumbnailHeight;
             }
 
-            SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width, tHeight / (float)vm.Height);
+            SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width * (float)PpiScale,
+                tHeight / (float)vm.Height * (float)PpiScale);
             
             using (var surface = SKSurface.Create(new SKImageInfo(tWidth, tHeight)))
             using (var canvas = surface.Canvas)
@@ -65,7 +66,7 @@ namespace Caly.Core.Services
                 canvas.DrawPicture(picture, in scale);
 
 #if DEBUG
-                using (var skFont = SKTypeface.Default.ToFont(tHeight / 5f, 1f))
+                using (var skFont = SKTypeface.Default.ToFont(tHeight * (float)PpiScale / 5f, 1f))
                 using (var paint = new SKPaint())
                 {
                     paint.Style = SKPaintStyle.Fill;

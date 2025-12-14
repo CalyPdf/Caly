@@ -119,16 +119,22 @@ namespace Caly.Core.Controls;
 
                         canvas.Save();
                         // The canvas could be clipped here: canvas.ClipRect(_visibleArea);
-                        canvas.DrawPicture(_picture.Item, _paint);
+
+                        double scaleX = Bounds.Width / _picture.Item.CullRect.Width;
+                        double scaleY = Bounds.Height / _picture.Item.CullRect.Height;
+                        var scale = SKMatrix.CreateScale((float)scaleX, (float)scaleY);
+                        canvas.DrawPicture(_picture.Item, in scale, _paint);
 
 #if DEBUG
-                        using (var skFont = SKTypeface.Default.ToFont(_picture.Item.CullRect.Height / 4f, 1f))
+                        using (var skFont = SKTypeface.Default.ToFont((float)Bounds.Height / 4f, 1f))
                         using (var paint = new SKPaint())
                         {
                             paint.Style = SKPaintStyle.Fill;
                             paint.Color = SKColors.Blue.WithAlpha(100);
-                            canvas.DrawText(_picture.Item.UniqueId.ToString(), _picture.Item.CullRect.Width / 4f,
-                                _picture.Item.CullRect.Height / 2f, skFont, paint);
+                            canvas.DrawText(_picture.Item.UniqueId.ToString(),
+                                (float)Bounds.Width / 4f,
+                                (float)Bounds.Height / 2f,
+                                skFont, paint);
                         }
 #endif
                         canvas.Restore();

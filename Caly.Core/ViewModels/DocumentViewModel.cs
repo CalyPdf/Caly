@@ -318,8 +318,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
             App.Messenger.Send(new LoadPageMessage(firstPage)); // Enqueue first page full loading
 
-            double defaultWidth = firstPage.Width;
-            double defaultHeight = firstPage.Height;
+            double defaultWidth = firstPage.Width * _pdfService.PpiScale;
+            double defaultHeight = firstPage.Height * _pdfService.PpiScale;
 
             Pages.Add(firstPage);
 

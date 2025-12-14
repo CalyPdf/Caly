@@ -46,6 +46,7 @@ using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
 using UglyToad.PdfPig.Outline;
 using UglyToad.PdfPig.Rendering.Skia;
+using UglyToad.PdfPig.Tokens;
 
 namespace Caly.Core.Services
 {
@@ -83,6 +84,14 @@ namespace Caly.Core.Services
             get => Interlocked.Read(ref _isActive) == 1;
             set => Interlocked.Exchange(ref _isActive, Convert.ToInt64(value));
         }
+
+        /// <summary>
+        /// Gets the Pixel Per Inch (PPI) scaling factor used to convert measurements from PDF points (72 PPI is the default) to application pixels.
+        /// </summary>
+        /// <remarks>
+        /// The application PPI is currently set to 144. We should make that configurable.
+        /// </remarks>
+        public double PpiScale => 144.0 / 72.0; // 72 should be document dependant, i.e. use PdfPig's UserSpaceUnit.
 
 #if DEBUG
         public PdfPigPdfService()
@@ -162,8 +171,15 @@ namespace Caly.Core.Services
                     {
                         pdfParsingOptions.Password = password;
                     }
-
+                    
                     _document = PdfDocument.Open(_fileStream, pdfParsingOptions);
+
+                    // We store the PPI as an indirect object so that it can be accessed in the TextLayerFactory.
+                    // This is very hacky but PdfPig does not provide a better way to pass such information
+                    // to the PageFactory for the moment.
+                    // TODO - to remove.
+                    _document.Advanced.ReplaceIndirectObject(CalyPdfHelper.FakePpiReference, new NumericToken(PpiScale));
+
                     _document.AddPageFactory<PdfPageInformation, PageInformationFactory>();
                     _document.AddPageFactory<SKPicture, SkiaPageFactory>();
                     _document.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
@@ -236,8 +252,8 @@ namespace Caly.Core.Services
 
             if (pageInfo.HasValue && !token.IsCancellationRequested)
             {
-                page.Width = pageInfo.Value.Width;
-                page.Height = pageInfo.Value.Height;
+                page.Width = pageInfo.Value.Width * PpiScale;
+                page.Height = pageInfo.Value.Height * PpiScale;
                 page.SetSizeSet();
             }
         }
