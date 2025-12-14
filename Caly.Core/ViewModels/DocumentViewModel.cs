@@ -40,6 +40,7 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core.ViewModels;
 
@@ -377,5 +378,12 @@ public sealed partial class DocumentViewModel : ViewModelBase
         }
 
         return SelectedPageIndex.Value < PageCount;
+    }
+    
+    [RelayCommand]
+    private async Task CloseDocument(CancellationToken token)
+    {
+        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()!;
+        await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(this), token);
     }
 }

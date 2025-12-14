@@ -32,6 +32,9 @@
 		<Setter Property="Template">
 			<ControlTemplate>
 				<Grid>
+					<Grid.KeyBindings>
+                        <KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.DocumentCloseGesture}" Command="{Binding CloseDocumentCommand}" />
+                    </Grid.KeyBindings>
 
                     <!-- Progress Ring for when the document is opening -->
                     <progRing:ProgressRing Width="50"
