@@ -16,7 +16,8 @@
         }
     },
     "LinuxSettings": {
-        "CreateBinSymlink": "True"
+        "CreateBinSymlink": "True",
+        "DesktopCategory": "Viewer"
     },
     "Win32Settings": {
         "InstallerIcon": "../Logo/Favicon Transparent.ico",
