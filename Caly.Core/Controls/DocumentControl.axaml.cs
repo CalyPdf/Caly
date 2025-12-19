@@ -66,7 +66,7 @@ public sealed class DocumentControl : CalyTemplatedControl
     /// Defines the <see cref="SelectedPageIndex"/> property. Starts at 1.
     /// </summary>
     public static readonly StyledProperty<int?> SelectedPageIndexProperty =
-        AvaloniaProperty.Register<DocumentControl, int?>(nameof(SelectedPageIndex), 1,
+        AvaloniaProperty.Register<DocumentControl, int?>(nameof(SelectedPageIndex), null,
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>

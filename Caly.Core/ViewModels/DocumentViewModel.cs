@@ -79,7 +79,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(GoToNextPageCommand))]
     private string _selectedPageIndexString = "1";
 
-    private int? _selectedPageIndex = 1;
+    private int? _selectedPageIndex = null;
 
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.

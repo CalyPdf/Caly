@@ -31,7 +31,7 @@ namespace Caly.Core.Converters
         {
             if (value is null)
             {
-                return 0;
+                return null;
             }
 
             if (value is int i)
