@@ -72,7 +72,12 @@ public sealed class ThumbnailsControl : TemplatedControl
         else if (e.Property == SelectingItemsControl.SelectedIndexProperty && DataContext is DocumentViewModel vm)
         {
             // Looks like there a bug where the binding does not work when new page = old page + 1
-            vm.SelectedPageIndex = (int?)e.NewValue + 1;
+            int? newSelectedPage = (int?)e.NewValue + 1;
+            if (vm.SelectedPageIndex == newSelectedPage)
+            {
+                return;
+            }
+            vm.SelectedPageIndex = newSelectedPage;
         }
     }
 

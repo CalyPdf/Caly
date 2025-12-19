@@ -84,7 +84,8 @@ public sealed class PageItemsControl : ItemsControl
     /// <summary>
     /// Defines the <see cref="SelectedPageIndex"/> property. Starts at 1.
     /// </summary>
-    public static readonly StyledProperty<int?> SelectedPageIndexProperty = AvaloniaProperty.Register<PageItemsControl, int?>(nameof(SelectedPageIndex), 1, defaultBindingMode: BindingMode.TwoWay);
+    public static readonly StyledProperty<int?> SelectedPageIndexProperty = AvaloniaProperty.Register<PageItemsControl, int?>(nameof(SelectedPageIndex), null,
+        defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="MinZoomLevel"/> property.
@@ -99,7 +100,8 @@ public sealed class PageItemsControl : ItemsControl
     /// <summary>
     /// Defines the <see cref="ZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1, defaultBindingMode: BindingMode.TwoWay);
+    public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1,
+        defaultBindingMode: BindingMode.TwoWay);
     
     private ScrollViewer? _scroll;
     private LayoutTransformControl? _layoutTransform;
@@ -482,6 +484,14 @@ public sealed class PageItemsControl : ItemsControl
                 App.Messenger.Send(new LoadPageMessage(vm));
             }
         }
+
+        if (SelectedPageIndex.HasValue)
+        {
+            // Ensure we are on the correct page
+            // and containers are realised
+            GoToPage(SelectedPageIndex.Value);
+        }
+        
         SetPagesVisibility();
     }
 
@@ -739,15 +749,24 @@ public sealed class PageItemsControl : ItemsControl
                 switch (vm.Rotation)
                 {
                     case 90:
-                        visibleArea = new Rect(visibleArea.Y, cp.Bounds.Width - visibleArea.Right, visibleArea.Height, visibleArea.Width);
+                        visibleArea = new Rect(visibleArea.Y,
+                            cp.Bounds.Width - visibleArea.Right,
+                            visibleArea.Height,
+                            visibleArea.Width);
                         break;
 
                     case 180:
-                        visibleArea = new Rect(cp.Bounds.Width - visibleArea.Right, cp.Bounds.Height - visibleArea.Bottom, visibleArea.Width, visibleArea.Height);
+                        visibleArea = new Rect(cp.Bounds.Width - visibleArea.Right,
+                            cp.Bounds.Height - visibleArea.Bottom,
+                            visibleArea.Width,
+                            visibleArea.Height);
                         break;
 
                     case 270:
-                        visibleArea = new Rect(cp.Bounds.Height - visibleArea.Bottom, visibleArea.X, visibleArea.Height, visibleArea.Width);
+                        visibleArea = new Rect(cp.Bounds.Height - visibleArea.Bottom,
+                            visibleArea.X,
+                            visibleArea.Height,
+                            visibleArea.Width);
                         break;
 
 #if DEBUG
@@ -776,7 +795,7 @@ public sealed class PageItemsControl : ItemsControl
         int maxPageIndex = GetMaxPageIndex(); // Exclusive
 
         System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: minPageIndex={minPageIndex} maxPageIndex={maxPageIndex}");
-        
+
         // Start with checking forward.
         // TODO - While scrolling down, the current selected page can become invisible and force
         // a full iteration if starting backward
