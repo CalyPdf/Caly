@@ -26,11 +26,14 @@ namespace Caly.Core.Services
 {
     internal partial class PdfPigPdfService
     {
+        private long _isDisposed;
+        private int _activeOperations;
+
         // PdfPig only allow to read 1 page at a time for now
         // NB: Initial count set to 0 to make sure the document is opened before anything else starts.
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
 
-        private async Task<T?> ExecuteWithLockAsync<T>(Func<T> action, CancellationToken token)
+        private async Task<T?> ExecuteWithLockAsync<T>(Func<CancellationToken, T> action, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
             if (IsDisposed())
@@ -50,7 +53,7 @@ namespace Caly.Core.Services
                 }
 
                 token.ThrowIfCancellationRequested();
-                return action();
+                return action(token);
             }
             finally
             {
@@ -59,6 +62,87 @@ namespace Caly.Core.Services
                     _semaphore.Release();
                 }
             }
+        }
+
+        private async Task GuardDispose(Func<CancellationToken, Task> action, CancellationToken token)
+        {
+            Interlocked.Increment(ref _activeOperations);
+            try
+            {
+                if (IsDisposed())
+                {
+                    return;
+                }
+
+                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
+                {
+                    linkedCts.Token.ThrowIfCancellationRequested();
+                    await action(linkedCts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            { }
+            finally
+            {
+                Interlocked.Decrement(ref _activeOperations);
+            }
+        }
+
+        private async Task<T?> GuardDispose<T>(Func<CancellationToken, Task<T>> action, CancellationToken token)
+        {
+            Interlocked.Increment(ref _activeOperations);
+            try
+            {
+                if (IsDisposed())
+                {
+                    return default;
+                }
+
+                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
+                {
+                    linkedCts.Token.ThrowIfCancellationRequested();
+                    return await action(linkedCts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            { }
+            finally
+            {
+                Interlocked.Decrement(ref _activeOperations);
+            }
+
+            return default;
+        }
+
+        private T? GuardDispose<T>(Func<CancellationToken, T> action, CancellationToken token)
+        {
+            Interlocked.Increment(ref _activeOperations);
+            try
+            {
+                if (IsDisposed())
+                {
+                    return default;
+                }
+
+                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
+                {
+                    linkedCts.Token.ThrowIfCancellationRequested();
+                    return action(linkedCts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            { }
+            finally
+            {
+                Interlocked.Decrement(ref _activeOperations);
+            }
+
+            return default;
+        }
+
+        private bool IsDisposed()
+        {
+            return Interlocked.Read(ref _isDisposed) != 0;
         }
     }
 }

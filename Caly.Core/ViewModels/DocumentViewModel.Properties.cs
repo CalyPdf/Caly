@@ -34,7 +34,7 @@ public partial class DocumentViewModel
 
     private async Task LoadProperties()
     {
-        _cts.Token.ThrowIfCancellationRequested();
-        await Task.Run(() => _pdfService.SetDocumentPropertiesAsync(this, _cts.Token));
+        _mainCts.Token.ThrowIfCancellationRequested();
+        await Task.Run(() => _pdfService.SetDocumentPropertiesAsync(this, _mainCts.Token));
     }
 }

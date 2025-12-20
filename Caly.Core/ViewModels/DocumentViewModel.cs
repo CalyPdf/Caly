@@ -58,7 +58,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
     private readonly IPdfService _pdfService;
     private readonly ISettingsService _settingsService;
 
-    private readonly CancellationTokenSource _cts = new();
+    private readonly CancellationTokenSource _mainCts = new();
     internal string? LocalPath { get; private set; }
 
     [ObservableProperty] private ObservableCollection<PageViewModel> _pages = [];
@@ -239,7 +239,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         {
             SearchResultsSource.RowSelection!.SingleSelect = true;
             SearchResultsSource.RowSelection.SelectionChanged += TextSearchSelectionChanged;
-        });
+        }, DispatcherPriority.Send, _mainCts.Token);
     }
 
     public void SetActive()
@@ -258,29 +258,30 @@ public sealed partial class DocumentViewModel : ViewModelBase
     /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
     public Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
     {
-        var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, token);
-
         WaitOpenAsync = Task.Run(async () =>
         {
-            int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
-
-            IsPasswordProtected = _pdfService.IsPasswordProtected;
-            FileName = _pdfService.FileName;
-            LocalPath = _pdfService.LocalPath;
-
-            if (pageCount == 0)
+            using (var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token, token))
             {
+                int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
+
+                IsPasswordProtected = _pdfService.IsPasswordProtected;
+                FileName = _pdfService.FileName;
+                LocalPath = _pdfService.LocalPath;
+
+                if (pageCount == 0)
+                {
+                    return pageCount;
+                }
+
+                PageCount = _pdfService.NumberOfPages;
+
+                if (_pdfService.FileSize.HasValue)
+                {
+                    FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
+                }
+
                 return pageCount;
             }
-
-            PageCount = _pdfService.NumberOfPages;
-
-            if (_pdfService.FileSize.HasValue)
-            {
-                FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
-            }
-
-            return pageCount;
         }, token);
 
         return WaitOpenAsync;
@@ -293,7 +294,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     internal async ValueTask CancelAsync()
     {
-        await _cts.CancelAsync();
+        await _mainCts.CancelAsync();
     }
 
     private async Task LoadPages()
@@ -314,7 +315,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         {
             // Use 1st page size as default page size
             var firstPage = new PageViewModel(1, _pdfService);
-            await firstPage.LoadPageSizeImmediate(_cts.Token);
+            await firstPage.LoadPageSizeImmediate(_mainCts.Token);
 
             App.Messenger.Send(new LoadPageMessage(firstPage)); // Enqueue first page full loading
 
@@ -325,7 +326,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
             for (int p = 2; p <= PageCount; p++)
             {
-                _cts.Token.ThrowIfCancellationRequested();
+                _mainCts.Token.ThrowIfCancellationRequested();
                 var newPage = new PageViewModel(p, _pdfService)
                 {
                     Height = defaultHeight,
@@ -335,7 +336,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
                 App.Messenger.Send(new LoadPageSizeMessage(newPage));
                 Pages.Add(newPage);
             }
-        }), _cts.Token);
+        }), _mainCts.Token);
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]

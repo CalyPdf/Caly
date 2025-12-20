@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels;
 
-public partial class DocumentViewModel : IAsyncDisposable, IDisposable
+public partial class DocumentViewModel : IAsyncDisposable
 {
     public async ValueTask DisposeAsync()
     {
@@ -34,7 +34,7 @@ public partial class DocumentViewModel : IAsyncDisposable, IDisposable
         Pages.Clear();
         Bookmarks?.Clear();
 
-        _cts.Dispose();
+        _mainCts.Dispose();
 
         _searchResultsDisposable.Dispose();
 
@@ -49,10 +49,5 @@ public partial class DocumentViewModel : IAsyncDisposable, IDisposable
         }
 
         SearchResults.Clear();
-    }
-
-    public void Dispose()
-    {
-        DisposeAsync().GetAwaiter().GetResult();
     }
 }
