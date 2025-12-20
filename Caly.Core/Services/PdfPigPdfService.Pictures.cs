@@ -34,84 +34,96 @@ namespace Caly.Core.Services
         {
             Debug.ThrowOnUiThread();
 
-            SKPicture? pic = await ExecuteWithLockAsync(() => 
+            SKPicture? pic = await GuardDispose(async ct =>
+            {
+                return await ExecuteWithLockAsync(lct =>
                     {
                         try
                         {
-                            if (IsDisposed())
-                            {
-                                return null;
-                            }
-
                             return _document?.GetPage<SKPicture>(pageNumber);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            throw; // No error picture to generate
                         }
                         catch (Exception e)
                         {
                             Debug.WriteExceptionToFile(e);
-                            return GetErrorPicture(pageNumber, e, token);
+                            return GetErrorPicture(pageNumber, e, lct);
                         }
-                    },
-                    token)
-                .ConfigureAwait(false);
+                    }, ct)
+                    .ConfigureAwait(false);
+            }, token);
 
             return pic is null ? null : RefCountable.Create(pic);
         }
 
-        private SKPicture? GetErrorPicture(int pageNumber, Exception ex, CancellationToken cancellationToken)
+        private SKPicture? GetErrorPicture(int pageNumber, Exception ex, CancellationToken token)
         {
-            if (IsDisposed())
+            if (token.IsCancellationRequested)
             {
                 return null;
             }
 
-            // Try get page size
-            PdfPageInformation info;
-
             try
             {
-                info = _document!.GetPage<PdfPageInformation>(pageNumber);
-            }
-            catch (Exception)
-            {
-                // TODO
-                info = new PdfPageInformation()
+                // Try get page size
+                PdfPageInformation info;
+
+                try
                 {
-                    Width = 100,
-                    Height = 100,
-                    PageNumber = pageNumber
-                };
-            }
-
-            float width = (float)info.Width;
-            float height = (float)info.Height;
-
-            using (var recorder = new SKPictureRecorder())
-            using (var canvas = recorder.BeginRecording(SKRect.Create(width, height)))
-            {
-                float size = 9;
-                using (var drawTypeface = SKTypeface.CreateDefault())
-                using (var skFont = drawTypeface.ToFont(size))
-                using (var paint = new SKPaint())
+                    info = _document?.GetPage<PdfPageInformation>(pageNumber) ?? throw new NullReferenceException();
+                }
+                catch (Exception)
                 {
-                    paint.Color = SKColors.Red;
-                    paint.IsAntialias = true;
-
-                    float lineY = size + 1;
-                    foreach (var textLine in ex.ToString().Split('\n'))
+                    if (token.IsCancellationRequested)
                     {
-                        canvas.DrawShapedText(textLine, new SKPoint(0, lineY), skFont, paint);
-                        lineY += size;
+                        return null;
                     }
+
+                    // TODO
+                    info = new PdfPageInformation()
+                    {
+                        Width = 100,
+                        Height = 100,
+                        PageNumber = pageNumber
+                    };
                 }
 
-                canvas.Flush();
+                float width = (float)info.Width;
+                float height = (float)info.Height;
 
-                return recorder.EndRecording();
+                if (token.IsCancellationRequested)
+                {
+                    return null;
+                }
+
+                using (var recorder = new SKPictureRecorder())
+                using (var canvas = recorder.BeginRecording(SKRect.Create(width, height)))
+                {
+                    float size = 9;
+                    using (var drawTypeface = SKTypeface.CreateDefault())
+                    using (var skFont = drawTypeface.ToFont(size))
+                    using (var paint = new SKPaint())
+                    {
+                        paint.Color = SKColors.Red;
+                        paint.IsAntialias = true;
+
+                        float lineY = size + 1;
+                        foreach (var textLine in ex.ToString().Split('\n'))
+                        {
+                            canvas.DrawShapedText(textLine, new SKPoint(0, lineY), skFont, paint);
+                            lineY += size;
+                        }
+                    }
+
+                    canvas.Flush();
+
+                    return recorder.EndRecording();
+                }
             }
+            catch (Exception e)
+            {
+                Debug.WriteExceptionToFile(e);
+            }
+
+            return null;
         }
     }
 }

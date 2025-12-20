@@ -56,12 +56,12 @@ namespace Caly.Core.Services
 
             SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width * (float)PpiScale,
                 tHeight / (float)vm.Height * (float)PpiScale);
-            
+
+            token.ThrowIfCancellationRequested();
+
             using (var surface = SKSurface.Create(new SKImageInfo(tWidth, tHeight)))
             using (var canvas = surface.Canvas)
             {
-                token.ThrowIfCancellationRequested();
-
                 canvas.Clear(SKColors.White);
                 canvas.DrawPicture(picture, in scale);
 
@@ -81,7 +81,7 @@ namespace Caly.Core.Services
                 {
                     var thumbnail = Bitmap.DecodeToWidth(stream, vm.ThumbnailWidth, BitmapInterpolationMode.LowQuality);
 
-                    Dispatcher.UIThread.Invoke(() => vm.Thumbnail = thumbnail);
+                    Dispatcher.UIThread.Invoke(() => vm.Thumbnail = thumbnail, DispatcherPriority.Send, token);
 
                     if (!_bitmaps.TryAdd(vm.PageNumber, vm))
                     {

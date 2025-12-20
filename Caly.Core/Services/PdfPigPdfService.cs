@@ -131,196 +131,212 @@ namespace Caly.Core.Services
 
             // TODO - Ensure method is called only once (one instance per document)
 
-            try
+            return await GuardDispose(async ct =>
             {
-                if (storageFile is null)
+                try
                 {
-                    return 0; // no pdf loaded
-                }
-
-                if (!PdfExtension.Equals(Path.GetExtension(storageFile.Path.LocalPath), StringComparison.OrdinalIgnoreCase) && !CalyExtensions.IsMobilePlatform())
-                {
-                    // TODO - Need to handle Mobile
-                    throw new ArgumentOutOfRangeException(
-                        $"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
-                }
-
-                _filePath = storageFile.Path;
-                System.Diagnostics.Debug.WriteLine($"[INFO] Opening {FileName}...");
-
-                _fileStream = await storageFile.OpenReadAsync();
-                if (!_fileStream.CanSeek)
-                {
-                    var ms = new MemoryStream((int)_fileStream.Length);
-                    await _fileStream.CopyToAsync(ms, token);
-                    ms.Position = 0;
-                    await _fileStream.DisposeAsync();
-                    _fileStream = ms;
-                }
-
-                return await Task.Run(() =>
-                {
-                    var pdfParsingOptions = new ParsingOptions()
+                    if (storageFile is null)
                     {
-                        SkipMissingFonts = true,
-                        FilterProvider = SkiaRenderingFilterProvider.Instance,
-                        Logger = CalyPdfPigLogger.Instance
-                    };
+                        return 0; // no pdf loaded
+                    }
+
+                    if (!PdfExtension.Equals(Path.GetExtension(storageFile.Path.LocalPath), StringComparison.OrdinalIgnoreCase) && !CalyExtensions.IsMobilePlatform())
+                    {
+                        // TODO - Need to handle Mobile
+                        throw new ArgumentOutOfRangeException(
+                            $"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
+                    }
+
+                    _filePath = storageFile.Path;
+                    System.Diagnostics.Debug.WriteLine($"[INFO] Opening {FileName}...");
+
+                    _fileStream = await storageFile.OpenReadAsync();
+                    if (!_fileStream.CanSeek)
+                    {
+                        var ms = new MemoryStream((int)_fileStream.Length);
+                        await _fileStream.CopyToAsync(ms, ct);
+                        ms.Position = 0;
+                        await _fileStream.DisposeAsync();
+                        _fileStream = ms;
+                    }
+
+                    return await Task.Run(() =>
+                    {
+                        var pdfParsingOptions = new ParsingOptions()
+                        {
+                            SkipMissingFonts = true,
+                            FilterProvider = SkiaRenderingFilterProvider.Instance,
+                            Logger = CalyPdfPigLogger.Instance
+                        };
+
+                        if (!string.IsNullOrEmpty(password))
+                        {
+                            pdfParsingOptions.Password = password;
+                        }
+
+                        _document = PdfDocument.Open(_fileStream, pdfParsingOptions);
+
+                        // We store the PPI as an indirect object so that it can be accessed in the TextLayerFactory.
+                        // This is very hacky but PdfPig does not provide a better way to pass such information
+                        // to the PageFactory for the moment.
+                        // TODO - to remove.
+                        _document.Advanced.ReplaceIndirectObject(CalyPdfHelper.FakePpiReference, new NumericToken(PpiScale));
+
+                        _document.AddPageFactory<PdfPageInformation, PageInformationFactory>();
+                        _document.AddPageFactory<SKPicture, SkiaPageFactory>();
+                        _document.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
+
+                        NumberOfPages = _document.NumberOfPages;
+                        PageInteractiveLayerHandler = new PageInteractiveLayerHandler(NumberOfPages);
+                        return NumberOfPages;
+                    }, ct);
+                }
+                catch (PdfDocumentEncryptedException)
+                {
+                    IsPasswordProtected = true;
 
                     if (!string.IsNullOrEmpty(password))
                     {
-                        pdfParsingOptions.Password = password;
+                        // Only stay at first level, do not recurse: If password is NOT null, this is recursion
+                        return 0;
                     }
-                    
-                    _document = PdfDocument.Open(_fileStream, pdfParsingOptions);
 
-                    // We store the PPI as an indirect object so that it can be accessed in the TextLayerFactory.
-                    // This is very hacky but PdfPig does not provide a better way to pass such information
-                    // to the PageFactory for the moment.
-                    // TODO - to remove.
-                    _document.Advanced.ReplaceIndirectObject(CalyPdfHelper.FakePpiReference, new NumericToken(PpiScale));
+                    bool shouldContinue = true;
+                    while (shouldContinue)
+                    {
+                        string? pw = await App.Messenger.Send(new ShowPdfPasswordDialogRequestMessage());
+                        Debug.ThrowOnUiThread();
 
-                    _document.AddPageFactory<PdfPageInformation, PageInformationFactory>();
-                    _document.AddPageFactory<SKPicture, SkiaPageFactory>();
-                    _document.AddPageFactory<PageTextLayerContent, TextLayerFactory>();
+                        shouldContinue = !string.IsNullOrEmpty(pw);
+                        if (!shouldContinue)
+                        {
+                            continue;
+                        }
 
-                    NumberOfPages = _document.NumberOfPages;
-                    PageInteractiveLayerHandler = new PageInteractiveLayerHandler(NumberOfPages);
-                    return NumberOfPages;
-                }, token);
-            }
-            catch (PdfDocumentEncryptedException)
-            {
-                IsPasswordProtected = true;
+                        var pageCount = await OpenDocument(storageFile, pw, ct);
+                        if (pageCount > 0)
+                        {
+                            // Password OK and document opened
+                            return pageCount;
+                        }
+                    }
 
-                if (!string.IsNullOrEmpty(password))
-                {
-                    // Only stay at first level, do not recurse: If password is NOT null, this is recursion
                     return 0;
                 }
-
-                bool shouldContinue = true;
-                while (shouldContinue)
+                catch (OperationCanceledException)
                 {
-                    string? pw = await App.Messenger.Send(new ShowPdfPasswordDialogRequestMessage());
-                    Debug.ThrowOnUiThread();
-
-                    shouldContinue = !string.IsNullOrEmpty(pw);
-                    if (!shouldContinue)
+                    return 0;
+                }
+                finally
+                {
+                    // Only release on first pass
+                    if (string.IsNullOrEmpty(password))
                     {
-                        continue;
-                    }
-
-                    var pageCount = await OpenDocument(storageFile, pw, token);
-                    if (pageCount > 0)
-                    {
-                        // Password OK and document opened
-                        return pageCount;
+                        // The _semaphore starts with initial count set to 0 and maxCount to 1.
+                        // By releasing here we allow _semaphore.Wait() in other methods.
+                        _semaphore.Release();
                     }
                 }
-
-                return 0;
-            }
-            catch (OperationCanceledException)
-            {
-                return 0;
-            }
-            finally
-            {
-                // Only release on first pass
-                if (string.IsNullOrEmpty(password))
-                {
-                    // The _semaphore starts with initial count set to 0 and maxCount to 1.
-                    // By releasing here we allow _semaphore.Wait() in other methods.
-                    _semaphore.Release();
-                }
-            }
+            }, token);
         }
 
         public async Task SetPageSizeAsync(PageViewModel page, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            if (page.IsSizeSet())
+            await GuardDispose(async ct =>
             {
-                return;
-            }
+                if (page.IsSizeSet())
+                {
+                    return;
+                }
 
-            PdfPageInformation? pageInfo = await ExecuteWithLockAsync(
-                () => _document?.GetPage<PdfPageInformation>(page.PageNumber),
-                token);
+                PdfPageInformation? pageInfo = await ExecuteWithLockAsync(
+                    _ => _document?.GetPage<PdfPageInformation>(page.PageNumber),
+                    ct);
 
-            if (pageInfo.HasValue && !token.IsCancellationRequested)
-            {
-                page.Width = pageInfo.Value.Width * PpiScale;
-                page.Height = pageInfo.Value.Height * PpiScale;
-                page.SetSizeSet();
-            }
+                if (pageInfo.HasValue && !ct.IsCancellationRequested)
+                {
+                    page.Width = pageInfo.Value.Width * PpiScale;
+                    page.Height = pageInfo.Value.Height * PpiScale;
+                    page.SetSizeSet();
+                }
+            }, token);
         }
 
         public async Task SetPageTextLayerAsync(PageViewModel page, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            if (page.PdfTextLayer is null)
+            await GuardDispose(async ct =>
             {
-                var pageTextLayer = await ExecuteWithLockAsync(
-                    () => _document?.GetPage<PageTextLayerContent>(page.PageNumber),
-                    token)
-                    .ConfigureAwait(false);
+                if (page.PdfTextLayer is null)
+                {
+                    var pageTextLayer = await ExecuteWithLockAsync(
+                            _ => _document?.GetPage<PageTextLayerContent>(page.PageNumber),
+                            ct)
+                        .ConfigureAwait(false);
 
-                if (pageTextLayer is null)
+                    if (pageTextLayer is null)
+                    {
+                        return;
+                    }
+
+                    var textLayer = PdfTextLayerHelper.GetTextLayer(pageTextLayer, ct);
+
+                    // This need to be done sync for SetPageTextLayerImmediate()
+                    Dispatcher.UIThread.Invoke(() => page.PdfTextLayer = textLayer, DispatcherPriority.Send, ct);
+                }
+
+                if (page.PdfTextLayer is not null && !ct.IsCancellationRequested)
+                {
+                    // We ensure the correct selection is set now that we have the text layer
+                    page.PageInteractiveLayerHandler.UpdateInteractiveLayer(page);
+                }
+            }, token);
+        }
+
+        public async Task SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token)
+        {
+            Debug.ThrowOnUiThread();
+
+            await GuardDispose(async ct =>
+            {
+                await Task.Yield();
+                if (document.Properties is not null)
                 {
                     return;
                 }
 
-                var textLayer = PdfTextLayerHelper.GetTextLayer(pageTextLayer, token);
+                var info = _document?.Information;
 
-                // This need to be done sync for SetPageTextLayerImmediate()
-                Dispatcher.UIThread.Invoke(() => page.PdfTextLayer = textLayer);
-            }
+                var others =
+                    _document?.Information.DocumentInformationDictionary?.Data?
+                        .Where(x => x.Value is not null)
+                        .ToDictionary(x => x.Key,
+                            x => x.Value.ToString()!);
 
-            if (page.PdfTextLayer is not null)
-            {
-                // We ensure the correct selection is set now that we have the text layer
-                page.PageInteractiveLayerHandler.UpdateInteractiveLayer(page);
-            }
-        }
+                if (info is null || others is null || ct.IsCancellationRequested)
+                {
+                    return;
+                }
 
-        public ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token)
-        {
-            Debug.ThrowOnUiThread();
+                var pdfProperties = new PdfDocumentProperties()
+                {
+                    PdfVersion = _document?.Version.ToString(PdfVersionFormat) ?? string.Empty,
+                    Title = info.Title,
+                    Author = info.Author,
+                    CreationDate = FormatPdfDate(info.CreationDate),
+                    Creator = info.Creator,
+                    Keywords = info.Keywords,
+                    ModifiedDate = FormatPdfDate(info.ModifiedDate),
+                    Producer = info.Producer,
+                    Subject = info.Subject,
+                    Others = others
+                };
 
-            if (_document is null || IsDisposed())
-            {
-                return ValueTask.CompletedTask;
-            }
-
-            var info = _document.Information;
-
-            var others =
-                _document.Information.DocumentInformationDictionary?.Data?
-                    .Where(x => x.Value is not null)
-                    .ToDictionary(x => x.Key,
-                        x => x.Value.ToString()!);
-
-            var pdfProperties = new PdfDocumentProperties()
-            {
-                PdfVersion = _document.Version.ToString(PdfVersionFormat),
-                Title = info.Title,
-                Author = info.Author,
-                CreationDate = FormatPdfDate(info.CreationDate),
-                Creator = info.Creator,
-                Keywords = info.Keywords,
-                ModifiedDate = FormatPdfDate(info.ModifiedDate),
-                Producer = info.Producer,
-                Subject = info.Subject,
-                Others = others
-            };
-
-            Dispatcher.UIThread.Invoke(() => document.Properties = pdfProperties);
-
-            return ValueTask.CompletedTask;
+                Dispatcher.UIThread.Invoke(() => document.Properties = pdfProperties, DispatcherPriority.Send, ct);
+            }, token);
         }
 
         public string? GetLogFileName()
@@ -369,25 +385,19 @@ namespace Caly.Core.Services
         public async Task SetPdfBookmark(DocumentViewModel document, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
-            if (_document is null)
+            await GuardDispose(async ct =>
             {
-                return;
-            }
+                Bookmarks? bookmarks = await ExecuteWithLockAsync(_ =>
+                    {
+                        if (_document!.TryGetBookmarks(out var b))
+                        {
+                            return b;
+                        }
 
-            Bookmarks? bookmarks = await ExecuteWithLockAsync(() =>
-            {
-                if (_document!.TryGetBookmarks(out var b))
-                {
-                    return b;
-                }
+                        return null;
+                    }, ct);
 
-                return null;
-            },
-            token);
-            
-            try
-            {
-                if (bookmarks is null || IsDisposed() || bookmarks.Roots.Count == 0)
+                if (bookmarks is null || bookmarks.Roots.Count == 0 || ct.IsCancellationRequested)
                 {
                     return;
                 }
@@ -395,35 +405,37 @@ namespace Caly.Core.Services
                 var bookmarksItems = new ObservableCollection<PdfBookmarkNode>();
                 foreach (BookmarkNode node in bookmarks.Roots)
                 {
-                    var n = BuildPdfBookmarkNode(node, token);
+                    var n = BuildPdfBookmarkNode(node, ct);
                     if (n is not null)
                     {
                         bookmarksItems.Add(n);
                     }
                 }
 
-                Dispatcher.UIThread.Invoke(() => document.Bookmarks = bookmarksItems);
-            }
-            catch (OperationCanceledException) { }
+                Dispatcher.UIThread.Invoke(() => document.Bookmarks = bookmarksItems, DispatcherPriority.Send, ct);
+            }, token);
         }
 
         public async Task BuildIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            await _textSearchService.BuildPdfDocumentIndex(document, progress, token);
+            await GuardDispose(async ct =>
+            {
+                await _textSearchService.BuildPdfDocumentIndex(document, progress, ct);
+            }, token);
         }
 
         public IEnumerable<TextSearchResultViewModel> SearchText(DocumentViewModel document, string query, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
-            return _textSearchService.Search(document, query, pagesToSkip, token);
+            return GuardDispose(ct => _textSearchService.Search(document, query, pagesToSkip, ct), token) ?? [];
         }
 
-        private static PdfBookmarkNode? BuildPdfBookmarkNode(BookmarkNode node, CancellationToken cancellationToken)
+        private static PdfBookmarkNode? BuildPdfBookmarkNode(BookmarkNode node, CancellationToken token)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            token.ThrowIfCancellationRequested();
 
             int? pageNumber = null;
             if (node is DocumentBookmarkNode bookmarkNode)
@@ -439,7 +451,7 @@ namespace Caly.Core.Services
             var children = new List<PdfBookmarkNode>();
             foreach (var child in node.Children)
             {
-                var n = BuildPdfBookmarkNode(child, cancellationToken);
+                var n = BuildPdfBookmarkNode(child, token);
                 if (n is not null)
                 {
                     children.Add(n);
@@ -448,14 +460,7 @@ namespace Caly.Core.Services
 
             return new PdfBookmarkNode(node.Title, pageNumber, children.Count == 0 ? null : children);
         }
-
-        private bool IsDisposed()
-        {
-            return Interlocked.Read(ref _isDisposed) != 0;
-        }
-
-        private long _isDisposed;
-
+        
         [Conditional("DEBUG")]
         private static void AssertTokensCancelled(ConcurrentDictionary<int, CancellationTokenSource> tokens)
         {
@@ -483,6 +488,16 @@ namespace Caly.Core.Services
 
                 await _mainCts.CancelAsync();
 
+                // Wait for in-flight operations (with timeout)
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                {
+                    while (_activeOperations > 0 && !cts.Token.IsCancellationRequested)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"DisposeAsync: '{FileName}' waiting for {_activeOperations} active operations to finish.");
+                        await Task.Delay(50, CancellationToken.None);
+                    }
+                }
+
                 AssertTokensCancelled(_thumbnailTokens);
                 AssertTokensCancelled(_textLayerTokens);
                 AssertTokensCancelled(_pictureTokens);
@@ -507,6 +522,7 @@ namespace Caly.Core.Services
             }
             catch (Exception ex)
             {
+                Debug.WriteExceptionToFile(ex);
                 System.Diagnostics.Debug.WriteLine($"[INFO] ERROR DisposeAsync for {FileName}: {ex.Message}");
             }
         }

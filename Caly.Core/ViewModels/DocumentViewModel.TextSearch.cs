@@ -69,13 +69,13 @@ public partial class DocumentViewModel
 
     private async Task BuildSearchIndex()
     {
-        _cts.Token.ThrowIfCancellationRequested();
+        _mainCts.Token.ThrowIfCancellationRequested();
         var progress = new Progress<int>(done =>
         {
             BuildIndexProgress = (int)Math.Ceiling((done / (double)PageCount) * 100);
         });
 
-        await Task.Run(() => _pdfService.BuildIndex(this, progress, _cts.Token), _cts.Token);
+        await Task.Run(() => _pdfService.BuildIndex(this, progress, _mainCts.Token), _mainCts.Token);
 
         SetSearchStatusFinal();
     }
@@ -94,7 +94,7 @@ public partial class DocumentViewModel
         try
         {
             var previousCts = _pendingSearchTaskCts;
-            var newCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            var newCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token);
             _pendingSearchTaskCts = newCts;
 
             if (previousCts is not null)

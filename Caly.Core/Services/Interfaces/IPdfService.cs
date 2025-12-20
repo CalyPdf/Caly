@@ -52,7 +52,7 @@ namespace Caly.Core.Services.Interfaces
         /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
         Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token);
 
-        ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token);
+        Task SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token);
         
         Task SetPdfBookmark(DocumentViewModel document, CancellationToken token);
 

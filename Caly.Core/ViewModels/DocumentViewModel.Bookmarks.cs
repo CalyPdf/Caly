@@ -42,8 +42,8 @@ public partial class DocumentViewModel
 
     private async Task LoadBookmarks()
     {
-        _cts.Token.ThrowIfCancellationRequested();
-        await Task.Run(() => _pdfService.SetPdfBookmark(this, _cts.Token));
+        _mainCts.Token.ThrowIfCancellationRequested();
+        await Task.Run(() => _pdfService.SetPdfBookmark(this, _mainCts.Token));
         if (Bookmarks?.Count > 0)
         {
             BookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(Bookmarks)
@@ -68,7 +68,7 @@ public partial class DocumentViewModel
                 BookmarksSource.RowSelection!.SingleSelect = true;
                 BookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;
                 BookmarksSource.ExpandAll();
-            });
+            }, DispatcherPriority.Send, _mainCts.Token);
         }
     }
 
