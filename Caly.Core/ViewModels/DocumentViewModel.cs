@@ -258,6 +258,9 @@ public sealed partial class DocumentViewModel : ViewModelBase
     /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
     public Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token)
     {
+        ArgumentNullException.ThrowIfNull(storageFile, nameof(storageFile));
+        LocalPath = storageFile.Path.LocalPath;
+
         WaitOpenAsync = Task.Run(async () =>
         {
             using (var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token, token))
@@ -266,7 +269,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
                 IsPasswordProtected = _pdfService.IsPasswordProtected;
                 FileName = _pdfService.FileName;
-                LocalPath = _pdfService.LocalPath;
+                System.Diagnostics.Debug.Assert(_pdfService.LocalPath == LocalPath);
 
                 if (pageCount == 0)
                 {
