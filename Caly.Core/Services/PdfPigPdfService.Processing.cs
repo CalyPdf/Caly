@@ -133,11 +133,9 @@ namespace Caly.Core.Services
             }
             catch (OperationCanceledException) { }
         }
-
-
+        
         private async Task ProcessPictureRequest(RenderRequest renderRequest)
         {
-
             try
             {
                 renderRequest.Token.ThrowIfCancellationRequested();
@@ -152,17 +150,25 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                var picture = await GetRenderPageAsync(renderRequest.Page.PageNumber, renderRequest.Token);
+                await renderRequest.Page.ExecuteWithRenderLockAsync(async ct =>
+                {
+                    if (renderRequest.Page.PdfPicture is not null)
+                    {
+                        return;
+                    }
+                    var picture = await GetRenderPageAsync(renderRequest.Page.PageNumber, ct);
 
 #if DEBUG
-                if (picture?.Item is not null)
-                {
-                    System.Diagnostics.Debug.Assert(picture.Item.CullRect.Width > 0);
-                    System.Diagnostics.Debug.Assert(picture.Item.CullRect.Height > 0);
-                }
+                    if (picture?.Item is not null)
+                    {
+                        System.Diagnostics.Debug.Assert(picture.Item.CullRect.Width > 0);
+                        System.Diagnostics.Debug.Assert(picture.Item.CullRect.Height > 0);
+                    }
 #endif
-                
-                renderRequest.Page.PdfPicture = picture;
+
+                    renderRequest.Page.PdfPicture = picture;
+                }, renderRequest.Token);
+
 
                 if (!renderRequest.Page.IsSizeSet() && renderRequest.Page.PdfPicture?.Item is not null)
                 {
@@ -266,8 +272,20 @@ namespace Caly.Core.Services
                     return;
                 }
 
-                // Need to get picture first
-                using (picture = await GetRenderPageAsync(renderRequest.Page.PageNumber, renderRequest.Token))
+                await renderRequest.Page.ExecuteWithRenderLockAsync(async ct =>
+                {
+                    picture = renderRequest.Page.PdfPicture?.Clone();
+                    if (picture is not null)
+                    {
+                        await SetThumbnail(renderRequest.Page, picture.Item, ct);
+                        picture.Dispose();
+                        return;
+                    }
+
+                    picture = await GetRenderPageAsync(renderRequest.Page.PageNumber, ct);
+                }, renderRequest.Token);
+
+                using (picture)
                 {
                     if (picture is not null)
                     {

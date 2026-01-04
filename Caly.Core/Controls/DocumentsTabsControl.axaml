@@ -173,6 +173,11 @@
 							   CompactPaneLength="0"
 							   DisplayMode="CompactInline">
 
+                        <!-- Document control -->
+                        <SplitView.Content>
+                            <controls:DocumentControl />
+                        </SplitView.Content>
+
 						<!-- Left navigation bar -->
 						<SplitView.Pane>
 
@@ -266,11 +271,6 @@
                                 </Grid>
 							</Grid>
 						</SplitView.Pane>
-
-						<!-- Document control -->
-						<SplitView.Content>
-							<controls:DocumentControl />
-						</SplitView.Content>
 
 					</SplitView>
 

@@ -36,6 +36,14 @@
                         <KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.DocumentCloseGesture}" Command="{Binding CloseDocumentCommand}" />
                     </Grid.KeyBindings>
 
+                    <!-- The pages control -->
+                    <controls:PageItemsControl Name="PART_PageItemsControl"
+                                               HorizontalAlignment="Stretch"
+                                               ItemsSource="{TemplateBinding ItemsSource}"
+                                               PageCount="{TemplateBinding PageCount}"
+                                               SelectedPageIndex="{TemplateBinding SelectedPageIndex, Mode=TwoWay}"
+                                               ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"/>
+
                     <!-- Progress Ring for when the document is opening -->
                     <progRing:ProgressRing Width="50"
                                            Height="50"
@@ -45,14 +53,6 @@
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource SystemAccentColor}"/>
-
-					<!-- The pages control -->
-					<controls:PageItemsControl Name="PART_PageItemsControl"
-												  HorizontalAlignment="Stretch"
-												  ItemsSource="{TemplateBinding ItemsSource}"
-												  PageCount="{TemplateBinding PageCount}"
-												  SelectedPageIndex="{TemplateBinding SelectedPageIndex, Mode=TwoWay}"
-												  ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"/>
 
 				</Grid>
 			</ControlTemplate>

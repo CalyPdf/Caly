@@ -103,7 +103,7 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     public bool IsPortrait => Rotation == 0 || Rotation == 180;
 
     private long _isSizeSet;
-
+    
     public bool IsSizeSet()
     {
         return Interlocked.Read(ref _isSizeSet) == 1;
@@ -172,6 +172,7 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     public ValueTask DisposeAsync()
     {
         App.Messenger.Send(new UnloadThumbnailMessage(this));
+        _renderMutex.Dispose();
         return ValueTask.CompletedTask;
     }
 }
