@@ -116,7 +116,7 @@ namespace Caly.Core.Services
             {
                  Comparer = RenderRequestComparer.Instance,
                  SingleWriter = false,
-                 SingleReader = true
+                 SingleReader = false
             });
             
             _requestsWriter = channel.Writer;

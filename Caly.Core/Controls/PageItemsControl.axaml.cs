@@ -231,10 +231,11 @@ public sealed class PageItemsControl : ItemsControl
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsSource: {(ItemsSource as ObservableCollection<PageViewModel>)?.Count}");
             System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride:  vm.VisibleArea: {vm.VisibleArea}");
 
+            App.Messenger.Send(new UnloadPageMessage(vm));
+
             if (vm.VisibleArea.HasValue)
             {
                 vm.VisibleArea = null;
-                App.Messenger.Send(new UnloadPageMessage(vm));
             }
             else
             {
@@ -247,7 +248,7 @@ public sealed class PageItemsControl : ItemsControl
             }
         }
     }
-
+    
     private void PageItemLayoutUpdated(object? sender, EventArgs e)
     {
         if (sender is not PageItem cp)
