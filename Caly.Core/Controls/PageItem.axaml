@@ -24,6 +24,7 @@
 		<Setter Property="VisibleArea" Value="{Binding VisibleArea}"/>
 		<Setter Property="IsPageRendering" Value="{Binding IsPageRendering}"/>
 		<Setter Property="IsPageVisible" Value="{Binding IsPageVisible}"/>
+        <Setter Property="Rotation" Value="{Binding Rotation}"/>
 		<Setter Property="Margin" Value="0,0,0,5"/>
 
 		<!-- ContextFlyout -->

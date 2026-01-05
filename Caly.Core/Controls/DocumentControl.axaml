@@ -12,6 +12,8 @@
 	<ControlTheme x:Key="{x:Type controls:DocumentControl}" TargetType="controls:DocumentControl" x:DataType="vm:DocumentViewModel">
 		<Setter Property="Exception" Value="{Binding Exception}"/>
 		<Setter Property="SelectedPageIndex" Value="{Binding SelectedPageIndex, Mode=TwoWay}"/>
+        <Setter Property="RealisedPages" Value="{Binding RealisedPages}"/>
+        <Setter Property="VisiblePages" Value="{Binding VisiblePages}"/>
 		<Setter Property="ItemsSource" Value="{Binding Pages}"/>
 		<Setter Property="PageInteractiveLayerHandler" Value="{Binding PageInteractiveLayerHandler}"/>
 		<Setter Property="PageCount" Value="{Binding PageCount}"/>
@@ -19,7 +21,7 @@
 		<Setter Property="SelectedBookmark" Value="{Binding SelectedBookmark, Mode=OneWay}"/>
 		<Setter Property="SelectedTextSearchResult" Value="{Binding SelectedTextSearchResult, Mode=OneWay}"/>
 		<Setter Property="UseLayoutRounding" Value="True"/>
-
+		
 		<Setter Property="ContextFlyout">
 			<MenuFlyout>
 				<MenuItem Header="{DynamicResource StringTextFlyoutCopyText}"
@@ -52,7 +54,9 @@
 												  ItemsSource="{TemplateBinding ItemsSource}"
 												  PageCount="{TemplateBinding PageCount}"
 												  SelectedPageIndex="{TemplateBinding SelectedPageIndex, Mode=TwoWay}"
-												  ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"/>
+												  ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"
+                                                  RealisedPages="{TemplateBinding RealisedPages, Mode=TwoWay}"
+                                                  VisiblePages="{TemplateBinding VisiblePages, Mode=TwoWay}"/>
 
 				</Grid>
 			</ControlTemplate>

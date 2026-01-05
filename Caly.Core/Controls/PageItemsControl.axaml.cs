@@ -18,10 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -33,10 +29,15 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
+using Caly.Core.Events;
 using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using Tabalonia.Controls;
 
 namespace Caly.Core.Controls;
@@ -86,6 +87,18 @@ public sealed class PageItemsControl : ItemsControl
     /// </summary>
     public static readonly StyledProperty<int?> SelectedPageIndexProperty = AvaloniaProperty.Register<PageItemsControl, int?>(nameof(SelectedPageIndex), null,
         defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Defines the <see cref="VisiblePages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> VisiblePagesProperty =
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(VisiblePages), defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Defines the <see cref="RealisedPages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> RealisedPagesProperty =
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(RealisedPages), defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="MinZoomLevel"/> property.
@@ -147,6 +160,24 @@ public sealed class PageItemsControl : ItemsControl
         set => SetValue(SelectedPageIndexProperty, value);
     }
 
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? VisiblePages
+    {
+        get => GetValue(VisiblePagesProperty);
+        set => SetValue(VisiblePagesProperty, value);
+    }
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? RealisedPages
+    {
+        get => GetValue(RealisedPagesProperty);
+        set => SetValue(RealisedPagesProperty, value);
+    }
+
     public double MinZoomLevel
     {
         get => GetValue(MinZoomLevelProperty);
@@ -199,52 +230,48 @@ public sealed class PageItemsControl : ItemsControl
     {
         base.PrepareContainerForItemOverride(container, item, index);
 
-        if (_isTabDragging ||
-            container is not PageItem ||
-            item is not PageViewModel vm)
+        if (_isTabDragging)
         {
             System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
             return;
         }
 
-        vm.VisibleArea = null;
-        App.Messenger.Send(new LoadPageMessage(vm));
+        if (container is PageItem pageItem)
+        {
+            pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+
+            if (pageItem.DataContext is PageViewModel vm) // TODO - To remove
+            {
+                App.Messenger.Send(new LoadPageMessage(vm));
+            }
+        }
     }
 
     protected override void ClearContainerForItemOverride(Control container)
     {
         base.ClearContainerForItemOverride(container);
         
-        if (container is not PageItem cp)
+        if (container is not PageItem pageItem)
         {
             return;
         }
 
-        if (cp.DataContext is PageViewModel vm)
+        if (pageItem.VisibleArea.HasValue)
         {
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: doc vm: {this.DataContext}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: page vm: {vm}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: isTabDragging: {_isTabDragging}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: HasRealisedItems: {HasRealisedItems()}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: IsPageRealised: {IsPageRealised(vm)}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsView?.Count: {ItemsView?.Count}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsSource: {(ItemsSource as ObservableCollection<PageViewModel>)?.Count}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride:  vm.VisibleArea: {vm.VisibleArea}");
-
-            if (vm.VisibleArea.HasValue)
+            pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+            if (pageItem.DataContext is PageViewModel vm) // TODO - To remove
             {
-                vm.VisibleArea = null;
                 App.Messenger.Send(new UnloadPageMessage(vm));
             }
-            else
-            {
-                // This is a sign that the page won't load properly.
-                // We are trying to cancel a page that needs to be
-                // rendered. The page picture, text and visibility
-                // will not be correct. To fix that, we do that once
-                // when the layout is updated.
-                cp.LayoutUpdated += PageItemLayoutUpdated;
-            }
+        }
+        else
+        {
+            // This is a sign that the page won't load properly.
+            // We are trying to cancel a page that needs to be
+            // rendered. The page picture, text and visibility
+            // will not be correct. To fix that, we do that once
+            // when the layout is updated.
+            pageItem.LayoutUpdated += PageItemLayoutUpdated;
         }
     }
 
@@ -259,7 +286,7 @@ public sealed class PageItemsControl : ItemsControl
 
         cp.LayoutUpdated -= PageItemLayoutUpdated; // Only once
 
-        SetPagesVisibility();
+        UpdatePagesVisibility();
     }
 
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
@@ -400,8 +427,8 @@ public sealed class PageItemsControl : ItemsControl
         base.OnApplyTemplate(e);
 
         Scroll = e.NameScope.FindFromNameScope<ScrollViewer>("PART_ScrollViewer");
-        Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
-        Scroll.AddHandler(SizeChangedEvent, (_, _) => SetPagesVisibility(), RoutingStrategies.Direct);
+        Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => UpdatePagesVisibility());
+        Scroll.AddHandler(SizeChangedEvent, (_, _) => UpdatePagesVisibility(), RoutingStrategies.Direct);
         Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
         Scroll.AddHandler(KeyUpEvent, OnKeyUpHandler);
         Scroll.Focus(); // Make sure the Scroll has focus
@@ -434,8 +461,8 @@ public sealed class PageItemsControl : ItemsControl
         
         if (Scroll is not null)
         {
-            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
-            Scroll.RemoveHandler(SizeChangedEvent, (_, _) => SetPagesVisibility());
+            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => UpdatePagesVisibility());
+            Scroll.RemoveHandler(SizeChangedEvent, (_, _) => UpdatePagesVisibility());
             Scroll.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
             Scroll.RemoveHandler(KeyUpEvent, OnKeyUpHandler);
         }
@@ -476,11 +503,12 @@ public sealed class PageItemsControl : ItemsControl
         }
         
         _isTabDragging = false;
-        foreach (Control cp in GetRealizedContainers())
+        foreach (var pageItem in GetRealizedContainers().OfType<PageItem>())
         {
-            if (cp.DataContext is PageViewModel vm)
+            pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+
+            if (pageItem.DataContext is PageViewModel vm) // TODO - To remove
             {
-                vm.VisibleArea = null;
                 App.Messenger.Send(new LoadPageMessage(vm));
             }
         }
@@ -492,7 +520,7 @@ public sealed class PageItemsControl : ItemsControl
             GoToPage(SelectedPageIndex.Value);
         }
         
-        SetPagesVisibility();
+        UpdatePagesVisibility();
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
@@ -534,7 +562,7 @@ public sealed class PageItemsControl : ItemsControl
         
         try
         {
-            SetPagesVisibility();
+            UpdatePagesVisibility();
         }
         finally
         {
@@ -547,6 +575,7 @@ public sealed class PageItemsControl : ItemsControl
         base.OnPropertyChanged(change);
         if (change.Property == ItemsSourceProperty)
         {
+            // TODO - To refactor to remove ref to PageViewModel
             if (change.OldValue is not IEnumerable<PageViewModel> items)
             {
                 return;
@@ -574,7 +603,7 @@ public sealed class PageItemsControl : ItemsControl
                 var children = panel.Children.OfType<PageItem>().ToArray();
                 foreach (var child in children)
                 {
-                    if (child is { IsVisible: true, DataContext: PageViewModel { PdfService.IsActive: false } })
+                    if (child is { IsVisible: true, DataContext: PageViewModel { PdfService.IsActive: false } }) // TODO - To refactor to remove ref to PageViewModel
                     {
                         child.SetCurrentValue(Visual.IsVisibleProperty, false);
                     }
@@ -595,7 +624,7 @@ public sealed class PageItemsControl : ItemsControl
         // Ensure the pages visibility is set when OnApplyTemplate()
         // is not called, i.e. when a new document is opened but the
         // page has exactly the same dimension of the visible page
-        SetPagesVisibility();
+        UpdatePagesVisibility();
     }
     
     private bool HasRealisedItems()
@@ -607,21 +636,20 @@ public sealed class PageItemsControl : ItemsControl
 
         return false;
     }
-
-    private bool IsPageRealised(PageViewModel vm)
+    
+    private void UpdatePagesVisibility()
     {
-        var index = ItemsView.IndexOf(vm);
-        if (index >= 0 && ItemsPanelRoot is VirtualizingStackPanel vsp)
-        {
-            return index >= vsp.FirstRealizedIndex && index <= vsp.LastRealizedIndex;
-        }
+        /*
+         * TODO - Refactor: We do way too many checks when jumping to a page (GoToPage).
+         * The visible pages will always be between 'firstPageRealisedIndex' and 'lastPageRealisedIndex'.
+         * Starting from 'SelectedPageIndex' is correct for simple scrolling. But when jumping to a page,
+         * 'SelectedPageIndex' might not be between 'firstPageRealisedIndex' and 'lastPageRealisedIndex'.
+         * Starting 'SelectedPageIndex' will cause unnecessary checks. In this case, after having set the
+         * visible area to null for all visible pages, we should start from either 'firstPageRealisedIndex'
+         * or 'lastPageRealisedIndex'.
+         */
 
-        return false;
-    }
-
-    private void SetPagesVisibility()
-    {
-        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {(DataContext as DocumentViewModel)}");
+        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {DataContext as DocumentViewModel}");
 
         if (_isSettingPageVisibility || _isTabDragging)
         {
@@ -667,12 +695,12 @@ public sealed class PageItemsControl : ItemsControl
 
         double maxOverlap = double.MinValue;
         int indexMaxOverlap = -1;
-
-        bool CheckPageVisibility(int p, out bool isPageVisible)
+        
+        bool CheckSetPageVisibility(int p, out bool isPageVisible)
         {
             isPageVisible = false;
 
-            if (ContainerFromIndex(p) is not PageItem { Content: PageViewModel vm } cp)
+            if (ContainerFromIndex(p) is not PageItem cp)
             {
                 // Page is not realised
                 return !isPreviousPageVisible;
@@ -680,14 +708,14 @@ public sealed class PageItemsControl : ItemsControl
 
             if (!needMoreChecks || cp.Bounds.IsEmpty())
             {
-                if (!vm.IsPageVisible)
+                if (!cp.IsPageVisible)
                 {
                     // Page is not visible and no need for more checks.
                     // All following pages are already set to IsPageVisible = false
                     return false;
                 }
 
-                vm.VisibleArea = null;
+                cp.SetCurrentValue(PageItem.VisibleAreaProperty, null);
                 return true;
             }
 
@@ -696,11 +724,12 @@ public sealed class PageItemsControl : ItemsControl
             if (view.Height == 0)
             {
                 // No need for further checks, not visible
-                vm.VisibleArea = null;
+                cp.SetCurrentValue(PageItem.VisibleAreaProperty, null);
                 return true;
             }
 
-            double vmWidth = vm.IsPortrait ? vm.Width : vm.Height;
+            //double vmWidth = cp.IsPortrait ? cp.Width : cp.Height;
+            double vmWidth = cp.Width;
             if (Math.Abs(view.Width - vmWidth) > double.Epsilon)
             {
                 double delta = (view.Width - vmWidth) / 2.0; // Centered
@@ -726,7 +755,7 @@ public sealed class PageItemsControl : ItemsControl
                 // Actual check if page is visible
                 if (overlapArea == 0)
                 {
-                    vm.VisibleArea = null;
+                    cp.SetCurrentValue(PageItem.VisibleAreaProperty, null);
                     // If previous page was visible but current page is not, we have the last visible page
                     needMoreChecks = !isPreviousPageVisible;
                     return true;
@@ -740,13 +769,12 @@ public sealed class PageItemsControl : ItemsControl
                     indexMaxOverlap = p;
                 }
 
-                isPreviousPageVisible = true;
                 isPageVisible = true;
 
                 // Set overlap area (Translate and inverse transform)
                 Rect visibleArea = view.Translate(new Vector(-left, -top));
 
-                switch (vm.Rotation)
+                switch (cp.Rotation)
                 {
                     case 90:
                         visibleArea = new Rect(visibleArea.Y,
@@ -771,65 +799,99 @@ public sealed class PageItemsControl : ItemsControl
 
 #if DEBUG
                     default:
-                        System.Diagnostics.Debug.Assert(vm.Rotation == 0);
+                        System.Diagnostics.Debug.Assert(cp.Rotation == 0);
                         break;
 #endif
                 }
 
-                vm.VisibleArea = visibleArea;
+                cp.SetCurrentValue(PageItem.VisibleAreaProperty, visibleArea);
 
                 return true;
             }
 
-            vm.VisibleArea = null;
+            cp.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+
             // If previous page was visible but current page is not, we have the last visible page
             needMoreChecks = !isPreviousPageVisible;
+
             return true;
         }
 
         // Check current page visibility
         int startIndex = SelectedPageIndex.HasValue ? SelectedPageIndex.Value - 1 : 0; // Switch from one-indexed to zero-indexed
-        CheckPageVisibility(startIndex, out bool isSelectedPageVisible);
+        CheckSetPageVisibility(startIndex, out bool isSelectedPageVisible);
 
-        int minPageIndex = GetMinPageIndex();
-        int maxPageIndex = GetMaxPageIndex(); // Exclusive
+        int firstPageRealisedIndex = GetMinPageIndex();
+        int lastPageRealisedIndex = GetMaxPageIndex(); // Exclusive
+        int firstPageVisibleIndex = -1;
+        int lastPageVisibleIndex = -1;
 
-        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: minPageIndex={minPageIndex} maxPageIndex={maxPageIndex}");
+        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: firstPageRealisedIndex={firstPageRealisedIndex} lastPageRealisedIndex={lastPageRealisedIndex}");
 
         // Start with checking forward.
         // TODO - While scrolling down, the current selected page can become invisible and force
         // a full iteration if starting backward
+
+        if (isSelectedPageVisible)
+        {
+            firstPageVisibleIndex = startIndex;
+            lastPageVisibleIndex = startIndex;
+        }
+
         isPreviousPageVisible = isSelectedPageVisible; // Previous page is SelectedPageIndex
         int forwardIndex = startIndex + 1;
-        while (forwardIndex < maxPageIndex && CheckPageVisibility(forwardIndex, out _))
+        
+        bool isPageVisible;
+        while (forwardIndex <= lastPageRealisedIndex && CheckSetPageVisibility(forwardIndex, out isPageVisible))
         {
+            if (isPageVisible)
+            {
+                lastPageVisibleIndex = forwardIndex;
+                if (!isPreviousPageVisible)
+                {
+                    firstPageVisibleIndex = forwardIndex;
+                }
+            }
+            
+            isPreviousPageVisible = isPageVisible;
             forwardIndex++;
         }
 
         // Continue with checking backward
-        isPreviousPageVisible = isSelectedPageVisible; // Previous page is SelectedPageIndex
+        isPreviousPageVisible = startIndex != 0 && isSelectedPageVisible; // Previous page is SelectedPageIndex, always false for first page
         needMoreChecks = true;
         int backwardIndex = startIndex - 1;
-        while (backwardIndex >= minPageIndex && CheckPageVisibility(backwardIndex, out _))
+        while (backwardIndex >= firstPageRealisedIndex && CheckSetPageVisibility(backwardIndex, out isPageVisible))
         {
+            if (isPageVisible)
+            {
+                firstPageVisibleIndex = backwardIndex;
+                if (lastPageVisibleIndex == -1)
+                {
+                    lastPageVisibleIndex = backwardIndex;
+                }
+            }
+
+            isPreviousPageVisible = isPageVisible;
             backwardIndex--;
         }
 
+        SetCurrentValue(RealisedPagesProperty, new Range(firstPageRealisedIndex + 1, lastPageRealisedIndex + 2));
+        SetCurrentValue(VisiblePagesProperty, new Range(firstPageVisibleIndex + 1, lastPageVisibleIndex + 2));
+
         indexMaxOverlap++; // Switch to base 1 indexing
 
-        if (indexMaxOverlap == 0 || SelectedPageIndex == indexMaxOverlap)
+        if (indexMaxOverlap != 0 && SelectedPageIndex != indexMaxOverlap)
         {
-            return;
-        }
-
-        try
-        {
-            _isSettingPageVisibility = true;
-            SetCurrentValue(SelectedPageIndexProperty, indexMaxOverlap);
-        }
-        finally
-        {
-            _isSettingPageVisibility = false;
+            try
+            {
+                _isSettingPageVisibility = true;
+                SetCurrentValue(SelectedPageIndexProperty, indexMaxOverlap);
+            }
+            finally
+            {
+                _isSettingPageVisibility = false;
+            }
         }
     }
 

@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Collections;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -26,12 +25,15 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Caly.Core.Events;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
+using System;
+using System.Collections;
 
 namespace Caly.Core.Controls;
 
@@ -70,6 +72,20 @@ public sealed class DocumentControl : CalyTemplatedControl
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
+    /// Defines the <see cref="VisiblePages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> VisiblePagesProperty =
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(VisiblePages), defaultBindingMode: BindingMode.TwoWay);
+            //defaultBindingMode: BindingMode.OneWayToSource);
+
+    /// <summary>
+    /// Defines the <see cref="RealisedPages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> RealisedPagesProperty =
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(RealisedPages), defaultBindingMode: BindingMode.TwoWay);
+            //defaultBindingMode: BindingMode.OneWayToSource);
+
+    /// <summary>
     /// Defines the <see cref="SelectedBookmark"/> property.
     /// </summary>
     public static readonly StyledProperty<PdfBookmarkNode?> SelectedBookmarkProperty =
@@ -103,6 +119,24 @@ public sealed class DocumentControl : CalyTemplatedControl
     {
         get => GetValue(SelectedPageIndexProperty);
         set => SetValue(SelectedPageIndexProperty, value);
+    }
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? VisiblePages
+    {
+        get => GetValue(VisiblePagesProperty);
+        set => SetValue(VisiblePagesProperty, value);
+    }
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? RealisedPages
+    {
+        get => GetValue(RealisedPagesProperty);
+        set => SetValue(RealisedPagesProperty, value);
     }
 
     public PdfBookmarkNode? SelectedBookmark

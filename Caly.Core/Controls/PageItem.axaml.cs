@@ -52,13 +52,19 @@ public sealed class PageItem : ContentControl
     /// Defines the <see cref="IsPageVisible"/> property.
     /// </summary>
     public static readonly StyledProperty<bool> IsPageVisibleProperty =
-        AvaloniaProperty.Register<PageItem, bool>(nameof(IsPageVisible), false);
+        AvaloniaProperty.Register<PageItem, bool>(nameof(IsPageVisible));
 
     /// <summary>
     /// Defines the <see cref="VisibleArea"/> property.
     /// </summary>
     public static readonly StyledProperty<Rect?> VisibleAreaProperty =
-        AvaloniaProperty.Register<PageItem, Rect?>(nameof(VisibleArea), null, defaultBindingMode: BindingMode.TwoWay);
+        AvaloniaProperty.Register<PageItem, Rect?>(nameof(VisibleArea), defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Defines the <see cref="Rotation"/> property.
+    /// </summary>
+    public static readonly StyledProperty<int> RotationProperty =
+        AvaloniaProperty.Register<PageItem, int>(nameof(Rotation));
 
     /// <summary>
     /// Defines the <see cref="Exception"/> property.
@@ -102,6 +108,20 @@ public sealed class PageItem : ContentControl
         get => GetValue(VisibleAreaProperty);
         set => SetValue(VisibleAreaProperty, value);
     }
+
+    public int Rotation
+    {
+        get => GetValue(RotationProperty);
+        set => SetValue(RotationProperty, value);
+    }
+
+    /*
+    public bool IsPortrait
+    {
+        get => GetValue(IsPortraitProperty);
+        set => SetValue(IsPortraitProperty, value);
+    }
+    */
 
     public ExceptionViewModel? Exception
     {

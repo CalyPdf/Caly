@@ -71,6 +71,20 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isPasswordProtected;
 
+    [ObservableProperty] private Range? _visiblePages;
+
+    [ObservableProperty] private Range? _realisedPages;
+
+    partial void OnVisiblePagesChanged(Range? oldValue, Range? newValue)
+    {
+        System.Diagnostics.Debug.WriteLine($"Visible Pages: '{oldValue}' -> '{newValue}'");
+    }
+
+    partial void OnRealisedPagesChanged(Range? oldValue, Range? newValue)
+    {
+        System.Diagnostics.Debug.WriteLine($"Realised Pages: '{oldValue}' -> '{newValue}'");
+    }
+
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
     /// </summary>
@@ -281,7 +295,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
             }
 
             return pageCount;
-        }, token);
+        }, combinedCts.Token);
 
         return WaitOpenAsync;
     }
