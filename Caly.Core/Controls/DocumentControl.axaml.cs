@@ -25,7 +25,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Caly.Core.Events;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services;
@@ -68,22 +67,22 @@ public sealed class DocumentControl : CalyTemplatedControl
     /// Defines the <see cref="SelectedPageIndex"/> property. Starts at 1.
     /// </summary>
     public static readonly StyledProperty<int?> SelectedPageIndexProperty =
-        AvaloniaProperty.Register<DocumentControl, int?>(nameof(SelectedPageIndex), null,
+        AvaloniaProperty.Register<DocumentControl, int?>(nameof(SelectedPageIndex),
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="VisiblePages"/> property. Starts at 1.
     /// </summary>
     public static readonly StyledProperty<Range?> VisiblePagesProperty =
-        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(VisiblePages), defaultBindingMode: BindingMode.TwoWay);
-            //defaultBindingMode: BindingMode.OneWayToSource);
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(VisiblePages),
+            defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="RealisedPages"/> property. Starts at 1.
     /// </summary>
     public static readonly StyledProperty<Range?> RealisedPagesProperty =
-        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(RealisedPages), defaultBindingMode: BindingMode.TwoWay);
-            //defaultBindingMode: BindingMode.OneWayToSource);
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(RealisedPages),
+            defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="SelectedBookmark"/> property.

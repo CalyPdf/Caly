@@ -29,14 +29,12 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
-using Caly.Core.Events;
 using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using Tabalonia.Controls;
 
@@ -49,7 +47,7 @@ namespace Caly.Core.Controls;
 [TemplatePart("PART_LayoutTransformControl", typeof(LayoutTransformControl))]
 public sealed class PageItemsControl : ItemsControl
 {
-    private const double _zoomFactor = 1.1;
+    private const double ZoomFactor = 1.1;
 
     private bool _isSettingPageVisibility = false;
     private bool _isZooming = false;
@@ -62,6 +60,7 @@ public sealed class PageItemsControl : ItemsControl
     {
         // On Windows desktop, 0 is enough
         // Need to test other platforms
+        // https://api-docs.avaloniaui.net/docs/P_Avalonia_Controls_VirtualizingStackPanel_CacheLength
         CacheLength = 0
     });
 
@@ -636,19 +635,192 @@ public sealed class PageItemsControl : ItemsControl
 
         return false;
     }
-    
+
+    private Range? _visiblePages = null;
+
     private void UpdatePagesVisibility()
     {
-        /*
-         * TODO - Refactor: We do way too many checks when jumping to a page (GoToPage).
-         * The visible pages will always be between 'firstPageRealisedIndex' and 'lastPageRealisedIndex'.
-         * Starting from 'SelectedPageIndex' is correct for simple scrolling. But when jumping to a page,
-         * 'SelectedPageIndex' might not be between 'firstPageRealisedIndex' and 'lastPageRealisedIndex'.
-         * Starting 'SelectedPageIndex' will cause unnecessary checks. In this case, after having set the
-         * visible area to null for all visible pages, we should start from either 'firstPageRealisedIndex'
-         * or 'lastPageRealisedIndex'.
-         */
+        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {DataContext as DocumentViewModel}");
 
+        // Exit early if the view is unstable (e.g., user interacting)
+        if (_isSettingPageVisibility || _isTabDragging || _isZooming)
+        {
+            return;
+        }
+
+        if (LayoutTransform is null || Scroll is null ||
+            Scroll.Viewport.IsEmpty() || ItemsView.Count == 0 || !HasRealisedItems())
+        {
+            return;
+        }
+
+        Debug.AssertIsNullOrScale(LayoutTransform.LayoutTransform?.Value);
+
+        // Compute viewport in document coordinates
+        double invScale = 1.0 / (LayoutTransform.LayoutTransform?.Value.M11 ?? 1.0);
+        Rect viewport = Scroll.GetViewportRect().TransformToAABB(Matrix.CreateScale(invScale, invScale));
+
+        int firstRealisedIndex = GetMinPageIndex();
+        int lastRealisedIndex = GetMaxPageIndex();
+        int startIndex = SelectedPageIndex.GetValueOrDefault() - 1;
+
+        // Adjust start if previous visible range is outdated
+        if (_visiblePages is { } prev && (prev.Start.Value < firstRealisedIndex + 1 || prev.End.Value > lastRealisedIndex + 1))
+        {
+            // Previous visible pages are out of the realised pages.
+            // The previous visible pages were marked as not visible,
+            // on container clearing.
+            // Start from first realised page.
+            startIndex = firstRealisedIndex;
+        }
+
+        bool needMoreChecks = true;
+        bool wasVisible = false;
+        double maxOverlap = double.MinValue;
+        int mostVisibleIndex = -1;
+
+        bool CheckPage(int index, out bool visible)
+        {
+            visible = false;
+            if (ContainerFromIndex(index) is not PageItem page)
+            {
+                return !wasVisible; // Skip unrealised pages but stop after last visible one.
+            }
+
+            if (!needMoreChecks || page.Bounds.IsEmpty())
+            {
+                page.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+                return wasVisible;
+            }
+
+            var bounds = GetAlignedBounds(page);
+            if (!OverlapsHeight(viewport.Top, viewport.Bottom, bounds.Top, bounds.Bottom))
+            {
+                page.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+                needMoreChecks = !wasVisible;
+                return true;
+            }
+
+            var intersect = bounds.Intersect(viewport);
+            double overlapArea = intersect.Height * intersect.Width;
+            if (overlapArea <= 0)
+            {
+                page.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+                needMoreChecks = !wasVisible;
+                return true;
+            }
+
+            if (overlapArea > maxOverlap)
+            {
+                maxOverlap = overlapArea;
+                mostVisibleIndex = index;
+            }
+
+            visible = true;
+            page.SetCurrentValue(PageItem.VisibleAreaProperty, ComputeVisibleArea(page, intersect));
+            return true;
+        }
+
+        // Check visibility starting from current selection, then forward and backward.
+        CheckPage(startIndex, out bool selectedVisible);
+
+        int firstVisibleIndex = selectedVisible ? startIndex : -1;
+        int lastVisibleIndex = selectedVisible ? startIndex : -1;
+
+        wasVisible = selectedVisible;
+        for (int i = startIndex + 1; i <= lastRealisedIndex && CheckPage(i, out bool visible); ++i)
+        {
+            if (visible)
+            {
+                lastVisibleIndex = i;
+                if (!wasVisible)
+                {
+                    firstVisibleIndex = i;
+                }
+            }
+
+            wasVisible = visible;
+        }
+
+        wasVisible = selectedVisible;
+        needMoreChecks = true;
+        for (int i = startIndex - 1; i >= firstRealisedIndex && CheckPage(i, out bool visible); --i)
+        {
+            if (visible)
+            {
+                firstVisibleIndex = i;
+                if (lastVisibleIndex == -1)
+                {
+                    lastVisibleIndex = i;
+                }
+            }
+
+            wasVisible = visible;
+        }
+
+        // Update bound properties
+        SetCurrentValue(RealisedPagesProperty, new Range(firstRealisedIndex + 1, lastRealisedIndex + 2));
+        _visiblePages = new Range(firstVisibleIndex + 1, lastVisibleIndex + 2);
+        SetCurrentValue(VisiblePagesProperty, _visiblePages);
+
+        // Auto-select the page with the largest overlap
+        if (mostVisibleIndex >= 0 && SelectedPageIndex != mostVisibleIndex + 1)
+        {
+            _isSettingPageVisibility = true;
+            try
+            {
+                SetCurrentValue(SelectedPageIndexProperty, mostVisibleIndex + 1);
+            }
+            finally
+            {
+                _isSettingPageVisibility = false;
+            }
+        }
+
+#if DEBUG
+        foreach (var item in Items.OfType<PageViewModel>())
+        {
+            if (item.PageNumber >= _visiblePages.Value.Start.Value && item.PageNumber < _visiblePages.Value.End.Value)
+            {
+                System.Diagnostics.Debug.Assert(item.IsPageVisible);
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(!item.IsPageVisible);
+            }
+        }
+#endif
+    }
+
+    private static Rect GetAlignedBounds(PageItem page)
+    {
+        var bounds = page.Bounds;
+        if (bounds.Height == 0) return bounds;
+
+        double expectedWidth = page.Width;
+        if (Math.Abs(bounds.Width - expectedWidth) > double.Epsilon)
+        {
+            double offset = (bounds.Width - expectedWidth) / 2.0;
+            bounds = new Rect(bounds.X + offset, bounds.Y, expectedWidth, bounds.Height);
+        }
+        return bounds;
+    }
+
+    private static Rect ComputeVisibleArea(PageItem page, Rect visible)
+    {
+        visible = visible.Translate(new Vector(-page.Bounds.Left, -page.Bounds.Top));
+        return page.Rotation switch
+        {
+            90 => new Rect(visible.Y, page.Bounds.Width - visible.Right, visible.Height, visible.Width),
+            180 => new Rect(page.Bounds.Width - visible.Right, page.Bounds.Height - visible.Bottom, visible.Width, visible.Height),
+            270 => new Rect(page.Bounds.Height - visible.Bottom, visible.X, visible.Height, visible.Width),
+            _ => visible
+        };
+    }
+
+    /*
+    private void UpdatePagesVisibility()
+    {
         System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {DataContext as DocumentViewModel}");
 
         if (_isSettingPageVisibility || _isTabDragging)
@@ -698,6 +870,7 @@ public sealed class PageItemsControl : ItemsControl
         
         bool CheckSetPageVisibility(int p, out bool isPageVisible)
         {
+            System.Diagnostics.Debug.WriteLine($"Checking visibility for page {p + 1}.");
             isPageVisible = false;
 
             if (ContainerFromIndex(p) is not PageItem cp)
@@ -817,12 +990,27 @@ public sealed class PageItemsControl : ItemsControl
             return true;
         }
 
-        // Check current page visibility
-        int startIndex = SelectedPageIndex.HasValue ? SelectedPageIndex.Value - 1 : 0; // Switch from one-indexed to zero-indexed
-        CheckSetPageVisibility(startIndex, out bool isSelectedPageVisible);
-
         int firstPageRealisedIndex = GetMinPageIndex();
         int lastPageRealisedIndex = GetMaxPageIndex(); // Exclusive
+
+        // Check current page visibility
+        int startIndex = SelectedPageIndex.HasValue ? SelectedPageIndex.Value - 1 : 0; // Switch from one-indexed to zero-indexed
+
+        if (_visiblePages.HasValue)
+        {
+            if (_visiblePages.Value.Start.Value < firstPageRealisedIndex + 1 ||
+                _visiblePages.Value.End.Value > lastPageRealisedIndex + 1)
+            {
+                // Previous visible pages are out of realised pages.
+                // The previous visible pages were marked as not visible,
+                // on container clearing.
+                // Start from first realised page.
+                startIndex = firstPageRealisedIndex;
+            }
+        }
+
+        CheckSetPageVisibility(startIndex, out bool isSelectedPageVisible);
+
         int firstPageVisibleIndex = -1;
         int lastPageVisibleIndex = -1;
 
@@ -877,7 +1065,8 @@ public sealed class PageItemsControl : ItemsControl
         }
 
         SetCurrentValue(RealisedPagesProperty, new Range(firstPageRealisedIndex + 1, lastPageRealisedIndex + 2));
-        SetCurrentValue(VisiblePagesProperty, new Range(firstPageVisibleIndex + 1, lastPageVisibleIndex + 2));
+        _visiblePages = new Range(firstPageVisibleIndex + 1, lastPageVisibleIndex + 2);
+        SetCurrentValue(VisiblePagesProperty, _visiblePages);
 
         indexMaxOverlap++; // Switch to base 1 indexing
 
@@ -893,7 +1082,20 @@ public sealed class PageItemsControl : ItemsControl
                 _isSettingPageVisibility = false;
             }
         }
+
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine("#### Start checking pages visibility.");
+        foreach (var item in Items.OfType<PageViewModel>())
+        {
+            if (item.IsPageVisible)
+            {
+                System.Diagnostics.Debug.WriteLine($"Page {item.PageNumber} is visible.");
+            }
+        }
+        System.Diagnostics.Debug.WriteLine("#### End  checking pages visibility.");
+#endif
     }
+    */
 
     private static double Overlap(double top1, double bottom1, double top2, double bottom2)
     {
@@ -1094,7 +1296,7 @@ public sealed class PageItemsControl : ItemsControl
         try
         {
             _isZooming = true;
-            double dZoom = Math.Round(Math.Pow(_zoomFactor, e.Delta.Y), 4); // If IsScrollInertiaEnabled = false, Y is only 1 or -1
+            double dZoom = Math.Round(Math.Pow(ZoomFactor, e.Delta.Y), 4); // If IsScrollInertiaEnabled = false, Y is only 1 or -1
             ZoomToInternal(dZoom, e.GetPosition(LayoutTransform));
             SetCurrentValue(ZoomLevelProperty, LayoutTransform.LayoutTransform?.Value.M11);
         }
