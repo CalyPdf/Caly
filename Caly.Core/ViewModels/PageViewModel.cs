@@ -71,8 +71,6 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
 
     [ObservableProperty] private int _pageNumber;
 
-    [ObservableProperty] private bool _isPagePrepared;
-
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsPageVisible))]
     private Rect? _visibleArea;
 

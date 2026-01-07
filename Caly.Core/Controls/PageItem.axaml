@@ -86,6 +86,7 @@
 
 								<controls:SkiaPdfPageControl Picture="{Binding PdfPicture}"
 															 VisibleArea="{Binding VisibleArea}"
+															 IsPageVisible="{Binding IsPageVisible}"
 															 HorizontalAlignment="Stretch"
 															 VerticalAlignment="Stretch"/>
 

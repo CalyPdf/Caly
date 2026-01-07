@@ -156,6 +156,12 @@ namespace Caly.Core.Controls;
             AvaloniaProperty.Register<SkiaPdfPageControl, Rect?>(nameof(VisibleArea));
 
         /// <summary>
+        /// Defines the <see cref="IsPageVisible"/> property.
+        /// </summary>
+        public static readonly StyledProperty<bool> IsPageVisibleProperty =
+            AvaloniaProperty.Register<SkiaPdfPageControl, bool>(nameof(IsPageVisible));
+
+        /// <summary>
         /// Gets or sets the <see cref="SKPicture"/> picture.
         /// </summary>
         [Content]
@@ -171,11 +177,19 @@ namespace Caly.Core.Controls;
             set => SetValue(VisibleAreaProperty, value);
         }
 
+
+        public bool IsPageVisible
+        {
+            get => GetValue(IsPageVisibleProperty);
+            set => SetValue(IsPageVisibleProperty, value);
+        }
+
+
         static SkiaPdfPageControl()
         {
             ClipToBoundsProperty.OverrideDefaultValue<SkiaPdfPageControl>(true);
 
-            AffectsRender<SkiaPdfPageControl>(PictureProperty);
+            AffectsRender<SkiaPdfPageControl>(PictureProperty, IsPageVisibleProperty);
             AffectsMeasure<SkiaPdfPageControl>(PictureProperty);
         }
 

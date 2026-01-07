@@ -77,12 +77,12 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     partial void OnVisiblePagesChanged(Range? oldValue, Range? newValue)
     {
-        System.Diagnostics.Debug.WriteLine($"Visible Pages: '{oldValue}' -> '{newValue}'");
+        System.Diagnostics.Debug.WriteLine($"Visible Pages: {this} '{oldValue}' -> '{newValue}'");
     }
 
     partial void OnRealisedPagesChanged(Range? oldValue, Range? newValue)
     {
-        System.Diagnostics.Debug.WriteLine($"Realised Pages: '{oldValue}' -> '{newValue}'");
+        System.Diagnostics.Debug.WriteLine($"Realised Pages: {this} '{oldValue}' -> '{newValue}'");
     }
 
     /// <summary>
@@ -350,6 +350,28 @@ public sealed partial class DocumentViewModel : ViewModelBase
                 Pages.Add(newPage);
             }
         }), _cts.Token);
+    }
+
+    [RelayCommand]
+    private void RefreshPages()
+    {
+        System.Diagnostics.Debug.WriteLine($"MyPageAction - Visible Pages: {this} '{VisiblePages}' '{RealisedPages}'.");
+        if (!VisiblePages.HasValue)
+        {
+            return;
+        }
+
+        int start = VisiblePages.Value.Start.Value;
+        int end = VisiblePages.Value.End.Value;
+        for (int p = start; p < end; p++)
+        {
+            if (p < 1 || p > Pages.Count)
+            {
+                continue;
+            }
+            System.Diagnostics.Debug.WriteLine($" - Page {p}");
+            App.Messenger.Send(new LoadPageMessage(Pages[p - 1]));
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]

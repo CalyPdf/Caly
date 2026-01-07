@@ -29,13 +29,12 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
-using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Input;
 using Tabalonia.Controls;
 
 namespace Caly.Core.Controls;
@@ -114,7 +113,15 @@ public sealed class PageItemsControl : ItemsControl
     /// </summary>
     public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1,
         defaultBindingMode: BindingMode.TwoWay);
-    
+
+    public static readonly StyledProperty<ICommand?> RefreshPagesProperty = AvaloniaProperty.Register<PageItemsControl, ICommand?>(nameof(RefreshPages));
+
+    public ICommand? RefreshPages
+    {
+        get => GetValue(RefreshPagesProperty);
+        set => SetValue(RefreshPagesProperty, value);
+    }
+
     private ScrollViewer? _scroll;
     private LayoutTransformControl? _layoutTransform;
     private TabsControl? _tabsControl;
@@ -239,10 +246,14 @@ public sealed class PageItemsControl : ItemsControl
         {
             pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
 
+            /*
+            Command?.Execute(null);
+
             if (pageItem.DataContext is PageViewModel vm) // TODO - To remove
             {
                 App.Messenger.Send(new LoadPageMessage(vm));
             }
+            */
         }
     }
 
@@ -258,10 +269,15 @@ public sealed class PageItemsControl : ItemsControl
         if (pageItem.VisibleArea.HasValue)
         {
             pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+
+            /*
+            Command?.Execute(null);
+
             if (pageItem.DataContext is PageViewModel vm) // TODO - To remove
             {
                 App.Messenger.Send(new UnloadPageMessage(vm));
             }
+            */
         }
         else
         {
@@ -506,10 +522,14 @@ public sealed class PageItemsControl : ItemsControl
         {
             pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
 
+            /*
+            Command?.Execute(null);
+
             if (pageItem.DataContext is PageViewModel vm) // TODO - To remove
             {
                 App.Messenger.Send(new LoadPageMessage(vm));
             }
+            */
         }
 
         if (SelectedPageIndex.HasValue)
@@ -584,11 +604,15 @@ public sealed class PageItemsControl : ItemsControl
             {
                 System.Diagnostics.Debug.Assert(!vm.VisibleArea.HasValue);
 
+                /*
+                Command?.Execute(null);
+
                 if (vm.PdfPicture is not null)
                 {
                     // TODO - Check why this happens
                     App.Messenger.Send(new UnloadPageMessage(vm));
                 }
+                */
             }
         }
         else if (change.Property == DataContextProperty)
@@ -759,9 +783,27 @@ public sealed class PageItemsControl : ItemsControl
         }
 
         // Update bound properties
-        SetCurrentValue(RealisedPagesProperty, new Range(firstRealisedIndex + 1, lastRealisedIndex + 2));
-        _visiblePages = new Range(firstVisibleIndex + 1, lastVisibleIndex + 2);
-        SetCurrentValue(VisiblePagesProperty, _visiblePages);
+        if (firstRealisedIndex == -1 || lastRealisedIndex == -1)
+        {
+            SetCurrentValue(RealisedPagesProperty, null);
+        }
+        else
+        {
+            SetCurrentValue(RealisedPagesProperty, new Range(firstRealisedIndex + 1, lastRealisedIndex + 2));
+        }
+
+        Range? currentVisiblePages = null;
+        if (firstVisibleIndex != -1 && lastVisibleIndex != -1) // No visible pages
+        {
+            currentVisiblePages = new Range(firstVisibleIndex + 1, lastVisibleIndex + 2);
+        }
+
+        if (!_visiblePages.HasValue || !_visiblePages.Value.Equals(currentVisiblePages))
+        {
+            _visiblePages = currentVisiblePages;
+            SetCurrentValue(VisiblePagesProperty, _visiblePages);
+            RefreshPages?.Execute(null);
+        }
 
         // Auto-select the page with the largest overlap
         if (mostVisibleIndex >= 0 && SelectedPageIndex != mostVisibleIndex + 1)
@@ -778,15 +820,18 @@ public sealed class PageItemsControl : ItemsControl
         }
 
 #if DEBUG
-        foreach (var item in Items.OfType<PageViewModel>())
+        if (_visiblePages.HasValue)
         {
-            if (item.PageNumber >= _visiblePages.Value.Start.Value && item.PageNumber < _visiblePages.Value.End.Value)
+            foreach (var item in Items.OfType<PageViewModel>())
             {
-                System.Diagnostics.Debug.Assert(item.IsPageVisible);
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(!item.IsPageVisible);
+                if (item.PageNumber >= _visiblePages.Value.Start.Value && item.PageNumber < _visiblePages.Value.End.Value)
+                {
+                    System.Diagnostics.Debug.Assert(item.IsPageVisible);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(!item.IsPageVisible);
+                }
             }
         }
 #endif

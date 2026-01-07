@@ -11,6 +11,7 @@
 
 	<ControlTheme x:Key="{x:Type controls:DocumentControl}" TargetType="controls:DocumentControl" x:DataType="vm:DocumentViewModel">
 		<Setter Property="Exception" Value="{Binding Exception}"/>
+		<Setter Property="RefreshPages" Value="{Binding RefreshPagesCommand}"/>
 		<Setter Property="SelectedPageIndex" Value="{Binding SelectedPageIndex, Mode=TwoWay}"/>
         <Setter Property="RealisedPages" Value="{Binding RealisedPages}"/>
         <Setter Property="VisiblePages" Value="{Binding VisiblePages}"/>
@@ -56,7 +57,8 @@
 												  SelectedPageIndex="{TemplateBinding SelectedPageIndex, Mode=TwoWay}"
 												  ZoomLevel="{TemplateBinding ZoomLevel, Mode=TwoWay}"
                                                   RealisedPages="{TemplateBinding RealisedPages, Mode=TwoWay}"
-                                                  VisiblePages="{TemplateBinding VisiblePages, Mode=TwoWay}"/>
+                                                  VisiblePages="{TemplateBinding VisiblePages, Mode=TwoWay}"
+                                                  RefreshPages="{TemplateBinding RefreshPages}"/>
 
 				</Grid>
 			</ControlTemplate>

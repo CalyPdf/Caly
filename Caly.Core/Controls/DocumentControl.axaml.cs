@@ -33,6 +33,7 @@ using Caly.Core.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections;
+using System.Windows.Input;
 
 namespace Caly.Core.Controls;
 
@@ -98,6 +99,14 @@ public sealed class DocumentControl : CalyTemplatedControl
     /// </summary>
     public static readonly StyledProperty<IPageInteractiveLayerHandler?> PageInteractiveLayerHandlerProperty =
         AvaloniaProperty.Register<DocumentControl, IPageInteractiveLayerHandler?>(nameof(PageInteractiveLayerHandler));
+
+    public static readonly StyledProperty<ICommand?> RefreshPagesProperty = AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(RefreshPages));
+
+    public ICommand? RefreshPages
+    {
+        get => GetValue(RefreshPagesProperty);
+        set => SetValue(RefreshPagesProperty, value);
+    }
 
     public int PageCount
     {
