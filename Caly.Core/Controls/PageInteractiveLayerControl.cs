@@ -18,16 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Reactive.Disposables;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
+using System;
+using System.Reactive.Disposables;
 
 namespace Caly.Core.Controls;
 
@@ -176,15 +178,11 @@ public sealed class PageInteractiveLayerControl : Control
                 var pointerReleasedDisposable = this.GetObservable(PointerReleasedEvent, handledEventsToo: false)
                     .Subscribe(PageInteractiveLayerHandler.OnPointerReleased);
 
-                var pointerCaptureLostDisposable = this.GetObservable(PointerExitedEvent, handledEventsToo: true)
-                    .Subscribe(PageInteractiveLayerHandler.OnPointerExitedEvent);
-
                 _pointerDisposables = new CompositeDisposable(
                     pointerMovedDisposable,
                     pointerWheelChangedDisposable,
                     pointerPressedDisposable,
-                    pointerReleasedDisposable,
-                    pointerCaptureLostDisposable);
+                    pointerReleasedDisposable);
             }
         }
     }
@@ -193,5 +191,22 @@ public sealed class PageInteractiveLayerControl : Control
     {
         base.OnDetachedFromVisualTree(e);
         _pointerDisposables?.Dispose();
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+
+        SetDefaultCursor();
+        HideAnnotation();
+    }
+
+    private void HideAnnotation()
+    {
+        if (FlyoutBase.GetAttachedFlyout(this) is Flyout attachedFlyout)
+        {
+            attachedFlyout.Hide();
+            attachedFlyout.Content = null;
+        }
     }
 }

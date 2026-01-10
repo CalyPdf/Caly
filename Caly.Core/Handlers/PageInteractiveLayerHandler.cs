@@ -192,19 +192,6 @@ namespace Caly.Core.Handlers
             }
         }
 
-        public void OnPointerExitedEvent(PointerEventArgs e)
-        {
-            Debug.ThrowNotOnUiThread();
-            
-            if (e.Source is not PageInteractiveLayerControl control)
-            {
-                return;
-            }
-
-            control.SetDefaultCursor();
-            HideAnnotation(control);
-        }
-
 #if DEBUG
         Point? p1;
         Point? p2;
