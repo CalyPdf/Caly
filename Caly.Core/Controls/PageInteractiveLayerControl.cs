@@ -26,12 +26,12 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Caly.Core.Events;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using System;
 using System.Reactive.Disposables;
-using Caly.Core.Events;
 
 namespace Caly.Core.Controls;
 
@@ -265,12 +265,14 @@ public sealed class PageInteractiveLayerControl : Control
 
     public void HideAnnotation()
     {
-        if (FlyoutBase.GetAttachedFlyout(this) is Flyout attachedFlyout)
+        if (FlyoutBase.GetAttachedFlyout(this) is not Flyout attachedFlyout)
         {
+            return;
+        }
+
             attachedFlyout.Hide();
             attachedFlyout.Content = null;
         }
-    }
 
     /// <summary>
     /// Handle mouse hover over words, links or others
@@ -313,6 +315,52 @@ public sealed class PageInteractiveLayerControl : Control
         {
             SetDefaultCursor();
         }
+    }
+
+    public void HandleMultipleClick(PointerPressedEventArgs e, PdfWord word)
+    {
+        if (PdfTextLayer is null)
+        {
+            return;
+        }
+
+        PdfWord? startWord;
+        PdfWord? endWord;
+
+        if (e.ClickCount == 2)
+        {
+            // Select whole word
+            startWord = word;
+            endWord = word;
+        }
+        else if (e.ClickCount == 3)
+        {
+            // Select whole line
+            var block = PdfTextLayer.TextBlocks![word.TextBlockIndex];
+            var line = block.TextLines![word.TextLineIndex - block.TextLines[0].IndexInPage];
+
+            startWord = line.Words![0];
+            endWord = line.Words[^1];
+        }
+        else if (e.ClickCount == 4)
+        {
+            // Select whole paragraph
+            var block = PdfTextLayer.TextBlocks![word.TextBlockIndex];
+
+            startWord = block.TextLines![0].Words![0];
+            endWord = block.TextLines![^1].Words![^1];
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: Not handled, got {e.ClickCount} click(s).");
+            return;
+        }
+
+        ClearSelection();
+
+        PageTextSelectionChanged?.Invoke(this, new PageTextSelectionChangedEventArgs(PageNumber!.Value, startWord, endWord, true));
+        
+        System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: {startWord} -> {endWord}.");
     }
 
     internal bool TrySwitchCapture(PointerEventArgs e)

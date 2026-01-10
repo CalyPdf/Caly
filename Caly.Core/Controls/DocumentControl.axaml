@@ -20,6 +20,7 @@
 		<Setter Property="SelectedTextSearchResult" Value="{Binding SelectedTextSearchResult, Mode=OneWay}"/>
 		<Setter Property="UseLayoutRounding" Value="True"/>
 		<Setter Property="ClearSelection" Value="{Binding ClearSelectionCommand}"/>
+		<Setter Property="UpdateSelection" Value="{Binding UpdateSelectionCommand}"/>
 
 		<Setter Property="ContextFlyout">
 			<MenuFlyout>

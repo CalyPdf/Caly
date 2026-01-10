@@ -329,55 +329,6 @@ namespace Caly.Core.Handlers
                             (Selection.AnchorOffset != -1 && Selection.FocusOffset != -1)); // Selection within same word
         }
 
-        private void HandleMultipleClick(PageInteractiveLayerControl control, PointerPressedEventArgs e, PdfWord word)
-        {
-            if (control.PdfTextLayer is null || control.DataContext is not PageViewModel vm)
-            {
-                return;
-            }
-
-            PdfWord? startWord;
-            PdfWord? endWord;
-
-            if (e.ClickCount == 2)
-            {
-                // Select whole word
-                startWord = word;
-                endWord = word;
-            }
-            else if (e.ClickCount == 3)
-            {
-                // Select whole line
-                var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
-                var line = block.TextLines![word.TextLineIndex - block.TextLines[0].IndexInPage];
-
-                startWord = line.Words![0];
-                endWord = line.Words[^1];
-            }
-            else if (e.ClickCount == 4)
-            {
-                // Select whole paragraph
-                var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
-
-                startWord = block.TextLines![0].Words![0];
-                endWord = block.TextLines![^1].Words![^1];
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: Not handled, got {e.ClickCount} click(s).");
-                return;
-            }
-
-            control.ClearSelection();
-
-            int pageNumber = control.PageNumber!.Value;
-            Selection.Start(pageNumber, startWord);
-            Selection.Extend(pageNumber, endWord);
-            Selection.UpdatePageWordsInRange(vm);
-
-            System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: {startWord} -> {endWord}.");
-        }
-
         public void OnPointerPressed(PointerPressedEventArgs e)
         {
             Debug.ThrowNotOnUiThread();
@@ -411,12 +362,12 @@ namespace Caly.Core.Handlers
                 if (word is not null && Selection.IsWordSelected(control.PageNumber!.Value, word))
                 {
                     clearSelection = e.ClickCount == 1; // Clear selection if single click
-                    HandleMultipleClick(control, e, word); // TODO - we pass 1 click here too
+                    control.HandleMultipleClick(e, word); // TODO - we pass 1 click here too
                 }
                 else if (word is not null && e.ClickCount == 2)
                 {
                     // TODO - do better multiple click selection
-                    HandleMultipleClick(control, e, word);
+                    control.HandleMultipleClick(e, word);
                 }
                 else
                 {

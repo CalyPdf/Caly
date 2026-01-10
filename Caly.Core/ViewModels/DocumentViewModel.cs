@@ -23,6 +23,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Caly.Core.Events;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services;
@@ -413,6 +414,26 @@ public sealed partial class DocumentViewModel : ViewModelBase
         for (int pageNumber = start; pageNumber <= end; ++pageNumber)
         {
             Pages[pageNumber - 1].FlagInteractiveLayerChanged();
+        }
+    }
+
+    [RelayCommand]
+    public void UpdateSelection(PageTextSelectionChangedEventArgs e)
+    {
+        if (PageInteractiveLayerHandler is null)
+        {
+            return;
+        }
+
+        if (e.IsMultipleClick)
+        {
+            PageInteractiveLayerHandler.Selection.Start(e.PageNumber, e.StartWord);
+            PageInteractiveLayerHandler.Selection.Extend(e.PageNumber, e.EndWord);
+            PageInteractiveLayerHandler.Selection.UpdatePageWordsInRange(Pages[e.PageNumber - 1]);
+        }
+        else
+        {
+            // TODO
         }
     }
 }

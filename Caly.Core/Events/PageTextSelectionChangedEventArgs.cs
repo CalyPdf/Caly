@@ -1,35 +1,29 @@
 ﻿using System;
+using Caly.Pdf.Models;
 
 namespace Caly.Core.Events
 {
     public class PageTextSelectionChangedEventArgs : EventArgs
     {
-        public PageTextSelectionChangedEventArgs(int pageNumber, int? startIndex, int? endIndex)
+        public PageTextSelectionChangedEventArgs(int pageNumber, PdfWord? startWord, PdfWord? endWord, bool isMultipleClick = false)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
-
-            if (startIndex.HasValue)
-            {
-                ArgumentOutOfRangeException.ThrowIfLessThan(startIndex.Value, 0);
-            }
-
-            if (endIndex.HasValue)
-            {
-                ArgumentOutOfRangeException.ThrowIfLessThan(endIndex.Value, 0);
-            }
-
+            
             PageNumber = pageNumber;
-            StartIndex = startIndex;
-            EndIndex = endIndex;
+            StartWord = startWord;
+            EndWord = endWord;
+            IsMultipleClick = isMultipleClick;
         }
 
         public int PageNumber { get; }
 
-        public int? StartIndex { get; }
+        public PdfWord? StartWord { get; }
 
-        public int? EndIndex { get; }
+        public PdfWord? EndWord { get; }
 
-        public bool IsReset => !StartIndex.HasValue && !EndIndex.HasValue;
+        public bool IsMultipleClick { get; }
+
+        public bool IsReset => StartWord is null && EndWord is null;
     }
 
     public sealed class PageTextSelectionResetEventArgs : PageTextSelectionChangedEventArgs

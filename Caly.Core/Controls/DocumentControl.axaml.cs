@@ -141,6 +141,15 @@ public sealed class DocumentControl : CalyTemplatedControl
         set => SetValue(ClearSelectionProperty, value);
     }
 
+    public static readonly StyledProperty<ICommand?> UpdateSelectionProperty =
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(UpdateSelection));
+
+    public ICommand? UpdateSelection
+    {
+        get => GetValue(UpdateSelectionProperty);
+        set => SetValue(UpdateSelectionProperty, value);
+    }
+
     public DocumentControl()
     {
 #if DEBUG
@@ -250,8 +259,8 @@ public sealed class DocumentControl : CalyTemplatedControl
             ClearSelection?.Execute(null);
             return;
         }
-        
-        // TODO - Update selection
+
+        UpdateSelection?.Execute(e);
     }
 
     /// <summary>
