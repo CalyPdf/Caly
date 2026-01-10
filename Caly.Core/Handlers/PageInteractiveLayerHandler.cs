@@ -72,7 +72,7 @@ namespace Caly.Core.Handlers
             }
 
             // Update selection
-            Selection.SelectWordsInRange(page);
+            Selection.UpdatePageWordsInRange(page);
 
             // Update search results
             var searchRange = _searchIndexResults[page.PageNumber - 1];
@@ -316,7 +316,7 @@ namespace Caly.Core.Handlers
 
             // Always set the focus word
             Selection.Extend(control.PageNumber!.Value, word, partialSelectLoc);
-            Selection.SelectWordsInRange(cvm);
+            Selection.UpdatePageWordsInRange(cvm);
 
             // Check for change of focus page
             if (focusPageIndex != -1 && focusPageIndex != Selection.FocusPageIndex)
@@ -334,7 +334,7 @@ namespace Caly.Core.Handlers
                 int end = Math.Max(focusPageIndex, Selection.FocusPageIndex);
                 for (int i = start; i <= end; ++i) // TODO - do not always do end page, only if deselecting
                 {
-                    Selection.SelectWordsInRange(docVm.Pages[i - 1]);
+                    Selection.UpdatePageWordsInRange(docVm.Pages[i - 1]);
                 }
             }
 
@@ -389,7 +389,7 @@ namespace Caly.Core.Handlers
             int pageNumber = control.PageNumber!.Value;
             Selection.Start(pageNumber, startWord);
             Selection.Extend(pageNumber, endWord);
-            Selection.SelectWordsInRange(vm);
+            Selection.UpdatePageWordsInRange(vm);
 
             System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: {startWord} -> {endWord}.");
         }

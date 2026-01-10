@@ -23,7 +23,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Caly.Core.Controls;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services;

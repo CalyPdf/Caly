@@ -23,14 +23,17 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Utilities;
+using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
 using System;
 using System.Reactive.Disposables;
-using Avalonia.Layout;
+using Avalonia.LogicalTree;
+using Caly.Core.Models;
 
 namespace Caly.Core.Controls;
 
@@ -42,6 +45,7 @@ public sealed class PageInteractiveLayerControl : Control
     // https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Controls/Primitives/TextSelectionCanvas.cs#L62
     // Check caret handle
 
+    private DocumentControl? _documentControl;
     private CompositeDisposable? _pointerDisposables;
 
     public static readonly StyledProperty<PdfTextLayer?> PdfTextLayerProperty =
@@ -61,7 +65,7 @@ public sealed class PageInteractiveLayerControl : Control
     /// Defines the <see cref="VisibleArea"/> property.
     /// </summary>
     public static readonly StyledProperty<Rect?> VisibleAreaProperty =
-        AvaloniaProperty.Register<SkiaPdfPageControl, Rect?>(nameof(VisibleArea));
+        AvaloniaProperty.Register<PageInteractiveLayerControl, Rect?>(nameof(VisibleArea));
 
     public PdfTextLayer? PdfTextLayer
     {
@@ -188,6 +192,13 @@ public sealed class PageInteractiveLayerControl : Control
         }
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _documentControl = this.FindAncestorOfType<DocumentControl>() ??
+                           throw new NullReferenceException($"{typeof(DocumentControl)} not found.");
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
@@ -206,10 +217,7 @@ public sealed class PageInteractiveLayerControl : Control
     {
         Debug.ThrowNotOnUiThread();
 
-        DocumentControl documentControl = this.FindAncestorOfType<DocumentControl>() ??
-                                          throw new NullReferenceException($"{typeof(DocumentControl)} not found.");
-
-        documentControl.ClearSelection?.Execute(null);
+        _documentControl?.ClearSelection?.Execute(null);
     }
 
     public void ShowAnnotation(PdfAnnotation annotation)

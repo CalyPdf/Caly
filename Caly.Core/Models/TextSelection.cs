@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia;
 using Avalonia.Threading;
 using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Caly.Core.Models
 {
@@ -261,22 +261,9 @@ namespace Caly.Core.Models
         }
 
         /// <summary>
-        /// Clear selected words for the page, but do not reset selection information.
-        /// <para>Starts at 1.</para>
-        /// </summary>
-        public void ClearSelectedWordsForPage(int pageNumber)
-        {
-#if DEBUG
-            System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
-
-            _selectedWords[pageNumber - 1] = null;
-        }
-
-        /// <summary>
         /// Clear selected words in the document, but do not reset selection information.
         /// </summary>
-        public void ClearSelectedWords()
+        private void ClearSelectedWords()
         {
             for (int p = 0; p < _selectedWords.Length; ++p)
             {
@@ -336,31 +323,35 @@ namespace Caly.Core.Models
             return word.IndexInPage >= AnchorWord!.IndexInPage && word.IndexInPage <= FocusWord!.IndexInPage;
         }
 
-        public void SelectWordsInRange(PageViewModel pageViewModel)
+        public void UpdatePageWordsInRange(PageViewModel pageViewModel)
         {
             if (pageViewModel.PdfTextLayer is null || pageViewModel.PdfTextLayer.Count == 0)
             {
                 return;
             }
 
-            SelectWordsInRange(pageViewModel.PdfTextLayer, pageViewModel.PageNumber);
+            UpdatePageWordsInRange(pageViewModel.PdfTextLayer, pageViewModel.PageNumber);
             Dispatcher.UIThread.Invoke(pageViewModel.FlagInteractiveLayerChanged);
         }
 
         /// <summary>
         /// Select all the words that are between the current anchor word and focus word, after having checked for selection direction.
         /// </summary>
-        private void SelectWordsInRange(PdfTextLayer pdfTextLayer, int pageNumber)
+        private void UpdatePageWordsInRange(PdfTextLayer pdfTextLayer, int pageNumber)
         {
             if (!IsPageInSelection(pageNumber))
             {
-                ClearSelectedWordsForPage(pageNumber);
+#if DEBUG
+                System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
+#endif
+
+                _selectedWords[pageNumber - 1] = null;
                 return;
             }
 
             PdfWord? anchor = AnchorPageIndex == pageNumber ? AnchorWord : pdfTextLayer[GetFirstWordIndex()];
             PdfWord? focus = FocusPageIndex == pageNumber ? FocusWord : pdfTextLayer[GetLastWordIndex()];
-            SelectWordsInRange(pdfTextLayer, pageNumber, IsBackward ? focus : anchor, IsBackward ? anchor : focus);
+            UpdatePageWordsInRange(pdfTextLayer, pageNumber, IsBackward ? focus : anchor, IsBackward ? anchor : focus);
         }
 
         /// <summary>
@@ -370,7 +361,7 @@ namespace Caly.Core.Models
         /// <param name="pageNumber"></param>
         /// <param name="selectionStart">selection start word limit</param>
         /// <param name="selectionEnd">selection end word limit</param>
-        private void SelectWordsInRange(PdfTextLayer? control, int pageNumber, PdfWord? selectionStart, PdfWord? selectionEnd)
+        private void UpdatePageWordsInRange(PdfTextLayer? control, int pageNumber, PdfWord? selectionStart, PdfWord? selectionEnd)
         {
 #if DEBUG
             System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
@@ -382,24 +373,10 @@ namespace Caly.Core.Models
             }
             else
             {
-                SetSelectedWordsForPage(pageNumber, control.GetWords(selectionStart, selectionEnd!).ToArray());
+                _selectedWords[pageNumber - 1] = control.GetWords(selectionStart, selectionEnd!).ToArray();
             }
         }
 
-        /// <summary>
-        /// Set the selection for the given page.
-        /// </summary>
-        /// <param name="pageNumber">The page number, starts at 1.</param>
-        /// <param name="words">The words in the selection.</param>
-        public void SetSelectedWordsForPage(int pageNumber, IReadOnlyList<PdfWord> words)
-        {
-#if DEBUG
-            System.Diagnostics.Debug.Assert(pageNumber <= NumberOfPages);
-#endif
-
-            _selectedWords[pageNumber - 1] = words;
-        }
-        
         /// <summary>
         /// Check if the selection direction is forward or backward.<br/>
         /// Is the selection anchor word is before the focus word.
