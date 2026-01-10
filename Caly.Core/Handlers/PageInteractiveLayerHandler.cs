@@ -250,7 +250,7 @@ namespace Caly.Core.Handlers
             }
             else
             {
-                HandleMouseMoveOver(control, loc);
+                control.HandleMouseMoveOver(loc);
             }
         }
 
@@ -343,49 +343,6 @@ namespace Caly.Core.Handlers
             _isSelecting = Selection.IsValid &&
                            (Selection.AnchorWord != Selection.FocusWord || // Multiple words selected
                             (Selection.AnchorOffset != -1 && Selection.FocusOffset != -1)); // Selection within same word
-        }
-        
-        /// <summary>
-        /// Handle mouse hover over words, links or others
-        /// </summary>
-        private static void HandleMouseMoveOver(PageInteractiveLayerControl control, Point loc)
-        {
-            PdfAnnotation? annotation = control.PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
-
-            if (annotation is not null)
-            {
-                if (!string.IsNullOrEmpty(annotation.Content))
-                {
-                    control.ShowAnnotation(annotation);
-                }
-
-                if (annotation.IsInteractive)
-                {
-                    control.SetHandCursor();
-                    return;
-                }
-            }
-            else
-            {
-                control.HideAnnotation();
-            }
-
-            PdfWord? word = control.PdfTextLayer!.FindWordOver(loc.X, loc.Y);
-            if (word is not null)
-            {
-                if (control.PdfTextLayer.GetLine(word)?.IsInteractive == true)
-                {
-                    control.SetHandCursor();
-                }
-                else
-                {
-                    control.SetIbeamCursor();
-                }
-            }
-            else
-            {
-                control.SetDefaultCursor();
-            }
         }
 
         private void HandleMultipleClick(PageInteractiveLayerControl control, PointerPressedEventArgs e, PdfWord word)

@@ -257,4 +257,47 @@ public sealed class PageInteractiveLayerControl : Control
             attachedFlyout.Content = null;
         }
     }
+
+    /// <summary>
+    /// Handle mouse hover over words, links or others
+    /// </summary>
+    public void HandleMouseMoveOver(Point loc)
+    {
+        PdfAnnotation? annotation = PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
+
+        if (annotation is not null)
+        {
+            if (!string.IsNullOrEmpty(annotation.Content))
+            {
+                ShowAnnotation(annotation);
+            }
+
+            if (annotation.IsInteractive)
+            {
+                SetHandCursor();
+                return;
+            }
+        }
+        else
+        {
+            HideAnnotation();
+        }
+
+        PdfWord? word = PdfTextLayer!.FindWordOver(loc.X, loc.Y);
+        if (word is not null)
+        {
+            if (PdfTextLayer.GetLine(word)?.IsInteractive == true)
+            {
+                SetHandCursor();
+            }
+            else
+            {
+                SetIbeamCursor();
+            }
+        }
+        else
+        {
+            SetDefaultCursor();
+        }
+    }
 }
