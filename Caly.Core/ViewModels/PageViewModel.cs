@@ -47,7 +47,7 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
         return $"[{PdfService.FileName}] Page {PageNumber}";
     }
 
-    internal readonly IPdfService PdfService;
+    internal readonly IPdfDocumentService PdfService;
 
     [ObservableProperty] private PdfTextLayer? _pdfTextLayer;
 
@@ -128,7 +128,7 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     }
 #endif
 
-    public PageViewModel(int pageNumber, IPdfService pdfService)
+    public PageViewModel(int pageNumber, IPdfDocumentService pdfService)
     {
         ArgumentNullException.ThrowIfNull(pdfService?.PageInteractiveLayerHandler,
             nameof(pdfService.PageInteractiveLayerHandler));

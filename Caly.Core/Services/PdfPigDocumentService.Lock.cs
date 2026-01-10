@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 
 namespace Caly.Core.Services
 {
-    internal partial class PdfPigPdfService
+    internal partial class PdfPigDocumentService
     {
         // PdfPig only allow to read 1 page at a time for now
         // NB: Initial count set to 0 to make sure the document is opened before anything else starts.

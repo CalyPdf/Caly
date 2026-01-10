@@ -30,7 +30,7 @@ using SkiaSharp;
 
 namespace Caly.Core.Services
 {
-    internal sealed partial class PdfPigPdfService
+    internal sealed partial class PdfPigDocumentService
     {
         private readonly ConcurrentDictionary<int, PageViewModel> _bitmaps = new();
         

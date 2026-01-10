@@ -36,7 +36,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core.Services
 {
-    internal sealed partial class PdfDocumentsService : IPdfDocumentsService, IDisposable
+    internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerService, IAsyncDisposable
     {
         private sealed class PdfDocumentRecord
         {
@@ -49,6 +49,9 @@ namespace Caly.Core.Services
         private readonly IFilesService _filesService;
         private readonly IDialogService _dialogService;
         private readonly IClipboardService _clipboardService;
+
+        private readonly CancellationTokenSource _processDocumentsQueueCts = new();
+        private readonly Task _processDocumentsQueueTask;
 
         private readonly ChannelWriter<IStorageFile?> _channelWriter;
         private readonly ChannelReader<IStorageFile?> _channelReader;
@@ -76,6 +79,10 @@ namespace Caly.Core.Services
                     }
                 });
             }
+            catch (OperationCanceledException)
+            {
+
+            }
             catch (Exception e)
             {
                 // Critical error - can't open document anymore
@@ -86,7 +93,7 @@ namespace Caly.Core.Services
             }
         }
 
-        public PdfDocumentsService(Visual target, IFilesService filesService, IDialogService dialogService, IClipboardService clipboardService)
+        public PdfDocumentsManagerService(Visual target, IFilesService filesService, IDialogService dialogService, IClipboardService clipboardService)
         {
             Debug.ThrowNotOnUiThread();
 
@@ -111,7 +118,7 @@ namespace Caly.Core.Services
 
             RegisterMessagesHandlers();
 
-            _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
+            _processDocumentsQueueTask = Task.Run(() => ProcessDocumentsQueue(_processDocumentsQueueCts.Token));
         }
 
         public async Task OpenLoadDocument(CancellationToken cancellationToken)
@@ -289,10 +296,21 @@ namespace Caly.Core.Services
             return Convert.ToBase64String(Encoding.UTF8.GetBytes(path)).Replace('\\', '#');
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            // https://formatexception.com/2024/03/using-messenger-in-the-communitytoolkit-mvvm/
+            // TODO - Never reached
+
             App.Messenger.UnregisterAll(this);
+            try
+            {
+                await _processDocumentsQueueCts.CancelAsync();
+                await _processDocumentsQueueTask;
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e);
+            }
+            _processDocumentsQueueCts.Dispose();
         }
     }
 }

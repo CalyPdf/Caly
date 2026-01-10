@@ -28,7 +28,7 @@ using SkiaSharp.HarfBuzz;
 
 namespace Caly.Core.Services
 {
-    internal sealed partial class PdfPigPdfService
+    internal sealed partial class PdfPigDocumentService
     {
         private async Task<IRef<SKPicture>?> GetRenderPageAsync(int pageNumber, CancellationToken token)
         {

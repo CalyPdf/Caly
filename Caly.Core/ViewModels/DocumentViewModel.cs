@@ -52,10 +52,11 @@ public sealed partial class DocumentViewModel : ViewModelBase
 {
     public override string ToString()
     {
-        return _pdfService?.FileName ?? "FileName NOT SET";
+        return FileName ?? "FileName NOT SET";
     }
 
-    private readonly IPdfService _pdfService;
+    private readonly IPdfDocumentService _pdfDocumentService;
+    private readonly PdfPageService _pdfPageService;
     private readonly ISettingsService _settingsService;
 
     private readonly CancellationTokenSource _cts = new();
@@ -68,23 +69,19 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [ObservableProperty] private double _paneSize;
 
     [ObservableProperty] private int _selectedTabIndex;
-
+    
     [ObservableProperty] private bool _isPasswordProtected;
 
     [ObservableProperty] private Range? _visiblePages;
 
     [ObservableProperty] private Range? _realisedPages;
 
-    partial void OnVisiblePagesChanged(Range? oldValue, Range? newValue)
-    {
-        System.Diagnostics.Debug.WriteLine($"Visible Pages: {this} '{oldValue}' -> '{newValue}'");
-    }
+    [ObservableProperty] private int _pageCount;
 
-    partial void OnRealisedPagesChanged(Range? oldValue, Range? newValue)
-    {
-        System.Diagnostics.Debug.WriteLine($"Realised Pages: {this} '{oldValue}' -> '{newValue}'");
-    }
+    [ObservableProperty] private string? _fileName;
 
+    [ObservableProperty] private string? _fileSize;
+    
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
     /// </summary>
@@ -93,17 +90,15 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(GoToNextPageCommand))]
     private string _selectedPageIndexString = "1";
 
-    private int? _selectedPageIndex = null;
-
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
     /// </summary>
     public int? SelectedPageIndex
     {
-        get => _selectedPageIndex;
+        get;
         set
         {
-            if (!SetProperty(ref _selectedPageIndex, value))
+            if (!SetProperty(ref field, value))
             {
                 return;
             }
@@ -112,13 +107,21 @@ public sealed partial class DocumentViewModel : ViewModelBase
         }
     }
 
-    [ObservableProperty] private int _pageCount;
+    public bool IsActive
+    {
+        get;
+        set
+        {
+            if (!SetProperty(ref field, value))
+            {
+                return;
+            }
 
-    [ObservableProperty] private string? _fileName;
+            _pdfDocumentService.IsActive = value;
+        }
+    }
 
-    [ObservableProperty] private string? _fileSize;
-
-    public IPageInteractiveLayerHandler? PageInteractiveLayerHandler => _pdfService.PageInteractiveLayerHandler;
+    public IPageInteractiveLayerHandler? PageInteractiveLayerHandler => _pdfDocumentService.PageInteractiveLayerHandler;
 
     private readonly Lazy<Task> _loadPagesTask;
     public Task LoadPagesTask => _loadPagesTask.Value;
@@ -150,25 +153,27 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _buildSearchIndex = null!;
         _searchResultsSource = null!;
 
-        _pdfService = new PdfPigPdfService(new SearchValuesTextSearchService());
+        _pdfDocumentService = new PdfPigDocumentService(new SearchValuesTextSearchService());
         _settingsService = new JsonSettingsService(null!);
         _paneSize = 50;
 
-        IsPasswordProtected = _pdfService.IsPasswordProtected;
-        FileName = _pdfService.FileName;
-        LocalPath = _pdfService.LocalPath;
-        PageCount = _pdfService.NumberOfPages;
+        IsPasswordProtected = _pdfDocumentService.IsPasswordProtected;
+        FileName = _pdfDocumentService.FileName;
+        LocalPath = _pdfDocumentService.LocalPath;
+        PageCount = _pdfDocumentService.NumberOfPages;
     }
 #endif
 
-    public DocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
+    public DocumentViewModel(IPdfDocumentService pdfDocumentService, PdfPageService pdfPageService, ISettingsService settingsService)
     {
-        ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
+        ArgumentNullException.ThrowIfNull(pdfDocumentService, nameof(pdfDocumentService));
+        ArgumentNullException.ThrowIfNull(pdfPageService, nameof(pdfPageService));
         ArgumentNullException.ThrowIfNull(settingsService, nameof(settingsService));
 
-        System.Diagnostics.Debug.Assert(pdfService.NumberOfPages == 0);
+        System.Diagnostics.Debug.Assert(pdfDocumentService.NumberOfPages == 0);
 
-        _pdfService = pdfService;
+        _pdfDocumentService = pdfDocumentService;
+        _pdfPageService = pdfPageService;
         _settingsService = settingsService;
 
         _paneSize = _settingsService.GetSettings().PaneSize;
@@ -256,16 +261,6 @@ public sealed partial class DocumentViewModel : ViewModelBase
         });
     }
 
-    public void SetActive()
-    {
-        _pdfService.IsActive = true;
-    }
-
-    public void SetInactive()
-    {
-        _pdfService.IsActive = false;
-    }
-
     /// <summary>
     /// Open the pdf document.
     /// </summary>
@@ -276,33 +271,38 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         WaitOpenAsync = Task.Run(async () =>
         {
-            int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
+            int pageCount = await _pdfDocumentService.OpenDocument(storageFile, password, combinedCts.Token);
 
-            IsPasswordProtected = _pdfService.IsPasswordProtected;
-            FileName = _pdfService.FileName;
-            LocalPath = _pdfService.LocalPath;
+            IsPasswordProtected = _pdfDocumentService.IsPasswordProtected;
+            FileName = _pdfDocumentService.FileName;
+            LocalPath = _pdfDocumentService.LocalPath;
 
             if (pageCount == 0)
             {
                 return pageCount;
             }
 
-            PageCount = _pdfService.NumberOfPages;
+            PageCount = _pdfDocumentService.NumberOfPages;
 
-            if (_pdfService.FileSize.HasValue)
+            if (_pdfDocumentService.FileSize.HasValue)
             {
-                FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
+                FileSize = Helpers.FormatSizeBytes(_pdfDocumentService.FileSize.Value);
             }
 
             return pageCount;
-        }, combinedCts.Token);
+        }, combinedCts.Token)
+        .ContinueWith(s =>
+        {
+            combinedCts.Dispose();
+            return s.Result;
+        }, TaskContinuationOptions.ExecuteSynchronously);
 
         return WaitOpenAsync;
     }
 
     public void ClearAllThumbnails()
     {
-        _pdfService.ClearAllThumbnail();
+        _pdfDocumentService.ClearAllThumbnail();
     }
 
     internal async ValueTask CancelAsync()
@@ -318,29 +318,27 @@ public sealed partial class DocumentViewModel : ViewModelBase
             {
                 throw new Exception("Could not open password protected document.");
             }
-            else
-            {
-                throw new Exception("Cannot load pages because document has 0 pages.");
-            }
+
+            throw new Exception("Cannot load pages because document has 0 pages.");
         }
 
         await Task.Run((Func<Task?>)(async () =>
         {
             // Use 1st page size as default page size
-            var firstPage = new PageViewModel(1, _pdfService);
+            var firstPage = new PageViewModel(1, _pdfDocumentService);
             await firstPage.LoadPageSizeImmediate(_cts.Token);
 
             App.Messenger.Send(new LoadPageMessage(firstPage)); // Enqueue first page full loading
 
-            double defaultWidth = firstPage.Width * _pdfService.PpiScale;
-            double defaultHeight = firstPage.Height * _pdfService.PpiScale;
+            double defaultWidth = firstPage.Width * _pdfDocumentService.PpiScale;
+            double defaultHeight = firstPage.Height * _pdfDocumentService.PpiScale;
 
             Pages.Add(firstPage);
 
             for (int p = 2; p <= PageCount; p++)
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                var newPage = new PageViewModel(p, _pdfService)
+                var newPage = new PageViewModel(p, _pdfDocumentService)
                 {
                     Height = defaultHeight,
                     Width = defaultWidth
@@ -353,25 +351,9 @@ public sealed partial class DocumentViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void RefreshPages()
+    private async Task RefreshPages()
     {
-        System.Diagnostics.Debug.WriteLine($"MyPageAction - Visible Pages: {this} '{VisiblePages}' '{RealisedPages}'.");
-        if (!VisiblePages.HasValue)
-        {
-            return;
-        }
-
-        int start = VisiblePages.Value.Start.Value;
-        int end = VisiblePages.Value.End.Value;
-        for (int p = start; p < end; p++)
-        {
-            if (p < 1 || p > Pages.Count)
-            {
-                continue;
-            }
-            System.Diagnostics.Debug.WriteLine($" - Page {p}");
-            App.Messenger.Send(new LoadPageMessage(Pages[p - 1]));
-        }
+        //_pdfPageService
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]
@@ -419,7 +401,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [RelayCommand]
     private async Task CloseDocument(CancellationToken token)
     {
-        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()!;
+        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsManagerService>()!;
         await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(this), token);
     }
 }

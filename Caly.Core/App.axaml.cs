@@ -59,7 +59,7 @@ namespace Caly.Core
         private Task? _listeningToFiles;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-        private IPdfDocumentsService _pdfDocumentsService;
+        private IPdfDocumentsManagerService _pdfDocumentsService;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
         public static new App? Current => Application.Current as App;
@@ -125,9 +125,11 @@ namespace Caly.Core
             services.AddSingleton<IFilesService, FilesService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IClipboardService, ClipboardService>();
-            services.AddSingleton<IPdfDocumentsService, PdfDocumentsService>();
+            services.AddSingleton<IPdfDocumentsManagerService, PdfDocumentsManagerService>();
 
-            services.AddScoped<IPdfService, PdfPigPdfService>();
+
+            services.AddScoped<IPdfDocumentService, PdfPigDocumentService>();
+            services.AddScoped<PdfPageService>();
             services.AddScoped<ITextSearchService, SearchValuesTextSearchService>();
             services.AddScoped<DocumentViewModel>();
 
@@ -139,7 +141,7 @@ namespace Caly.Core
             Services.GetRequiredService<ISettingsService>().Load();
 
             // We need to make sure IPdfDocumentsService singleton is initiated in UI thread
-            _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsService>();
+            _pdfDocumentsService = Services.GetRequiredService<IPdfDocumentsManagerService>();
 
             base.OnFrameworkInitializationCompleted();
         }

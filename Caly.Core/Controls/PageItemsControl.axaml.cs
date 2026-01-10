@@ -592,6 +592,7 @@ public sealed class PageItemsControl : ItemsControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+#if DEBUG
         if (change.Property == ItemsSourceProperty)
         {
             // TODO - To refactor to remove ref to PageViewModel
@@ -603,22 +604,16 @@ public sealed class PageItemsControl : ItemsControl
             foreach (var vm in items)
             {
                 System.Diagnostics.Debug.Assert(!vm.VisibleArea.HasValue);
-
-                /*
-                Command?.Execute(null);
-
-                if (vm.PdfPicture is not null)
-                {
-                    // TODO - Check why this happens
-                    App.Messenger.Send(new UnloadPageMessage(vm));
-                }
-                */
             }
         }
-        else if (change.Property == DataContextProperty)
+        else
+#endif
+
+        if (change.Property == DataContextProperty)
         {
             Scroll?.Focus();
 
+#if DEBUG
             if (ItemsPanelRoot is VirtualizingStackPanel panel)
             {
                 // This is a hack to ensure PageItem that belongs to not Active documents are not visible
@@ -626,12 +621,13 @@ public sealed class PageItemsControl : ItemsControl
                 var children = panel.Children.OfType<PageItem>().ToArray();
                 foreach (var child in children)
                 {
-                    if (child is { IsVisible: true, DataContext: PageViewModel { PdfService.IsActive: false } }) // TODO - To refactor to remove ref to PageViewModel
+                    if (child.IsPageVisible && child.DataContext is PageViewModel vm)
                     {
-                        child.SetCurrentValue(Visual.IsVisibleProperty, false);
+                        System.Diagnostics.Debug.Assert(vm.PdfService.IsActive);
                     }
                 }
             }
+#endif
         }
     }
     

@@ -20,6 +20,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -35,6 +36,7 @@ public partial class DocumentViewModel
     private async Task LoadProperties()
     {
         _cts.Token.ThrowIfCancellationRequested();
-        await Task.Run(() => _pdfService.SetDocumentPropertiesAsync(this, _cts.Token));
+        var properties = await Task.Run(() => _pdfDocumentService.GetDocumentPropertiesAsync(_cts.Token));
+        Dispatcher.UIThread.Invoke(() => Properties = properties);
     }
 }

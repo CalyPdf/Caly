@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Caly.Core.Services
 {
-    internal partial class PdfDocumentsService
+    internal partial class PdfDocumentsManagerService
     {
         private void RegisterMessagesHandlers()
         {
@@ -48,11 +48,11 @@ namespace Caly.Core.Services
             {
                 if (openedFile.Value.ViewModel.Equals(m.Value))
                 {
-                    openedFile.Value.ViewModel.SetActive();
+                    openedFile.Value.ViewModel.IsActive = true;
                     continue;
                 }
 
-                openedFile.Value.ViewModel.SetInactive();
+                openedFile.Value.ViewModel.IsActive = false;
             }
         }
 

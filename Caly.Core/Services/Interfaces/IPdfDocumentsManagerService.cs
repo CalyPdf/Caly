@@ -26,7 +26,7 @@ using Caly.Core.ViewModels;
 
 namespace Caly.Core.Services.Interfaces
 {
-    public interface IPdfDocumentsService
+    public interface IPdfDocumentsManagerService
     {
         /// <summary>
         /// Open and load pdf document through popup window.

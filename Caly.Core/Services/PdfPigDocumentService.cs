@@ -18,16 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -42,6 +32,17 @@ using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
 using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
 using UglyToad.PdfPig.Outline;
@@ -53,7 +54,7 @@ namespace Caly.Core.Services
     /// <summary>
     /// One instance per document.
     /// </summary>
-    internal sealed partial class PdfPigPdfService : IPdfService
+    internal sealed partial class PdfPigDocumentService : IPdfDocumentService
     {
         private const string PdfVersionFormat = "0.0";
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
@@ -64,6 +65,8 @@ namespace Caly.Core.Services
         private Stream? _fileStream;
         private PdfDocument? _document;
         private Uri? _filePath;
+
+        public Guid Id { get; }
 
         public string? LocalPath => _filePath?.LocalPath;
 
@@ -94,7 +97,7 @@ namespace Caly.Core.Services
         public double PpiScale => 144.0 / 72.0; // 72 should be document dependant, i.e. use PdfPig's UserSpaceUnit.
 
 #if DEBUG
-        public PdfPigPdfService()
+        public PdfPigDocumentService()
         {
             if (!Design.IsDesignMode)
             {
@@ -105,11 +108,14 @@ namespace Caly.Core.Services
             _requestsWriter = null!;
             _requestsReader = null!;
             _processingLoopTask = Task.CompletedTask;
+            Id = Guid.NewGuid();
         }
 #endif
 
-        public PdfPigPdfService(ITextSearchService textSearchService)
+        public PdfPigDocumentService(ITextSearchService textSearchService)
         {
+            Id = Guid.NewGuid();
+
             _textSearchService = textSearchService;
 
             var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
@@ -236,6 +242,53 @@ namespace Caly.Core.Services
                 }
             }
         }
+        
+        public async Task<PdfBookmarkNode[]?> GetPdfBookmarks(CancellationToken token)
+        {
+            Debug.ThrowOnUiThread();
+            if (_document is null)
+            {
+                return null;
+            }
+
+            Bookmarks? bookmarks = await ExecuteWithLockAsync(() =>
+                {
+                    if (_document!.TryGetBookmarks(out var b))
+                    {
+                        return b;
+                    }
+
+                    return null;
+                },
+                token);
+
+            try
+            {
+                if (IsDisposed() || bookmarks is null || bookmarks.Roots.Count == 0)
+                {
+                    return null;
+                }
+
+                var bookmarksItems = new PdfBookmarkNode[bookmarks.Roots.Count];
+                for (var i = 0; i < bookmarks.Roots.Count; i++)
+                {
+                    var n = BuildPdfBookmarkNode(bookmarks.Roots[i], token);
+                    if (n is not null)
+                    {
+                        bookmarksItems[i] = n;
+                    }
+                }
+
+                return bookmarksItems;
+            }
+            catch (OperationCanceledException)
+            { }
+            catch (Exception ex)
+            {
+                Debug.WriteExceptionToFile(ex);
+            }
+            return [];
+        }
 
         public async Task SetPageSizeAsync(PageViewModel page, CancellationToken token)
         {
@@ -287,13 +340,13 @@ namespace Caly.Core.Services
             }
         }
 
-        public ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token)
+        public Task<PdfDocumentProperties?> GetDocumentPropertiesAsync(CancellationToken token)
         {
             Debug.ThrowOnUiThread();
 
             if (_document is null || IsDisposed())
             {
-                return ValueTask.CompletedTask;
+                return Task.FromResult((PdfDocumentProperties?)null);
             }
 
             var info = _document.Information;
@@ -317,10 +370,8 @@ namespace Caly.Core.Services
                 Subject = info.Subject,
                 Others = others
             };
-
-            Dispatcher.UIThread.Invoke(() => document.Properties = pdfProperties);
-
-            return ValueTask.CompletedTask;
+            
+            return Task.FromResult((PdfDocumentProperties?)pdfProperties);
         }
 
         public string? GetLogFileName()
@@ -365,48 +416,7 @@ namespace Caly.Core.Services
 
             return rawDate;
         }
-
-        public async Task SetPdfBookmark(DocumentViewModel document, CancellationToken token)
-        {
-            Debug.ThrowOnUiThread();
-            if (_document is null)
-            {
-                return;
-            }
-
-            Bookmarks? bookmarks = await ExecuteWithLockAsync(() =>
-            {
-                if (_document!.TryGetBookmarks(out var b))
-                {
-                    return b;
-                }
-
-                return null;
-            },
-            token);
-            
-            try
-            {
-                if (bookmarks is null || IsDisposed() || bookmarks.Roots.Count == 0)
-                {
-                    return;
-                }
-
-                var bookmarksItems = new ObservableCollection<PdfBookmarkNode>();
-                foreach (BookmarkNode node in bookmarks.Roots)
-                {
-                    var n = BuildPdfBookmarkNode(node, token);
-                    if (n is not null)
-                    {
-                        bookmarksItems.Add(n);
-                    }
-                }
-
-                Dispatcher.UIThread.Invoke(() => document.Bookmarks = bookmarksItems);
-            }
-            catch (OperationCanceledException) { }
-        }
-
+        
         public async Task BuildIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token)
         {
             Debug.ThrowOnUiThread();

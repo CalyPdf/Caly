@@ -75,7 +75,7 @@ public partial class DocumentViewModel
             BuildIndexProgress = (int)Math.Ceiling((done / (double)PageCount) * 100);
         });
 
-        await Task.Run(() => _pdfService.BuildIndex(this, progress, _cts.Token), _cts.Token);
+        await Task.Run(() => _pdfDocumentService.BuildIndex(this, progress, _cts.Token), _cts.Token);
 
         SetSearchStatusFinal();
     }
@@ -185,7 +185,7 @@ public partial class DocumentViewModel
                 {
                     token.ThrowIfCancellationRequested();
                     indexBuildTaskComplete = indexBuildTask.IsCompleted;
-                    var searchResults = _pdfService.SearchText(this, TextSearch, pagesDone, token);
+                    var searchResults = _pdfDocumentService.SearchText(this, TextSearch, pagesDone, token);
 
                     foreach (var result in searchResults)
                     {

@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace Caly.Core.Services
 {
-    internal partial class PdfPigPdfService
+    internal partial class PdfPigDocumentService
     {
         private readonly ConcurrentDictionary<int, CancellationTokenSource> _pictureTokens = new();
         private readonly ConcurrentDictionary<int, CancellationTokenSource> _textLayerTokens = new();

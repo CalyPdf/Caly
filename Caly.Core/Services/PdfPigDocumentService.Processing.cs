@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 namespace Caly.Core.Services
 {
-    internal sealed partial class PdfPigPdfService
+    internal sealed partial class PdfPigDocumentService
     {
         private enum RenderRequestTypes : byte
         {

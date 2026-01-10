@@ -18,17 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Platform.Storage;
+using Caly.Core.Handlers.Interfaces;
+using Caly.Core.Models;
+using Caly.Core.ViewModels;
+using Caly.Pdf.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Platform.Storage;
-using Caly.Core.Handlers.Interfaces;
-using Caly.Core.ViewModels;
 
 namespace Caly.Core.Services.Interfaces
 {
-    public interface IPdfService : IAsyncDisposable
+    public interface IPdfDocumentService : IAsyncDisposable
     {
         double PpiScale { get; }
 
@@ -52,9 +54,11 @@ namespace Caly.Core.Services.Interfaces
         /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
         Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token);
 
-        ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token);
-        
-        Task SetPdfBookmark(DocumentViewModel document, CancellationToken token);
+        //ValueTask SetDocumentPropertiesAsync(DocumentViewModel document, CancellationToken token);
+
+        public Task<PdfDocumentProperties?> GetDocumentPropertiesAsync(CancellationToken token);
+
+        Task<PdfBookmarkNode[]?> GetPdfBookmarks(CancellationToken token);
 
         Task BuildIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token);
 
