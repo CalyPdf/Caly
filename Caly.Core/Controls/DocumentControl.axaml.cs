@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System.Collections;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -129,6 +130,15 @@ public sealed class DocumentControl : CalyTemplatedControl
         set => SetValue(PageInteractiveLayerHandlerProperty, value);
     }
 
+    public static readonly StyledProperty<ICommand?> ClearSelectionProperty =
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(ClearSelection));
+
+    public ICommand? ClearSelection
+    {
+        get => GetValue(ClearSelectionProperty);
+        set => SetValue(ClearSelectionProperty, value);
+    }
+
     public DocumentControl()
     {
 #if DEBUG
@@ -149,7 +159,7 @@ public sealed class DocumentControl : CalyTemplatedControl
             pointer.Properties.IsLeftButtonPressed &&
             e.Source is not PageInteractiveLayerControl)
         {
-            PageInteractiveLayerHandler.ClearSelection(this);
+            ClearSelection?.Execute(null);
         }
     }
 

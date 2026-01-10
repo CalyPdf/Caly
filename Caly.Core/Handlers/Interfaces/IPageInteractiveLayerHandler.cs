@@ -52,17 +52,7 @@ namespace Caly.Core.Handlers.Interfaces
         /// TODO - Should not be in selection handler.
         /// </summary>
         void RenderPage(PageInteractiveLayerControl control, DrawingContext context, Rect visibleArea);
-
-        /// <summary>
-        /// Clear the current selection.
-        /// </summary>
-        void ClearSelection(DocumentControl documentControl);
-
-        /// <summary>
-        /// Clear the current selection.
-        /// </summary>
-        void ClearSelection(PageInteractiveLayerControl currentTextLayer);
-
+        
         void UpdateInteractiveLayer(PageViewModel page);
     }
 }

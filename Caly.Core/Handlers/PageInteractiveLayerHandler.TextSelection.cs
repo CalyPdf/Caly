@@ -18,10 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Avalonia.VisualTree;
-using Caly.Core.Controls;
-using Caly.Core.ViewModels;
-using System;
 using Avalonia.Media;
 
 namespace Caly.Core.Handlers
@@ -30,35 +26,5 @@ namespace Caly.Core.Handlers
     {
         private static readonly Color _selectionColor = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
 
-        public void ClearSelection(DocumentControl documentControl)
-        {
-            Debug.ThrowNotOnUiThread();
-            int start = Selection.GetStartPageIndex();
-            int end = Selection.GetEndPageIndex();
-
-            System.Diagnostics.Debug.Assert(start <= end);
-
-            Selection.ResetSelection();
-
-            if (start == -1 || end == -1 ||
-                documentControl.DataContext is not DocumentViewModel docVm)
-            {
-                return;
-            }
-
-            for (int pageNumber = start; pageNumber <= end; ++pageNumber)
-            {
-                docVm.Pages[pageNumber - 1].FlagInteractiveLayerChanged();
-            }
-        }
-
-        public void ClearSelection(PageInteractiveLayerControl currentTextLayer)
-        {
-            Debug.ThrowNotOnUiThread();
-
-            DocumentControl documentControl = currentTextLayer.FindAncestorOfType<DocumentControl>() ??
-                                                    throw new NullReferenceException($"{typeof(DocumentControl)} not found.");
-            ClearSelection(documentControl);
-        }
     }
 }

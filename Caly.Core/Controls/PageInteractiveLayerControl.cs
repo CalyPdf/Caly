@@ -201,6 +201,16 @@ public sealed class PageInteractiveLayerControl : Control
         HideAnnotation();
     }
 
+    public void ClearSelection()
+    {
+        Debug.ThrowNotOnUiThread();
+
+        DocumentControl documentControl = this.FindAncestorOfType<DocumentControl>() ??
+                                          throw new NullReferenceException($"{typeof(DocumentControl)} not found.");
+
+        documentControl.ClearSelection?.Execute(null);
+    }
+
     private void HideAnnotation()
     {
         if (FlyoutBase.GetAttachedFlyout(this) is Flyout attachedFlyout)

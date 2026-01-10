@@ -23,13 +23,16 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Caly.Core.Controls;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
+using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -39,8 +42,6 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core.ViewModels;
 
@@ -389,5 +390,32 @@ public sealed partial class DocumentViewModel : ViewModelBase
     {
         var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()!;
         await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(this), token);
+    }
+
+    [RelayCommand]
+    public void ClearSelection()
+    {
+        Debug.ThrowNotOnUiThread();
+        if (PageInteractiveLayerHandler is null)
+        {
+            return;
+        }
+
+        int start = PageInteractiveLayerHandler.Selection.GetStartPageIndex();
+        int end = PageInteractiveLayerHandler.Selection.GetEndPageIndex();
+
+        System.Diagnostics.Debug.Assert(start <= end);
+
+        PageInteractiveLayerHandler.Selection.ResetSelection();
+
+        if (start == -1 || end == -1)
+        {
+            return;
+        }
+
+        for (int pageNumber = start; pageNumber <= end; ++pageNumber)
+        {
+            Pages[pageNumber - 1].FlagInteractiveLayerChanged();
+        }
     }
 }

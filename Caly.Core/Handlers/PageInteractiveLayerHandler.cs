@@ -427,7 +427,7 @@ namespace Caly.Core.Handlers
                 return;
             }
 
-            ClearSelection(control);
+            control.ClearSelection();
 
             int pageNumber = control.PageNumber!.Value;
             Selection.Start(pageNumber, startWord);
@@ -489,7 +489,7 @@ namespace Caly.Core.Handlers
 
             if (clearSelection)
             {
-                ClearSelection(control);
+                control.ClearSelection();
             }
         }
 
@@ -513,7 +513,7 @@ namespace Caly.Core.Handlers
             bool ignore = _isSelecting || _isMultipleClickSelection;
             if (!ignore && pointerPoint.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
             {
-                ClearSelection(control);
+                control.ClearSelection();
 
                 // Check link
                 if (!_isSelecting)
