@@ -28,12 +28,9 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Utilities;
-using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
 using System;
 using System.Reactive.Disposables;
-using Avalonia.LogicalTree;
-using Caly.Core.Models;
 
 namespace Caly.Core.Controls;
 

@@ -31,6 +31,8 @@ namespace Caly.Core.Handlers
 {
     public sealed partial class PageInteractiveLayerHandler
     {
+        private static readonly Color _selectionColor = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
+
         public void RenderPage(PageInteractiveLayerControl control, DrawingContext context, Rect visibleArea)
         {
             var pdfVisibleArea = visibleArea.ToPdfRectangle();

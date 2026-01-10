@@ -112,9 +112,9 @@ public sealed partial class DocumentViewModel : ViewModelBase
     /// </summary>
     public Task<int>? WaitOpenAsync { get; private set; }
 
-    partial void OnPaneSizeChanged(double oldValue, double newValue)
+    partial void OnPaneSizeChanged(double value)
     {
-        _settingsService.SetProperty(CalySettings.CalySettingsProperty.PaneSize, newValue);
+        _settingsService.SetProperty(CalySettings.CalySettingsProperty.PaneSize, value);
     }
 
     private readonly IDisposable _searchResultsDisposable;
