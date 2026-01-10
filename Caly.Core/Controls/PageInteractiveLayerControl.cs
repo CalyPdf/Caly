@@ -158,6 +158,9 @@ public sealed class PageInteractiveLayerControl : Control
         // We need to fill to get Pointer events
         context.FillRectangle(Brushes.Transparent, Bounds);
 
+        DebugRender.RenderAnnotations(this, context, VisibleArea.Value);
+        DebugRender.RenderText(this, context, VisibleArea.Value);
+
         PageInteractiveLayerHandler?.RenderPage(this, context, VisibleArea.Value);
     }
 
