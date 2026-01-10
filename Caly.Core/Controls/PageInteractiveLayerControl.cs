@@ -308,4 +308,20 @@ public sealed class PageInteractiveLayerControl : Control
             SetDefaultCursor();
         }
     }
+
+    internal bool TrySwitchCapture(PointerEventArgs e)
+    {
+        PageItem? endPage = _documentControl?.GetPageItemOver(e);
+        if (endPage is null)
+        {
+            // Cursor is not over any page, do nothing
+            return false;
+        }
+
+        PageInteractiveLayerControl endTextLayer = endPage.TextLayer ??
+                                                   throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
+
+        e.Pointer.Capture(endTextLayer); // Switch capture to new page
+        return true;
+    }
 }

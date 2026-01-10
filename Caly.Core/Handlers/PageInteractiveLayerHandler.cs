@@ -94,23 +94,7 @@ namespace Caly.Core.Handlers
 
             Dispatcher.UIThread.Invoke(page.FlagInteractiveLayerChanged);
         }
-
-        private static bool TrySwitchCapture(PageInteractiveLayerControl currentTextLayer, PointerEventArgs e)
-        {
-            PageItem? endPage = currentTextLayer.FindAncestorOfType<DocumentControl>()?.GetPageItemOver(e);
-            if (endPage is null)
-            {
-                // Cursor is not over any page, do nothing
-                return false;
-            }
-
-            PageInteractiveLayerControl endTextLayer = endPage.TextLayer ??
-                                                   throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
-
-            e.Pointer.Capture(endTextLayer); // Switch capture to new page
-            return true;
-        }
-
+        
         private PdfWord? FindNearestWordWhileSelecting(Point loc, PdfTextLayer textLayer)
         {
             if (textLayer.TextBlocks is null || textLayer.TextBlocks.Count == 0)
@@ -263,7 +247,7 @@ namespace Caly.Core.Handlers
 
             if (!control.Bounds.Contains(loc))
             {
-                if (TrySwitchCapture(control, e))
+                if (control.TrySwitchCapture(e))
                 {
                     // Update all pages
                     return;
