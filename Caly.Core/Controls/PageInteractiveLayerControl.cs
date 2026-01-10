@@ -30,6 +30,7 @@ using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using System;
 using System.Reactive.Disposables;
+using Avalonia.Layout;
 
 namespace Caly.Core.Controls;
 
@@ -211,7 +212,44 @@ public sealed class PageInteractiveLayerControl : Control
         documentControl.ClearSelection?.Execute(null);
     }
 
-    private void HideAnnotation()
+    public void ShowAnnotation(PdfAnnotation annotation)
+    {
+        if (FlyoutBase.GetAttachedFlyout(this) is not Flyout attachedFlyout)
+        {
+            return;
+        }
+
+        var contentText = new TextBlock()
+        {
+            MaxWidth = 200,
+            TextWrapping = TextWrapping.Wrap,
+            Text = annotation.Content
+        };
+
+        if (!string.IsNullOrEmpty(annotation.Date))
+        {
+            attachedFlyout.Content = new StackPanel()
+            {
+                Orientation = Orientation.Vertical,
+                Children =
+                {
+                    new TextBlock()
+                    {
+                        Text = annotation.Date
+                    },
+                    contentText
+                }
+            };
+        }
+        else
+        {
+            attachedFlyout.Content = contentText;
+        }
+
+        attachedFlyout.ShowAt(this);
+    }
+
+    public void HideAnnotation()
     {
         if (FlyoutBase.GetAttachedFlyout(this) is Flyout attachedFlyout)
         {

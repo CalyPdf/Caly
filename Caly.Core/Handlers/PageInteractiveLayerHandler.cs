@@ -356,7 +356,7 @@ namespace Caly.Core.Handlers
             {
                 if (!string.IsNullOrEmpty(annotation.Content))
                 {
-                    ShowAnnotation(control, annotation);
+                    control.ShowAnnotation(annotation);
                 }
 
                 if (annotation.IsInteractive)
@@ -367,7 +367,7 @@ namespace Caly.Core.Handlers
             }
             else
             {
-                HideAnnotation(control);
+                control.HideAnnotation();
             }
 
             PdfWord? word = control.PdfTextLayer!.FindWordOver(loc.X, loc.Y);
@@ -449,7 +449,7 @@ namespace Caly.Core.Handlers
             if (e.IsPanningOrZooming())
             {
                 // Panning pages is not handled here
-                HideAnnotation(control);
+                control.HideAnnotation();
                 return;
             }
 
