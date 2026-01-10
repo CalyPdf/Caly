@@ -47,12 +47,12 @@ namespace Caly.Core.ViewModels;
 /// <summary>
 /// View model that represent a PDF document.
 /// </summary>
-[DebuggerDisplay("[{_pdfService?.FileName}]")]
+[DebuggerDisplay("[{FileName}]")]
 public sealed partial class DocumentViewModel : ViewModelBase
 {
     public override string ToString()
     {
-        return _pdfService?.FileName ?? "FileName NOT SET";
+        return FileName ?? "FileName NOT SET";
     }
 
     private readonly IPdfService _pdfService;
@@ -79,24 +79,22 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(GoToNextPageCommand))]
     private string _selectedPageIndexString = "1";
 
-    private int? _selectedPageIndex = null;
-
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
     /// </summary>
     public int? SelectedPageIndex
     {
-        get => _selectedPageIndex;
+        get;
         set
         {
-            if (!SetProperty(ref _selectedPageIndex, value))
+            if (!SetProperty(ref field, value))
             {
                 return;
             }
 
             SelectedPageIndexString = value.HasValue ? value.Value.ToString("0") : string.Empty;
         }
-    }
+    } = null;
 
     [ObservableProperty] private int _pageCount;
 
