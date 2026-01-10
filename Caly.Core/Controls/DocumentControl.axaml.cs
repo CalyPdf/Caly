@@ -26,7 +26,9 @@ using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
+using Caly.Core.Events;
 using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
 using Caly.Core.Services;
@@ -232,6 +234,24 @@ public sealed class DocumentControl : CalyTemplatedControl
     {
         base.OnApplyTemplate(e);
         _pageItemsControl = e.NameScope.FindFromNameScope<PageItemsControl>("PART_PageItemsControl");
+        _pageItemsControl.PageTextSelectionChanged += _pageItemsControl_PageTextSelectionChanged;
+    }
+    
+    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromLogicalTree(e);
+        _pageItemsControl?.PageTextSelectionChanged -= _pageItemsControl_PageTextSelectionChanged;
+    }
+
+    private void _pageItemsControl_PageTextSelectionChanged(object? sender, PageTextSelectionChangedEventArgs e)
+    {
+        if (e.IsReset)
+        {
+            ClearSelection?.Execute(null);
+            return;
+        }
+        
+        // TODO - Update selection
     }
 
     /// <summary>

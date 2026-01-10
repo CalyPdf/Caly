@@ -31,6 +31,7 @@ using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using System;
 using System.Reactive.Disposables;
+using Caly.Core.Events;
 
 namespace Caly.Core.Controls;
 
@@ -63,6 +64,8 @@ public sealed class PageInteractiveLayerControl : Control
     /// </summary>
     public static readonly StyledProperty<Rect?> VisibleAreaProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, Rect?>(nameof(VisibleArea));
+    
+    public event EventHandler<PageTextSelectionChangedEventArgs>? PageTextSelectionChanged;
 
     public PdfTextLayer? PdfTextLayer
     {
@@ -217,7 +220,10 @@ public sealed class PageInteractiveLayerControl : Control
     {
         Debug.ThrowNotOnUiThread();
 
-        _documentControl?.ClearSelection?.Execute(null);
+        if (PageNumber.HasValue)
+        {
+            PageTextSelectionChanged?.Invoke(this, new PageTextSelectionResetEventArgs(PageNumber.Value));
+        }
     }
 
     public void ShowAnnotation(PdfAnnotation annotation)
@@ -318,7 +324,7 @@ public sealed class PageInteractiveLayerControl : Control
             return false;
         }
 
-        PageInteractiveLayerControl endTextLayer = endPage.TextLayer ??
+        PageInteractiveLayerControl endTextLayer = endPage.InteractiveLayer ??
                                                    throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
 
         e.Pointer.Capture(endTextLayer); // Switch capture to new page

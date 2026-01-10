@@ -24,16 +24,18 @@ using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.LogicalTree;
+using Caly.Core.Events;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using SkiaSharp;
+using System;
 
 namespace Caly.Core.Controls;
 
 /// <summary>
 /// Control that represents a single page in a PDF document.
 /// </summary>
-[TemplatePart("PART_PageTextLayerControl", typeof(PageInteractiveLayerControl))]
+[TemplatePart("PART_PageInteractiveLayerControl", typeof(PageInteractiveLayerControl))]
 public sealed class PageItem : ContentControl
 {
     /// <summary>
@@ -72,7 +74,24 @@ public sealed class PageItem : ContentControl
     /// </summary>
     public static readonly DirectProperty<PageItem, PageInteractiveLayerControl?> TextLayerProperty =
         AvaloniaProperty.RegisterDirect<PageItem, PageInteractiveLayerControl?>(nameof(LayoutTransformControl),
-            o => o.TextLayer);
+            o => o.InteractiveLayer);
+
+    private EventHandler<PageTextSelectionChangedEventArgs>? _pageTextSelectionChanged;
+
+    public event EventHandler<PageTextSelectionChangedEventArgs> PageTextSelectionChanged
+    {
+        add
+        {
+            InteractiveLayer?.PageTextSelectionChanged += value;
+            _pageTextSelectionChanged += value;
+        }
+
+        remove
+        {
+            _pageTextSelectionChanged -= value;
+            InteractiveLayer?.PageTextSelectionChanged -= value;
+        }
+    }
 
     static PageItem()
     {
@@ -109,15 +128,13 @@ public sealed class PageItem : ContentControl
         set => SetValue(ExceptionProperty, value);
     }
 
-    private PageInteractiveLayerControl? _textLayer;
-
     /// <summary>
     /// Gets the text layer.
     /// </summary>
-    public PageInteractiveLayerControl? TextLayer
+    public PageInteractiveLayerControl? InteractiveLayer
     {
-        get => _textLayer;
-        private set => SetAndRaise(TextLayerProperty, ref _textLayer, value);
+        get;
+        private set => SetAndRaise(TextLayerProperty, ref field, value);
     }
 
     public PageItem()
@@ -134,12 +151,18 @@ public sealed class PageItem : ContentControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        TextLayer = e.NameScope.FindFromNameScope<PageInteractiveLayerControl>("PART_PageTextLayerControl");
+        InteractiveLayer = e.NameScope.FindFromNameScope<PageInteractiveLayerControl>("PART_PageInteractiveLayerControl");
+
+        if (_pageTextSelectionChanged is not null)
+        {
+            InteractiveLayer.PageTextSelectionChanged += _pageTextSelectionChanged;
+        }
     }
 
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromLogicalTree(e);
         Picture?.Dispose();
+        InteractiveLayer?.PageTextSelectionChanged -= _pageTextSelectionChanged;
     }
 }

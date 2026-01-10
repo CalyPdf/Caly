@@ -33,6 +33,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
+using Caly.Core.Events;
 using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
@@ -63,7 +64,7 @@ public sealed class PageItemsControl : ItemsControl
         // Need to test other platforms
         CacheLength = 0
     });
-
+    
     /// <summary>
     /// Defines the <see cref="Scroll"/> property.
     /// </summary>
@@ -102,9 +103,9 @@ public sealed class PageItemsControl : ItemsControl
     /// </summary>
     public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1,
         defaultBindingMode: BindingMode.TwoWay);
-    
-    private ScrollViewer? _scroll;
-    private LayoutTransformControl? _layoutTransform;
+
+    public event EventHandler<PageTextSelectionChangedEventArgs>? PageTextSelectionChanged;
+
     private TabsControl? _tabsControl;
 
     static PageItemsControl()
@@ -113,14 +114,14 @@ public sealed class PageItemsControl : ItemsControl
         KeyboardNavigation.TabNavigationProperty.OverrideDefaultValue(typeof(PageItemsControl),
             KeyboardNavigationMode.Once);
     }
-    
+
     /// <summary>
     /// Gets the scroll information for the <see cref="ListBox"/>.
     /// </summary>
     public ScrollViewer? Scroll
     {
-        get => _scroll;
-        private set => SetAndRaise(ScrollProperty, ref _scroll, value);
+        get;
+        private set => SetAndRaise(ScrollProperty, ref field, value);
     }
 
     /// <summary>
@@ -128,8 +129,8 @@ public sealed class PageItemsControl : ItemsControl
     /// </summary>
     public LayoutTransformControl? LayoutTransform
     {
-        get => _layoutTransform;
-        private set => SetAndRaise(LayoutTransformControlProperty, ref _layoutTransform, value);
+        get;
+        private set => SetAndRaise(LayoutTransformControlProperty, ref field, value);
     }
 
     public int PageCount
@@ -200,15 +201,23 @@ public sealed class PageItemsControl : ItemsControl
         base.PrepareContainerForItemOverride(container, item, index);
 
         if (_isTabDragging ||
-            container is not PageItem ||
+            container is not PageItem cp ||
             item is not PageViewModel vm)
         {
             System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
             return;
         }
 
+        cp.PageTextSelectionChanged -= _pageTextSelectionChanged;
+        cp.PageTextSelectionChanged += _pageTextSelectionChanged;
+
         vm.VisibleArea = null;
         App.Messenger.Send(new LoadPageMessage(vm));
+    }
+
+    private void _pageTextSelectionChanged(object? sender, PageTextSelectionChangedEventArgs e)
+    {
+        PageTextSelectionChanged?.Invoke(this, e);
     }
 
     protected override void ClearContainerForItemOverride(Control container)
@@ -219,6 +228,8 @@ public sealed class PageItemsControl : ItemsControl
         {
             return;
         }
+
+        cp.PageTextSelectionChanged -= _pageTextSelectionChanged;
 
         if (cp.DataContext is PageViewModel vm)
         {
