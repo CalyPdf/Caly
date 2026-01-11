@@ -244,14 +244,45 @@ public sealed class DocumentControl : CalyTemplatedControl
         base.OnApplyTemplate(e);
         _pageItemsControl = e.NameScope.FindFromNameScope<PageItemsControl>("PART_PageItemsControl");
         _pageItemsControl.PageTextSelectionChanged += _pageItemsControl_PageTextSelectionChanged;
+        _pageItemsControl.PageInteractiveLayerPointerMoved += _pageInteractiveLayerPointerMoved;
+        _pageItemsControl.PageInteractiveLayerPointerPressed += _pageInteractiveLayerPointerPressed;
+        _pageItemsControl.PageInteractiveLayerPointerReleased += _pageInteractiveLayerPointerReleased;
+        _pageItemsControl.PageInteractiveLayerPointerExited += _pageInteractiveLayerPointerExited;
     }
-    
+
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromLogicalTree(e);
-        _pageItemsControl?.PageTextSelectionChanged -= _pageItemsControl_PageTextSelectionChanged;
+        if (_pageItemsControl is not null)
+        {
+            _pageItemsControl.PageTextSelectionChanged -= _pageItemsControl_PageTextSelectionChanged;
+            _pageItemsControl.PageInteractiveLayerPointerMoved -= _pageInteractiveLayerPointerMoved;
+            _pageItemsControl.PageInteractiveLayerPointerPressed -= _pageInteractiveLayerPointerPressed;
+            _pageItemsControl.PageInteractiveLayerPointerReleased -= _pageInteractiveLayerPointerReleased;
+            _pageItemsControl.PageInteractiveLayerPointerExited -= _pageInteractiveLayerPointerExited;
+        }
     }
 
+    private void _pageInteractiveLayerPointerExited(object? sender, PageInteractiveLayerPointerExitedEventArgs e)
+    {
+        
+    }
+
+    private void _pageInteractiveLayerPointerReleased(object? sender, PageInteractiveLayerPointerReleasedEventArgs e)
+    {
+    
+    }
+
+    private void _pageInteractiveLayerPointerPressed(object? sender, PageInteractiveLayerPointerPressedEventArgs e)
+    {
+        
+    }
+
+    private void _pageInteractiveLayerPointerMoved(object? sender, PageInteractiveLayerPointerMovedEventArgs e)
+    {
+        
+    }
+    
     private void _pageItemsControl_PageTextSelectionChanged(object? sender, PageTextSelectionChangedEventArgs e)
     {
         if (e.IsReset)

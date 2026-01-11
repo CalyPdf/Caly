@@ -43,6 +43,9 @@ public sealed class PageInteractiveLayerControl : Control
     // https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Controls/Primitives/TextSelectionCanvas.cs#L62
     // Check caret handle
 
+    private Point? _startPointerPressed;
+    private bool _isDragging;
+
     private DocumentControl? _documentControl;
     private CompositeDisposable? _pointerDisposables;
 
@@ -66,6 +69,10 @@ public sealed class PageInteractiveLayerControl : Control
         AvaloniaProperty.Register<PageInteractiveLayerControl, Rect?>(nameof(VisibleArea));
     
     public event EventHandler<PageTextSelectionChangedEventArgs>? PageTextSelectionChanged;
+    public event EventHandler<PageInteractiveLayerPointerPressedEventArgs>? PageInteractiveLayerPointerPressed;
+    public event EventHandler<PageInteractiveLayerPointerReleasedEventArgs>? PageInteractiveLayerPointerReleased;
+    public event EventHandler<PageInteractiveLayerPointerMovedEventArgs>? PageInteractiveLayerPointerMoved;
+    public event EventHandler<PageInteractiveLayerPointerExitedEventArgs>? PageInteractiveLayerPointerExited;
 
     public PdfTextLayer? PdfTextLayer
     {
@@ -208,12 +215,179 @@ public sealed class PageInteractiveLayerControl : Control
         _pointerDisposables?.Dispose();
     }
 
+    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+    {
+        base.OnPointerWheelChanged(e);
+
+        if (PdfTextLayer is null)
+        {
+            return;
+        }
+
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            return;
+        }
+
+        var pointerPoint = e.GetCurrentPoint(this);
+        var point = pointerPoint.Position;
+
+        // TODO - Looks like there's a bug in Avalonia (TBC) where the position of the pointer
+        // is 1 step behind the actual position.
+        // We need to add back this step (1 scroll step is 50, see link below)
+        // https://github.com/AvaloniaUI/Avalonia/blob/dadc9ab69284bb228ad460f36d5442b4eee4a82a/src/Avalonia.Controls/Presenters/ScrollContentPresenter.cs#L684
+
+        var adjPoint = new Point(50, 50);
+        var matrix = GetLayoutTransformMatrix();
+
+        if (!matrix.IsIdentity && matrix.TryInvert(out var inverted))
+        {
+            adjPoint = inverted.Transform(adjPoint);
+        }
+
+        double x = Math.Max(point.X - e.Delta.X * adjPoint.X, 0);
+        double y = Math.Max(point.Y - e.Delta.Y * adjPoint.Y, 0);
+
+        point = new Point(x, y);
+
+        // TODO - We have an issue when scrolling and changing page here, similar the TrySwitchCapture
+        // not sure how we should address it
+
+        HandlePointerMove(point, pointerPoint.Properties);
+    }
+
+    private void HandlePointerMove(Point point, PointerPointProperties properties)
+    {
+        if (!_isDragging && properties.IsLeftButtonPressed && _startPointerPressed.HasValue)
+        {
+            _isDragging = _startPointerPressed.Value.Euclidean(point) > 1.0;
+        }
+
+        PdfWord? word = PdfTextLayer!.FindWordOver(point.X, point.Y);
+        if (word is not null)
+        {
+            SetIbeamCursor();
+        }
+        else if (!_isDragging)
+        {
+            SetDefaultCursor();
+        }
+
+        PdfAnnotation? annotation = PdfTextLayer.FindAnnotationOver(point.X, point.Y);
+        if (annotation is not null)
+        {
+            if (!string.IsNullOrEmpty(annotation.Content))
+            {
+                ShowAnnotation(annotation);
+            }
+
+            if (annotation.IsInteractive)
+            {
+                SetHandCursor();
+            }
+        }
+        else
+        {
+            HideAnnotation();
+        }
+
+        PageInteractiveLayerPointerMoved?.Invoke(this,
+            new PageInteractiveLayerPointerMovedEventArgs(PageNumber!.Value,
+                point, properties, word, annotation, _isDragging ? _startPointerPressed!.Value : null));
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        if (PdfTextLayer is null)
+        {
+            return;
+        }
+
+        /*
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            return;
+        }
+        */
+
+        var pointerPoint = e.GetCurrentPoint(this);
+        var point = pointerPoint.Position;
+
+        HandlePointerMove(point, pointerPoint.Properties);
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+
+        if (PdfTextLayer is null)
+        {
+            return;
+        }
+
+        /*
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            return;
+        }
+        */
+
+        _startPointerPressed = null;
+        _isDragging = false;
+
+        var pointerPoint = e.GetCurrentPoint(this);
+        var point = pointerPoint.Position;
+
+        PdfWord? word = PdfTextLayer.FindWordOver(point.X, point.Y);
+        PdfAnnotation? annotation = PdfTextLayer.FindAnnotationOver(point.X, point.Y);
+
+        PageInteractiveLayerPointerReleased?.Invoke(this, new PageInteractiveLayerPointerReleasedEventArgs(PageNumber!.Value, point, pointerPoint.Properties, word, annotation));
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+
+        if (PdfTextLayer is null)
+        {
+            return;
+        }
+
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            HideAnnotation();
+            return;
+        }
+
+        var pointerPoint = e.GetCurrentPoint(this);
+        var point = pointerPoint.Position;
+
+        if (pointerPoint.Properties.IsLeftButtonPressed)
+        {
+            _startPointerPressed = point;
+        }
+
+        PdfWord? word = PdfTextLayer.FindWordOver(point.X, point.Y);
+        PdfAnnotation? annotation = PdfTextLayer.FindAnnotationOver(point.X, point.Y);
+
+        PageInteractiveLayerPointerPressed?.Invoke(this, new PageInteractiveLayerPointerPressedEventArgs(PageNumber!.Value, point, pointerPoint.Properties, word, annotation));
+    }
+
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
 
         SetDefaultCursor();
         HideAnnotation();
+
+        var pointerPoint = e.GetCurrentPoint(this);
+        PageInteractiveLayerPointerExited?.Invoke(this, new PageInteractiveLayerPointerExitedEventArgs(PageNumber!.Value, pointerPoint.Position, pointerPoint.Properties));
     }
 
     public void ClearSelection()
@@ -270,9 +444,9 @@ public sealed class PageInteractiveLayerControl : Control
             return;
         }
 
-            attachedFlyout.Hide();
-            attachedFlyout.Content = null;
-        }
+        attachedFlyout.Hide();
+        attachedFlyout.Content = null;
+    }
 
     /// <summary>
     /// Handle mouse hover over words, links or others

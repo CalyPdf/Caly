@@ -77,6 +77,10 @@ public sealed class PageItem : ContentControl
             o => o.InteractiveLayer);
 
     private EventHandler<PageTextSelectionChangedEventArgs>? _pageTextSelectionChanged;
+    private EventHandler<PageInteractiveLayerPointerPressedEventArgs>? _pageInteractiveLayerPointerPressed;
+    private EventHandler<PageInteractiveLayerPointerReleasedEventArgs>? _pageInteractiveLayerPointerReleased;
+    private EventHandler<PageInteractiveLayerPointerMovedEventArgs>? _pageInteractiveLayerPointerMoved;
+    private EventHandler<PageInteractiveLayerPointerExitedEventArgs>? _pageInteractiveLayerPointerExited;
 
     public event EventHandler<PageTextSelectionChangedEventArgs> PageTextSelectionChanged
     {
@@ -90,6 +94,65 @@ public sealed class PageItem : ContentControl
         {
             _pageTextSelectionChanged -= value;
             InteractiveLayer?.PageTextSelectionChanged -= value;
+        }
+    }
+
+    public event EventHandler<PageInteractiveLayerPointerPressedEventArgs>? PageInteractiveLayerPointerPressed
+    {
+        add
+        {
+            InteractiveLayer?.PageInteractiveLayerPointerPressed += value;
+            _pageInteractiveLayerPointerPressed += value;
+        }
+
+        remove
+        {
+            _pageInteractiveLayerPointerPressed -= value;
+            InteractiveLayer?.PageInteractiveLayerPointerPressed -= value;
+        }
+    }
+
+    public event EventHandler<PageInteractiveLayerPointerReleasedEventArgs>? PageInteractiveLayerPointerReleased
+    {
+        add
+        {
+            InteractiveLayer?.PageInteractiveLayerPointerReleased += value;
+            _pageInteractiveLayerPointerReleased += value;
+        }
+
+        remove
+        {
+            _pageInteractiveLayerPointerReleased -= value;
+            InteractiveLayer?.PageInteractiveLayerPointerReleased -= value;
+        }
+    }
+    public event EventHandler<PageInteractiveLayerPointerMovedEventArgs>? PageInteractiveLayerPointerMoved
+    {
+        add
+        {
+            InteractiveLayer?.PageInteractiveLayerPointerMoved += value;
+            _pageInteractiveLayerPointerMoved += value;
+        }
+
+        remove
+        {
+            _pageInteractiveLayerPointerMoved -= value;
+            InteractiveLayer?.PageInteractiveLayerPointerMoved -= value;
+        }
+    }
+
+    public event EventHandler<PageInteractiveLayerPointerExitedEventArgs>? PageInteractiveLayerPointerExited
+    {
+        add
+        {
+            InteractiveLayer?.PageInteractiveLayerPointerExited += value;
+            _pageInteractiveLayerPointerExited += value;
+        }
+
+        remove
+        {
+            _pageInteractiveLayerPointerExited -= value;
+            InteractiveLayer?.PageInteractiveLayerPointerExited -= value;
         }
     }
 
@@ -157,6 +220,26 @@ public sealed class PageItem : ContentControl
         {
             InteractiveLayer.PageTextSelectionChanged += _pageTextSelectionChanged;
         }
+
+        if (_pageInteractiveLayerPointerPressed is not null)
+        {
+            InteractiveLayer.PageInteractiveLayerPointerPressed += _pageInteractiveLayerPointerPressed;
+        }
+
+        if (_pageInteractiveLayerPointerReleased is not null)
+        {
+            InteractiveLayer.PageInteractiveLayerPointerReleased += _pageInteractiveLayerPointerReleased;
+        }
+
+        if (_pageInteractiveLayerPointerMoved is not null)
+        {
+            InteractiveLayer.PageInteractiveLayerPointerMoved += _pageInteractiveLayerPointerMoved;
+        }
+
+        if (_pageInteractiveLayerPointerExited is not null)
+        {
+            InteractiveLayer.PageInteractiveLayerPointerExited += _pageInteractiveLayerPointerExited;
+        }
     }
 
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
@@ -164,5 +247,9 @@ public sealed class PageItem : ContentControl
         base.OnDetachedFromLogicalTree(e);
         Picture?.Dispose();
         InteractiveLayer?.PageTextSelectionChanged -= _pageTextSelectionChanged;
+        InteractiveLayer?.PageInteractiveLayerPointerPressed -= _pageInteractiveLayerPointerPressed;
+        InteractiveLayer?.PageInteractiveLayerPointerReleased -= _pageInteractiveLayerPointerReleased;
+        InteractiveLayer?.PageInteractiveLayerPointerMoved -= _pageInteractiveLayerPointerMoved;
+        InteractiveLayer?.PageInteractiveLayerPointerExited -= _pageInteractiveLayerPointerExited;
     }
 }

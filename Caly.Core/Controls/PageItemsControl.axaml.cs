@@ -105,6 +105,10 @@ public sealed class PageItemsControl : ItemsControl
         defaultBindingMode: BindingMode.TwoWay);
 
     public event EventHandler<PageTextSelectionChangedEventArgs>? PageTextSelectionChanged;
+    public event EventHandler<PageInteractiveLayerPointerPressedEventArgs>? PageInteractiveLayerPointerPressed;
+    public event EventHandler<PageInteractiveLayerPointerReleasedEventArgs>? PageInteractiveLayerPointerReleased;
+    public event EventHandler<PageInteractiveLayerPointerMovedEventArgs>? PageInteractiveLayerPointerMoved;
+    public event EventHandler<PageInteractiveLayerPointerExitedEventArgs>? PageInteractiveLayerPointerExited;
 
     private TabsControl? _tabsControl;
 
@@ -208,11 +212,34 @@ public sealed class PageItemsControl : ItemsControl
             return;
         }
 
-        cp.PageTextSelectionChanged -= _pageTextSelectionChanged;
         cp.PageTextSelectionChanged += _pageTextSelectionChanged;
+        cp.PageInteractiveLayerPointerMoved += _pageInteractiveLayerPointerMoved;
+        cp.PageInteractiveLayerPointerPressed += _pageInteractiveLayerPointerPressed;
+        cp.PageInteractiveLayerPointerReleased += _pageInteractiveLayerPointerReleased;
+        cp.PageInteractiveLayerPointerExited += _pageInteractiveLayerPointerExited;
 
         vm.VisibleArea = null;
         App.Messenger.Send(new LoadPageMessage(vm));
+    }
+
+    private void _pageInteractiveLayerPointerExited(object? sender, PageInteractiveLayerPointerExitedEventArgs e)
+    {
+        PageInteractiveLayerPointerExited?.Invoke(this, e);
+    }
+
+    private void _pageInteractiveLayerPointerReleased(object? sender, PageInteractiveLayerPointerReleasedEventArgs e)
+    {
+        PageInteractiveLayerPointerReleased?.Invoke(this, e);
+    }
+
+    private void _pageInteractiveLayerPointerPressed(object? sender, PageInteractiveLayerPointerPressedEventArgs e)
+    {
+        PageInteractiveLayerPointerPressed?.Invoke(this, e);
+    }
+
+    private void _pageInteractiveLayerPointerMoved(object? sender, PageInteractiveLayerPointerMovedEventArgs e)
+    {
+        PageInteractiveLayerPointerMoved?.Invoke(this, e);
     }
 
     private void _pageTextSelectionChanged(object? sender, PageTextSelectionChangedEventArgs e)
@@ -230,6 +257,9 @@ public sealed class PageItemsControl : ItemsControl
         }
 
         cp.PageTextSelectionChanged -= _pageTextSelectionChanged;
+        cp.PageInteractiveLayerPointerMoved -= _pageInteractiveLayerPointerMoved;
+        cp.PageInteractiveLayerPointerPressed -= _pageInteractiveLayerPointerPressed;
+        cp.PageInteractiveLayerPointerReleased -= _pageInteractiveLayerPointerReleased;
 
         if (cp.DataContext is PageViewModel vm)
         {
