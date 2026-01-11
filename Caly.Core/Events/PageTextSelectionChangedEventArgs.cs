@@ -3,110 +3,139 @@ using Caly.Pdf.Models;
 using System;
 using Avalonia;
 
-namespace Caly.Core.Events
+namespace Caly.Core.Events;
+
+public abstract class PageInteractiveLayerPointerEventArgs : EventArgs
 {
-    // OnPointerMoved
-
-    public abstract class PageInteractiveLayerPointerEventArgs : EventArgs
+    protected PageInteractiveLayerPointerEventArgs(int pageNumber,
+        Point position,
+        PointerPointProperties properties,
+        KeyModifiers keyModifiers,
+        PdfWord? word,
+        PdfAnnotation? annotation)
     {
-        protected PageInteractiveLayerPointerEventArgs(int pageNumber,
-            Point position,
-            PointerPointProperties properties,
-            PdfWord? word,
-            PdfAnnotation? annotation)
+        System.Diagnostics.Debug.Assert(pageNumber >= 1);
+        PageNumber = pageNumber;
+        Position = position;
+        Properties = properties;
+        KeyModifiers = keyModifiers;
+        Word = word;
+        Annotation = annotation;
+    }
+
+    public PointerPointProperties Properties { get; }
+
+    public KeyModifiers KeyModifiers { get; }
+
+    public Point Position { get; }
+
+    public int PageNumber { get; }
+
+    public PdfWord? Word { get; }
+
+    public PdfAnnotation? Annotation { get; }
+
+    public bool IsPanning()
+    {
+        if (!Properties.IsLeftButtonPressed)
         {
-            System.Diagnostics.Debug.Assert(pageNumber >= 1);
-            PageNumber = pageNumber;
-            Position = position;
-            Properties = properties;
-            Word = word;
-            Annotation = annotation;
+            return false;
         }
 
-        public PointerPointProperties Properties { get; }
-
-        public Point Position { get; }
-
-        public int PageNumber { get; }
-
-        public PdfWord? Word { get; }
-
-        public PdfAnnotation? Annotation { get; }
+        var hotkeys = Application.Current!.PlatformSettings?.HotkeyConfiguration;
+        return hotkeys is not null && KeyModifiers.HasFlag(hotkeys.CommandModifiers);
     }
 
-    public sealed class PageInteractiveLayerPointerExitedEventArgs : PageInteractiveLayerPointerEventArgs
+    public bool IsPanningOrZooming()
     {
-        public PageInteractiveLayerPointerExitedEventArgs(int pageNumber, Point position, PointerPointProperties properties)
-            : base(pageNumber, position, properties, null, null)
-        { }
+        var hotkeys = Application.Current!.PlatformSettings?.HotkeyConfiguration;
+        return hotkeys is not null && KeyModifiers.HasFlag(hotkeys.CommandModifiers);
     }
+}
 
-    public sealed class PageInteractiveLayerPointerMovedEventArgs : PageInteractiveLayerPointerEventArgs
+public sealed class PageInteractiveLayerPointerExitedEventArgs : PageInteractiveLayerPointerEventArgs
+{
+    public PageInteractiveLayerPointerExitedEventArgs(int pageNumber, Point position,
+        PointerPointProperties properties, KeyModifiers keyModifiers)
+        : base(pageNumber, position, properties, keyModifiers, null, null)
+    { }
+}
+
+public sealed class PageInteractiveLayerPointerMovedEventArgs : PageInteractiveLayerPointerEventArgs
+{
+    public PageInteractiveLayerPointerMovedEventArgs(int pageNumber,
+        Point position,
+        PointerPointProperties properties,
+        KeyModifiers keyModifiers,
+        PdfWord? word,
+        PdfAnnotation? annotation,
+        Point? startPosition)
+        : base(pageNumber, position, properties, keyModifiers, word, annotation)
     {
-        public PageInteractiveLayerPointerMovedEventArgs(int pageNumber,
-            Point position,
-            PointerPointProperties properties,
-            PdfWord? word,
-            PdfAnnotation? annotation,
-            Point? startPosition)
-            : base(pageNumber, position,properties, word, annotation)
-        {
-            StartPosition = startPosition;
-        }
-
-        public Point? StartPosition { get; }
-
-        public bool IsDragging => StartPosition.HasValue;
+        StartPosition = startPosition;
     }
 
-    public sealed class PageInteractiveLayerPointerReleasedEventArgs : PageInteractiveLayerPointerEventArgs
+    public Point? StartPosition { get; }
+
+    public bool IsDragging => StartPosition.HasValue;
+}
+
+public sealed class PageInteractiveLayerPointerReleasedEventArgs : PageInteractiveLayerPointerEventArgs
+{
+    public PageInteractiveLayerPointerReleasedEventArgs(int pageNumber,
+        Point position,
+        PointerPointProperties properties,
+        KeyModifiers keyModifiers,
+        PdfWord? word,
+        PdfAnnotation? annotation)
+        : base(pageNumber, position, properties, keyModifiers, word, annotation)
+    { }
+}
+
+public sealed class PageInteractiveLayerPointerPressedEventArgs : PageInteractiveLayerPointerEventArgs
+{
+    public PageInteractiveLayerPointerPressedEventArgs(int pageNumber,
+        Point position,
+        PointerPointProperties properties,
+        KeyModifiers keyModifiers,
+        int clickCount,
+        PdfWord? word,
+        PdfAnnotation? annotation)
+        : base(pageNumber, position, properties, keyModifiers, word, annotation)
     {
-        public PageInteractiveLayerPointerReleasedEventArgs(int pageNumber,
-            Point position,
-            PointerPointProperties properties,
-            PdfWord? word,
-            PdfAnnotation? annotation)
-            : base(pageNumber, position, properties, word, annotation)
-        { }
+        ClickCount = clickCount;
     }
 
-    public sealed class PageInteractiveLayerPointerPressedEventArgs : PageInteractiveLayerPointerEventArgs
+    public int ClickCount { get; } 
+}
+
+public class PageTextSelectionChangedEventArgs : EventArgs
+{
+    public PageTextSelectionChangedEventArgs(int pageNumber, PdfWord? startWord, PdfWord? endWord,
+        bool isMultipleClick = false)
     {
-        public PageInteractiveLayerPointerPressedEventArgs(int pageNumber,
-            Point position,
-            PointerPointProperties properties,
-            PdfWord? word,
-            PdfAnnotation? annotation)
-            : base(pageNumber, position,properties, word, annotation)
-        { }
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
+
+        PageNumber = pageNumber;
+        StartWord = startWord;
+        EndWord = endWord;
+        IsMultipleClick = isMultipleClick;
     }
 
-    public class PageTextSelectionChangedEventArgs : EventArgs
-    {
-        public PageTextSelectionChangedEventArgs(int pageNumber, PdfWord? startWord, PdfWord? endWord, bool isMultipleClick = false)
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
-            
-            PageNumber = pageNumber;
-            StartWord = startWord;
-            EndWord = endWord;
-            IsMultipleClick = isMultipleClick;
-        }
-        
-        public int PageNumber { get; }
+    public int PageNumber { get; }
 
-        public PdfWord? StartWord { get; }
+    public PdfWord? StartWord { get; }
 
-        public PdfWord? EndWord { get; }
+    public PdfWord? EndWord { get; }
 
-        public bool IsMultipleClick { get; }
+    public bool IsMultipleClick { get; }
 
-        public bool IsReset => StartWord is null && EndWord is null;
-    }
+    public bool IsReset => StartWord is null && EndWord is null;
+}
 
-    public sealed class PageTextSelectionResetEventArgs : PageTextSelectionChangedEventArgs
-    {
-        public PageTextSelectionResetEventArgs(int pageNumber) : base(pageNumber, null, null)
-        { }
-    }
+public sealed class PageTextSelectionResetEventArgs : PageTextSelectionChangedEventArgs
+{
+    public PageTextSelectionResetEventArgs(int pageNumber)
+        : base(pageNumber, null, null)
+    { }
 }

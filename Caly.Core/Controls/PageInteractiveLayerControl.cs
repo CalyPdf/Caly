@@ -254,22 +254,38 @@ public sealed class PageInteractiveLayerControl : Control
         // TODO - We have an issue when scrolling and changing page here, similar the TrySwitchCapture
         // not sure how we should address it
 
-        HandlePointerMove(point, pointerPoint.Properties);
+        HandlePointerMove(point, pointerPoint.Properties, e);
     }
 
-    private void HandlePointerMove(Point point, PointerPointProperties properties)
+    private void HandlePointerMove(Point point, PointerPointProperties properties, PointerEventArgs e)
     {
         if (!_isDragging && properties.IsLeftButtonPressed && _startPointerPressed.HasValue)
         {
             _isDragging = _startPointerPressed.Value.Euclidean(point) > 1.0;
         }
 
+        if (_isDragging && !Bounds.Contains(point))
+        {
+            if (TrySwitchCapture(e))
+            {
+                System.Diagnostics.Debug.WriteLine($"Capture switched from '{PageNumber}'.");
+            }
+            return;
+        }
+
         PdfWord? word = PdfTextLayer!.FindWordOver(point.X, point.Y);
         if (word is not null)
         {
-            SetIbeamCursor();
+            if (PdfTextLayer.GetLine(word)?.IsInteractive == true)
+            {
+                SetHandCursor();
+            }
+            else
+            {
+                SetIbeamCursor();
+            }
         }
-        else if (!_isDragging)
+        else
         {
             SetDefaultCursor();
         }
@@ -294,7 +310,7 @@ public sealed class PageInteractiveLayerControl : Control
 
         PageInteractiveLayerPointerMoved?.Invoke(this,
             new PageInteractiveLayerPointerMovedEventArgs(PageNumber!.Value,
-                point, properties, word, annotation, _isDragging ? _startPointerPressed!.Value : null));
+                point, properties,e.KeyModifiers, word, annotation, _isDragging ? _startPointerPressed!.Value : null));
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
@@ -317,7 +333,7 @@ public sealed class PageInteractiveLayerControl : Control
         var pointerPoint = e.GetCurrentPoint(this);
         var point = pointerPoint.Position;
 
-        HandlePointerMove(point, pointerPoint.Properties);
+        HandlePointerMove(point, pointerPoint.Properties, e);
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
@@ -346,7 +362,8 @@ public sealed class PageInteractiveLayerControl : Control
         PdfWord? word = PdfTextLayer.FindWordOver(point.X, point.Y);
         PdfAnnotation? annotation = PdfTextLayer.FindAnnotationOver(point.X, point.Y);
 
-        PageInteractiveLayerPointerReleased?.Invoke(this, new PageInteractiveLayerPointerReleasedEventArgs(PageNumber!.Value, point, pointerPoint.Properties, word, annotation));
+        PageInteractiveLayerPointerReleased?.Invoke(this,
+            new PageInteractiveLayerPointerReleasedEventArgs(PageNumber!.Value, point, pointerPoint.Properties, e.KeyModifiers, word, annotation));
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -376,7 +393,10 @@ public sealed class PageInteractiveLayerControl : Control
         PdfWord? word = PdfTextLayer.FindWordOver(point.X, point.Y);
         PdfAnnotation? annotation = PdfTextLayer.FindAnnotationOver(point.X, point.Y);
 
-        PageInteractiveLayerPointerPressed?.Invoke(this, new PageInteractiveLayerPointerPressedEventArgs(PageNumber!.Value, point, pointerPoint.Properties, word, annotation));
+        PageInteractiveLayerPointerPressed?.Invoke(this,
+            new PageInteractiveLayerPointerPressedEventArgs(PageNumber!.Value, point,
+                pointerPoint.Properties, e.KeyModifiers, e.ClickCount,
+                word, annotation));
     }
 
     protected override void OnPointerExited(PointerEventArgs e)
@@ -387,7 +407,8 @@ public sealed class PageInteractiveLayerControl : Control
         HideAnnotation();
 
         var pointerPoint = e.GetCurrentPoint(this);
-        PageInteractiveLayerPointerExited?.Invoke(this, new PageInteractiveLayerPointerExitedEventArgs(PageNumber!.Value, pointerPoint.Position, pointerPoint.Properties));
+        PageInteractiveLayerPointerExited?.Invoke(this,
+            new PageInteractiveLayerPointerExitedEventArgs(PageNumber!.Value, pointerPoint.Position, pointerPoint.Properties, e.KeyModifiers));
     }
 
     public void ClearSelection()
@@ -447,50 +468,7 @@ public sealed class PageInteractiveLayerControl : Control
         attachedFlyout.Hide();
         attachedFlyout.Content = null;
     }
-
-    /// <summary>
-    /// Handle mouse hover over words, links or others
-    /// </summary>
-    public void HandleMouseMoveOver(Point loc)
-    {
-        PdfAnnotation? annotation = PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
-
-        if (annotation is not null)
-        {
-            if (!string.IsNullOrEmpty(annotation.Content))
-            {
-                ShowAnnotation(annotation);
-            }
-
-            if (annotation.IsInteractive)
-            {
-                SetHandCursor();
-                return;
-            }
-        }
-        else
-        {
-            HideAnnotation();
-        }
-
-        PdfWord? word = PdfTextLayer!.FindWordOver(loc.X, loc.Y);
-        if (word is not null)
-        {
-            if (PdfTextLayer.GetLine(word)?.IsInteractive == true)
-            {
-                SetHandCursor();
-            }
-            else
-            {
-                SetIbeamCursor();
-            }
-        }
-        else
-        {
-            SetDefaultCursor();
-        }
-    }
-
+    
     public void HandleMultipleClick(PointerPressedEventArgs e, PdfWord word)
     {
         if (PdfTextLayer is null)
@@ -546,8 +524,8 @@ public sealed class PageInteractiveLayerControl : Control
             return false;
         }
 
-        PageInteractiveLayerControl endTextLayer = endPage.InteractiveLayer ??
-                                                   throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
+        var endTextLayer = endPage.InteractiveLayer ??
+                           throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
 
         e.Pointer.Capture(endTextLayer); // Switch capture to new page
         return true;

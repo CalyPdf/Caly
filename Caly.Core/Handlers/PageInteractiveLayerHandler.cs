@@ -232,10 +232,6 @@ namespace Caly.Core.Handlers
                 // Text selection
                 HandleMouseMoveSelection(control, e, loc);
             }
-            else
-            {
-                control.HandleMouseMoveOver(loc);
-            }
         }
 
         private void HandleMouseMoveSelection(PageInteractiveLayerControl control, PointerEventArgs e, Point loc)
