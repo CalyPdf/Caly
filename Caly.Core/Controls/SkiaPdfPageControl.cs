@@ -62,7 +62,7 @@ namespace Caly.Core.Controls;
             private readonly IRef<SKPicture>? _picture;
             private readonly SKPaint _paint;
             private readonly double _ppiScale;
-            
+
             private readonly Lock _lock = new Lock();
 
             public SkiaDrawOperation(Rect bounds, double ppiScale, IRef<SKPicture>? picture)
@@ -80,7 +80,6 @@ namespace Caly.Core.Controls;
 
             public void Dispose()
             {
-                System.Diagnostics.Debug.WriteLine($"Disposing SkiaDrawOperation {DateTime.UtcNow:O}");
                 lock (_lock)
                 {
                     _picture?.Dispose();
@@ -92,7 +91,22 @@ namespace Caly.Core.Controls;
 
             public bool HitTest(Point p) => Bounds.Contains(p);
 
-            public bool Equals(ICustomDrawOperation? other) => false;
+            public bool Equals(ICustomDrawOperation? other)
+            {
+                return other is SkiaDrawOperation op &&
+                       op.Bounds == Bounds &&
+                       op._picture?.Item?.UniqueId == _picture?.Item?.UniqueId;
+            }
+
+            public override bool Equals(object? obj)
+            {
+                return obj is ICustomDrawOperation cdo && Equals(cdo);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(Bounds, _picture?.Item?.UniqueId);
+            }
 
             /// <summary>
             /// This operation is executed on Render thread.
@@ -121,7 +135,7 @@ namespace Caly.Core.Controls;
 
                         canvas.Save();
                         // The canvas could be clipped here: canvas.ClipRect(_visibleArea);
-                        
+
                         var scale = SKMatrix.CreateScale((float)_ppiScale, (float)_ppiScale);
                         canvas.DrawPicture(_picture.Item, in scale, _paint);
 
@@ -231,7 +245,6 @@ namespace Caly.Core.Controls;
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine($"Creating SkiaDrawOperation {DateTime.UtcNow:O}");
             context.Custom(new SkiaDrawOperation(viewPort, PpiScale, picture));
         }
     }
