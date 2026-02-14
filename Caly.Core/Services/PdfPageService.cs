@@ -31,7 +31,6 @@ using SkiaSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -51,7 +50,7 @@ namespace Caly.Core.Services
 
         private sealed class RenderRequestComparer : IComparer<RenderRequest>
         {
-            public static readonly RenderRequestComparer Instance = new RenderRequestComparer();
+            public static readonly RenderRequestComparer Instance = new();
 
             public int Compare(RenderRequest? x, RenderRequest? y)
             {
@@ -68,28 +67,19 @@ namespace Caly.Core.Services
             }
         }
 
-        private sealed class RenderRequest : IDisposable, IEquatable<RenderRequest>
+        private sealed class RenderRequest : IEquatable<RenderRequest>
         {
-            private readonly CancellationTokenSource _cts;
-
             public PageViewModel Page { get; }
 
             public RenderRequestTypes Type { get; }
 
-            public CancellationToken Token => _cts.Token;
-
-            public Task CancelAsync() => _cts.CancelAsync();
+            public CancellationToken Token { get; }
 
             public RenderRequest(PageViewModel page, RenderRequestTypes type, CancellationToken token)
             {
                 Page = page;
                 Type = type;
-                _cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            }
-
-            public void Dispose()
-            {
-                _cts.Dispose();
+                Token = token;
             }
 
             public bool Equals(RenderRequest? other)
@@ -173,10 +163,6 @@ namespace Caly.Core.Services
                     {
                         // We just ignore for the moment
                         Debug.WriteExceptionToFile(e);
-                    }
-                    finally
-                    {
-                        r.Dispose();
                     }
                 });
             }
