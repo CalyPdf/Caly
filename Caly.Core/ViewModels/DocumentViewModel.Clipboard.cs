@@ -33,14 +33,16 @@ public partial class DocumentViewModel
     [RelayCommand(CanExecute = nameof(CanCopyText))]
     private async Task CopyText(CancellationToken token)
     {
+        System.Diagnostics.Debug.Assert(TextSelection is not null);
+        
         try
         {
-            if (PageInteractiveLayerHandler?.Selection.IsValid != true)
+            if (!TextSelection.IsValid)
             {
                 return;
             }
 
-            bool success = await App.Messenger.Send(new CopyToClipboardRequestMessage(this, token));
+            bool success = await App.Messenger.Send(new CopyToClipboardRequestMessage(TextSelection, _pdfPageService, token));
             if (!success)
             {
                 // TODO - Error
@@ -55,6 +57,7 @@ public partial class DocumentViewModel
 
     private bool CanCopyText()
     {
-        return PageInteractiveLayerHandler?.Selection.IsValid == true;
+        System.Diagnostics.Debug.Assert(TextSelection is not null);
+        return TextSelection.IsValid;
     }
 }

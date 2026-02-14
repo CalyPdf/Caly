@@ -1,15 +1,14 @@
 ﻿using System;
 
-namespace Caly.Core
+namespace Caly.Core;
+
+public sealed class CalyCriticalException : Exception
 {
-    public sealed class CalyCriticalException : Exception
-    {
-        public bool TryRestartApp { get; init; }
-        
-        public CalyCriticalException() : base() { }
+    public bool TryRestartApp { get; init; }
 
-        public CalyCriticalException(string? message) : base(message) { }
+    public CalyCriticalException() : base() { }
 
-        public CalyCriticalException(string? message, Exception? innerException) : base(message, innerException) { }
-    }
+    public CalyCriticalException(string? message) : base(message) { }
+
+    public CalyCriticalException(string? message, Exception? innerException) : base(message, innerException) { }
 }

@@ -26,50 +26,49 @@ using Avalonia.Input;
 using Caly.Core.Services;
 using CommunityToolkit.Mvvm.Messaging;
 
-namespace Caly.Core.Views
+namespace Caly.Core.Views;
+
+public partial class MainView : UserControl
 {
-    public partial class MainView : UserControl
+    public MainView()
     {
-        public MainView()
+        InitializeComponent();
+        AddHandler(DragDrop.DropEvent, Drop);
+    }
+
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+
+        // Pass KeyBindings to top level
+        if (TopLevel.GetTopLevel(this) is Window w)
         {
-            InitializeComponent();
-            AddHandler(DragDrop.DropEvent, Drop);
+            w.KeyBindings.AddRange(KeyBindings);
         }
+    }
 
-        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    private static async void Drop(object? sender, DragEventArgs e)
+    {
+        try
         {
-            base.OnApplyTemplate(e);
-
-            // Pass KeyBindings to top level
-            if (TopLevel.GetTopLevel(this) is Window w)
+            if (!e.DataTransfer.Contains(DataFormat.File))
             {
-                w.KeyBindings.AddRange(KeyBindings);
+                return;
             }
+
+            var files = e.DataTransfer.TryGetFiles();
+
+            if (files is null)
+            {
+                return;
+            }
+
+            _ = await App.Messenger.Send(new OpenLoadDocumentsRequestMessage(files, CancellationToken.None));
         }
-
-        private static async void Drop(object? sender, DragEventArgs e)
+        catch (Exception ex)
         {
-            try
-            {
-                if (!e.DataTransfer.Contains(DataFormat.File))
-                {
-                    return;
-                }
-
-                var files = e.DataTransfer.TryGetFiles();
-
-                if (files is null)
-                {
-                    return;
-                }
-
-                _ = await App.Messenger.Send(new OpenLoadDocumentsRequestMessage(files, CancellationToken.None));
-            }
-            catch (Exception ex)
-            {
-                // TODO - Show dialog
-                Debug.WriteExceptionToFile(ex);
-            }
+            // TODO - Show dialog
+            Debug.WriteExceptionToFile(ex);
         }
     }
 }

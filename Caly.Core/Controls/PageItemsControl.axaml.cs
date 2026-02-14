@@ -18,10 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -33,11 +29,17 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
 using Avalonia.VisualTree;
-using Caly.Core.Services;
+using Caly.Core.Models;
 using Caly.Core.Utilities;
-using Caly.Core.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
+using Caly.Pdf;
+using Caly.Pdf.Models;
+using System;
+using System.Linq;
+using System.Windows.Input;
+using Avalonia.Threading;
 using Tabalonia.Controls;
+using UglyToad.PdfPig.Actions;
+using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Controls;
 
@@ -50,10 +52,6 @@ public sealed class PageItemsControl : ItemsControl
 {
     private const double _zoomFactor = 1.1;
 
-    private bool _isSettingPageVisibility = false;
-    private bool _isZooming = false;
-    private bool _isTabDragging = false;
-
     /// <summary>
     /// The default value for the <see cref="PageItemsControl.ItemsPanel"/> property.
     /// </summary>
@@ -65,47 +63,91 @@ public sealed class PageItemsControl : ItemsControl
     });
 
     /// <summary>
+    /// <c>true</c> if we are currently selecting text. <c>false</c> otherwise.
+    /// </summary>
+    private bool _isSelecting;
+
+    /// <summary>
+    /// <c>true</c> if we are selecting text though multiple click (full word selection).
+    /// </summary>
+    private bool _isMultipleClickSelection;
+
+    private Point? _startPointerPressed;
+    private Point? _currentPosition;
+    private bool _isSettingPageVisibility;
+    private bool _isZooming;
+    private bool _isTabDragging;
+    private bool _pendingScrollToPage;
+
+    private TabsControl? _tabsControl;
+    
+    /// <summary>
     /// Defines the <see cref="Scroll"/> property.
     /// </summary>
     public static readonly DirectProperty<PageItemsControl, ScrollViewer?> ScrollProperty =
-        AvaloniaProperty.RegisterDirect<PageItemsControl, ScrollViewer?>(nameof(Scroll), o => o.Scroll);
+        AvaloniaProperty.RegisterDirect<PageItemsControl, ScrollViewer?>(nameof(Scroll),
+            o => o.Scroll);
 
     /// <summary>
     /// Defines the <see cref="LayoutTransform"/> property.
     /// </summary>
     public static readonly DirectProperty<PageItemsControl, LayoutTransformControl?> LayoutTransformControlProperty =
-        AvaloniaProperty.RegisterDirect<PageItemsControl, LayoutTransformControl?>(nameof(LayoutTransform), o => o.LayoutTransform);
+        AvaloniaProperty.RegisterDirect<PageItemsControl, LayoutTransformControl?>(nameof(LayoutTransform),
+            o => o.LayoutTransform);
 
     /// <summary>
     /// Defines the <see cref="PageCount"/> property.
     /// </summary>
-    public static readonly StyledProperty<int> PageCountProperty = AvaloniaProperty.Register<PageItemsControl, int>(nameof(PageCount));
+    public static readonly StyledProperty<int> PageCountProperty =
+        AvaloniaProperty.Register<PageItemsControl, int>(nameof(PageCount));
 
     /// <summary>
-    /// Defines the <see cref="SelectedPageIndex"/> property. Starts at 1.
+    /// Defines the <see cref="SelectedPageNumber"/> property. Starts at 1.
     /// </summary>
-    public static readonly StyledProperty<int?> SelectedPageIndexProperty = AvaloniaProperty.Register<PageItemsControl, int?>(nameof(SelectedPageIndex), null,
-        defaultBindingMode: BindingMode.TwoWay);
+    public static readonly StyledProperty<int?> SelectedPageNumberProperty =
+        AvaloniaProperty.Register<PageItemsControl, int?>(nameof(SelectedPageNumber), defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="MinZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> MinZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(MinZoomLevel));
+    public static readonly StyledProperty<double> MinZoomLevelProperty =
+        AvaloniaProperty.Register<PageItemsControl, double>(nameof(MinZoomLevel));
 
     /// <summary>
     /// Defines the <see cref="MaxZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> MaxZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(MaxZoomLevel), 1);
+    public static readonly StyledProperty<double> MaxZoomLevelProperty =
+        AvaloniaProperty.Register<PageItemsControl, double>(nameof(MaxZoomLevel), 1);
 
     /// <summary>
     /// Defines the <see cref="ZoomLevel"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> ZoomLevelProperty = AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1,
-        defaultBindingMode: BindingMode.TwoWay);
-    
-    private ScrollViewer? _scroll;
-    private LayoutTransformControl? _layoutTransform;
-    private TabsControl? _tabsControl;
+    public static readonly StyledProperty<double> ZoomLevelProperty =
+        AvaloniaProperty.Register<PageItemsControl, double>(nameof(ZoomLevel), 1, defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Defines the <see cref="TextSelection"/> property.
+    /// </summary>
+    public static readonly StyledProperty<TextSelection?> TextSelectionProperty =
+        AvaloniaProperty.Register<PageItemsControl, TextSelection?>(nameof(TextSelection));
+
+    /// <summary>
+    /// Defines the <see cref="RealisedPages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> RealisedPagesProperty =
+        AvaloniaProperty.Register<PageItemsControl, Range?>(nameof(RealisedPages), defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Defines the <see cref="VisiblePages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> VisiblePagesProperty =
+        AvaloniaProperty.Register<PageItemsControl, Range?>(nameof(VisiblePages), defaultBindingMode: BindingMode.TwoWay);
+
+    public static readonly StyledProperty<ICommand?> RefreshPagesProperty =
+        AvaloniaProperty.Register<PageItemsControl, ICommand?>(nameof(RefreshPages));
+
+    public static readonly StyledProperty<ICommand?> ClearSelectionProperty =
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(ClearSelection));
 
     static PageItemsControl()
     {
@@ -113,14 +155,37 @@ public sealed class PageItemsControl : ItemsControl
         KeyboardNavigation.TabNavigationProperty.OverrideDefaultValue(typeof(PageItemsControl),
             KeyboardNavigationMode.Once);
     }
+
+    public ICommand? RefreshPages
+    {
+        get => GetValue(RefreshPagesProperty);
+        set => SetValue(RefreshPagesProperty, value);
+    }
+
+    public TextSelection? TextSelection
+    {
+        get => GetValue(TextSelectionProperty);
+        set => SetValue(TextSelectionProperty, value);
+    }
     
+    public ICommand? ClearSelection
+    {
+        get => GetValue(ClearSelectionProperty);
+        set => SetValue(ClearSelectionProperty, value);
+    }
+    
+    public PageItemsControl()
+    {
+        ResetState();
+    }
+
     /// <summary>
     /// Gets the scroll information for the <see cref="ListBox"/>.
     /// </summary>
     public ScrollViewer? Scroll
     {
-        get => _scroll;
-        private set => SetAndRaise(ScrollProperty, ref _scroll, value);
+        get;
+        private set => SetAndRaise(ScrollProperty, ref field, value);
     }
 
     /// <summary>
@@ -128,8 +193,8 @@ public sealed class PageItemsControl : ItemsControl
     /// </summary>
     public LayoutTransformControl? LayoutTransform
     {
-        get => _layoutTransform;
-        private set => SetAndRaise(LayoutTransformControlProperty, ref _layoutTransform, value);
+        get;
+        private set => SetAndRaise(LayoutTransformControlProperty, ref field, value);
     }
 
     public int PageCount
@@ -141,10 +206,10 @@ public sealed class PageItemsControl : ItemsControl
     /// <summary>
     /// Starts at 1.
     /// </summary>
-    public int? SelectedPageIndex
+    public int? SelectedPageNumber
     {
-        get => GetValue(SelectedPageIndexProperty);
-        set => SetValue(SelectedPageIndexProperty, value);
+        get => GetValue(SelectedPageNumberProperty);
+        set => SetValue(SelectedPageNumberProperty, value);
     }
 
     public double MinZoomLevel
@@ -163,6 +228,24 @@ public sealed class PageItemsControl : ItemsControl
     {
         get => GetValue(ZoomLevelProperty);
         set => SetValue(ZoomLevelProperty, value);
+    }
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? RealisedPages
+    {
+        get => GetValue(RealisedPagesProperty);
+        set => SetValue(RealisedPagesProperty, value);
+    }
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? VisiblePages
+    {
+        get => GetValue(VisiblePagesProperty);
+        set => SetValue(VisiblePagesProperty, value);
     }
 
     /// <summary>
@@ -198,69 +281,532 @@ public sealed class PageItemsControl : ItemsControl
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
-
-        if (_isTabDragging ||
-            container is not PageItem ||
-            item is not PageViewModel vm)
+        if (_isTabDragging || container is not PageItem pageItem)
         {
             System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
             return;
         }
 
-        vm.VisibleArea = null;
-        App.Messenger.Send(new LoadPageMessage(vm));
+        pageItem.Loaded += PageItem_Loaded;
+        pageItem.Unloaded += PageItem_Unloaded;
+
+        pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
     }
 
+    private void PageItem_Unloaded(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not PageItem pageItem)
+        {
+            return;
+        }
+
+        pageItem.Unloaded -= PageItem_Unloaded;
+
+        if (pageItem.TextLayer is null)
+        {
+            return;
+        }
+
+        pageItem.TextLayer.PointerMoved -= TextLayer_PointerMoved;
+        pageItem.TextLayer.PointerWheelChanged -= TextLayer_PointerMoved;
+        pageItem.TextLayer.PointerExited -= TextLayer_PointerExited;
+        pageItem.TextLayer.PointerReleased -= TextLayer_PointerReleased;
+        pageItem.TextLayer.PointerPressed -= TextLayer_PointerPressed;
+    }
+
+    private void PageItem_Loaded(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not PageItem pageItem)
+        {
+            return;
+        }
+
+        pageItem.Loaded -= PageItem_Loaded;
+
+        if (pageItem.TextLayer is null)
+        {
+            return;
+        }
+
+        pageItem.TextLayer.PointerMoved += TextLayer_PointerMoved;
+        pageItem.TextLayer.PointerWheelChanged += TextLayer_PointerMoved;
+        pageItem.TextLayer.PointerExited += TextLayer_PointerExited;
+        pageItem.TextLayer.PointerReleased += TextLayer_PointerReleased;
+        pageItem.TextLayer.PointerPressed += TextLayer_PointerPressed;
+    }
+
+    private void TextLayer_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        Debug.ThrowNotOnUiThread();
+        
+        if (TextSelection is null || sender is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
+        {
+            return;
+        }
+        
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            control.HideAnnotation();
+            return;
+        }
+
+        bool clearSelection = false;
+
+        _isMultipleClickSelection = e.ClickCount > 1;
+
+        var pointerPoint = e.GetCurrentPoint(control);
+        var point = pointerPoint.Position;
+
+        if (pointerPoint.Properties.IsLeftButtonPressed)
+        {
+            _startPointerPressed = point;
+
+            // Text selection
+            PdfWord? word = control.PdfTextLayer.FindWordOver(point.X, point.Y);
+
+            if (word is not null && TextSelection.IsWordSelected(control.PageNumber!.Value, word))
+            {
+                clearSelection = e.ClickCount == 1; // Clear selection if single click
+                HandleMultipleClick(control, e, word); // TODO - we pass 1 click here too
+            }
+            else if (word is not null && e.ClickCount == 2)
+            {
+                // TODO - do better multiple click selection
+                HandleMultipleClick(control, e, word);
+            }
+            else
+            {
+                clearSelection = true;
+            }
+        }
+
+        if (clearSelection)
+        {
+            ClearSelection?.Execute(null);
+        }
+
+        e.Handled = true;
+        e.PreventGestureRecognition();
+    }
+
+    private void HandleMultipleClick(PageInteractiveLayerControl control, PointerPressedEventArgs e, PdfWord word)
+    {
+        if (TextSelection is null || control.PdfTextLayer is null)
+        {
+            return;
+        }
+
+        PdfWord? startWord;
+        PdfWord? endWord;
+
+        switch (e.ClickCount)
+        {
+            case 2:
+            {
+                // Select whole word
+                startWord = word;
+                endWord = word;
+                break;
+            }
+            case 3:
+            {
+                // Select whole line
+                var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
+                var line = block.TextLines![word.TextLineIndex - block.TextLines[0].IndexInPage];
+
+                startWord = line.Words[0];
+                endWord = line.Words[^1];
+                break;
+            }
+            case 4:
+            {
+                // Select whole paragraph
+                var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
+
+                startWord = block.TextLines![0].Words![0];
+                endWord = block.TextLines![^1].Words![^1];
+                break;
+            }
+            default:
+                System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: Not handled, got {e.ClickCount} click(s).");
+                return;
+        }
+
+        ClearSelection?.Execute(null);
+
+        int pageNumber = control.PageNumber!.Value;
+        TextSelection.Start(pageNumber, startWord);
+        TextSelection.Extend(pageNumber, endWord);
+
+        System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: {startWord} -> {endWord}.");
+    }
+
+    private void TextLayer_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        Debug.ThrowNotOnUiThread();
+
+        if (sender is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
+        {
+            return;
+        }
+
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            return;
+        }
+
+        _startPointerPressed = null;
+
+        var pointerPoint = e.GetCurrentPoint(control);
+
+        bool ignore = _isSelecting || _isMultipleClickSelection;
+        if (!ignore && pointerPoint.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
+        {
+            ClearSelection?.Execute(null);
+
+            // Check link
+            if (!_isSelecting)
+            {
+                var point = pointerPoint.Position;
+
+                // Annotation
+                PdfAnnotation? annotation = control.PdfTextLayer.FindAnnotationOver(point.X, point.Y);
+
+                if (annotation?.Action is not null)
+                {
+                    switch (annotation.Action.Type)
+                    {
+                        case ActionType.URI:
+                            string? uri = ((UriAction)annotation.Action)?.Uri;
+                            if (!string.IsNullOrEmpty(uri))
+                            {
+                                CalyExtensions.OpenBrowser(uri);
+                                return;
+                            }
+                            break;
+
+                        case ActionType.GoTo:
+                        case ActionType.GoToE:
+                        case ActionType.GoToR:
+                            var goToAction = (AbstractGoToAction)annotation.Action;
+                            var dest = goToAction?.Destination;
+                            if (dest is not null)
+                            {
+                                var documentControl = control.FindAncestorOfType<DocumentControl>();
+                                documentControl?.GoToPage(dest.PageNumber);
+                                return;
+                            }
+                            else
+                            {
+                                // Log error
+                            }
+                            break;
+                    }
+                }
+
+                // Words
+                PdfWord? word = control.PdfTextLayer.FindWordOver(point.X, point.Y);
+                if (word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
+                {
+                    /*
+                     * TODO - Use TopLevel.GetTopLevel(source)?.Launcher
+                     *  if (e.Source is Control source && TopLevel.GetTopLevel(source)?.Launcher is {}
+                     *  launcher && word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
+                     *  ...
+                     *  launcher.LaunchUriAsync(new Uri(match.ToString()))
+                     */
+
+                    var match = PdfTextLayerHelper.GetInteractiveMatch(line);
+                    if (!match.IsEmpty)
+                    {
+                        CalyExtensions.OpenBrowser(match);
+                    }
+                }
+            }
+        }
+
+        _isSelecting = false;
+
+        e.Handled = true;
+        e.PreventGestureRecognition();
+    }
+
+    private static void TextLayer_PointerExited(object? sender, PointerEventArgs e)
+    {
+        Debug.ThrowNotOnUiThread();
+
+        if (sender is not PageInteractiveLayerControl interactiveLayer)
+        {
+            return;
+        }
+
+        interactiveLayer.SetDefaultCursor();
+        interactiveLayer.HideAnnotation();
+    }
+    
+    private void TextLayer_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        Debug.ThrowNotOnUiThread();
+
+        // Needs to be on UI thread to access
+        if (sender is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
+        {
+            return;
+        }
+
+        if (e.IsPanningOrZooming())
+        {
+            // Panning pages is not handled here
+            return;
+        }
+
+        var pointerPoint = e.GetCurrentPoint(control);
+        var loc = pointerPoint.Position;
+
+        if (e is PointerWheelEventArgs we)
+        {
+            // TODO - Looks like there's a bug in Avalonia (TBC) where the position of the pointer
+            // is 1 step behind the actual position.
+            // We need to add back this step (1 scroll step is 50, see link below)
+            // https://github.com/AvaloniaUI/Avalonia/blob/dadc9ab69284bb228ad460f36d5442b4eee4a82a/src/Avalonia.Controls/Presenters/ScrollContentPresenter.cs#L684
+
+            var adjPoint = new Point(50, 50);
+            var matrix = control.GetLayoutTransformMatrix();
+
+            if (!matrix.IsIdentity && matrix.TryInvert(out var inverted))
+            {
+                adjPoint = inverted.Transform(adjPoint);
+            }
+
+            double x = Math.Max(loc.X - we.Delta.X * adjPoint.X, 0);
+            double y = Math.Max(loc.Y - we.Delta.Y * adjPoint.Y, 0);
+
+            loc = new Point(x, y);
+
+            // TODO - We have an issue when scrolling and changing page here, similar the TrySwitchCapture
+            // not sure how we should address it
+        }
+
+        if (pointerPoint.Properties.IsLeftButtonPressed && _startPointerPressed.HasValue && _startPointerPressed.Value.Euclidean(loc) > 1.0)
+        {
+            // Text selection
+            HandleMouseMoveSelection(control, e, loc);
+        }
+        else
+        {
+            HandleMouseMoveOver(control, loc);
+        }
+    }
+
+    private void HandleMouseMoveSelection(PageInteractiveLayerControl control, PointerEventArgs e, Point loc)
+    {
+        if (_isMultipleClickSelection || TextSelection is null)
+        {
+            return;
+        }
+
+        if (!control.Bounds.Contains(loc))
+        {
+            if (TrySwitchCapture(e))
+            {
+                System.Diagnostics.Debug.WriteLine($"TrySwitchCapture from {control.PageNumber}");
+            }
+
+            return;
+        }
+
+        // Get the line under the cursor or nearest from the top
+        PdfTextLine? lineBox = control.PdfTextLayer!.FindLineOver(loc.X, loc.Y);
+
+        PdfWord? word = null;
+        if (TextSelection.HasStarted && lineBox is null)
+        {
+            // Try to find the closest line as we are already selecting something
+            word = FindNearestWordWhileSelecting(loc, control.PdfTextLayer);
+        }
+
+        if (lineBox is null && word is null)
+        {
+            return;
+        }
+
+        if (lineBox is not null && word is null)
+        {
+            // Get the word under the cursor
+            word = lineBox.FindWordOver(loc.X, loc.Y);
+
+            // If no word found under the cursor use the last or the first word in the line
+            if (word is null)
+            {
+                word = lineBox.FindNearestWord(loc.X, loc.Y);
+            }
+        }
+
+        if (word is null)
+        {
+            return;
+        }
+
+        // If there is matching word
+        bool allowPartialSelect = !_isMultipleClickSelection;
+
+        Point? partialSelectLoc = allowPartialSelect ? loc : null;
+        if (!TextSelection.HasStarted)
+        {
+            TextSelection.Start(control.PageNumber!.Value, word, partialSelectLoc);
+        }
+
+        // Always set the focus word
+        TextSelection.Extend(control.PageNumber!.Value, word, partialSelectLoc);
+
+        control.SetIbeamCursor();
+
+        _isSelecting = TextSelection.IsSelecting;
+    }
+
+    /// <summary>
+    /// Handle mouse hover over words, links or others
+    /// </summary>
+    private static void HandleMouseMoveOver(PageInteractiveLayerControl control, Point loc)
+    {
+        PdfAnnotation? annotation = control.PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
+
+        if (annotation is not null)
+        {
+            if (!string.IsNullOrEmpty(annotation.Content))
+            {
+                control.ShowAnnotation(annotation);
+            }
+
+            if (annotation.IsInteractive)
+            {
+                control.SetHandCursor();
+                return;
+            }
+        }
+        else
+        {
+            control.HideAnnotation();
+        }
+
+        PdfWord? word = control.PdfTextLayer!.FindWordOver(loc.X, loc.Y);
+        if (word is not null)
+        {
+            if (control.PdfTextLayer.GetLine(word)?.IsInteractive == true)
+            {
+                control.SetHandCursor();
+            }
+            else
+            {
+                control.SetIbeamCursor();
+            }
+        }
+        else
+        {
+            control.SetDefaultCursor();
+        }
+    }
+
+    private static PdfWord? FindNearestWordWhileSelecting(Point loc, PdfTextLayer textLayer)
+    {
+        if (textLayer.TextBlocks is null || textLayer.TextBlocks.Count == 0)
+        {
+            return null;
+        }
+
+        // Try finding the closest line as we are already selecting something
+
+        // TODO - To finish, improve performance
+        var point = new PdfPoint(loc.X, loc.Y);
+
+        double dist = double.MaxValue;
+        double projectionOnLine = 0;
+        PdfTextLine? l = null;
+
+        foreach (var block in textLayer.TextBlocks)
+        {
+            foreach (var line in block.TextLines)
+            {
+                PdfPoint? projection = PdfPointExtensions.ProjectPointOnLine(in point,
+                    line.BoundingBox.BottomLeft,
+                    line.BoundingBox.BottomRight,
+                    out double s);
+
+                if (!projection.HasValue || s < 0)
+                {
+                    // If s < 0, the cursor is before the line (to the left), we ignore
+                    continue;
+                }
+
+                // If s > 1, the cursor is after the line (to the right), we measure distance from bottom right corner
+                PdfPoint referencePoint = s > 1 ? line.BoundingBox.BottomRight : projection.Value;
+
+                double localDist = SquaredWeightedEuclidean(in point, in referencePoint, wY: 4); // Make y direction farther
+
+                // TODO - Prevent selection line 'below' cursor
+
+                if (localDist < dist)
+                {
+                    dist = localDist;
+                    l = line;
+                    projectionOnLine = s;
+                }
+            }
+        }
+
+        if (l is null)
+        {
+            return null;
+        }
+
+        if (projectionOnLine >= 1)
+        {
+            // Cursor after line, return last word
+            return l.Words[^1];
+        }
+
+        // TODO - to improve, we already know where on the line is the point thanks to 'projectionOnLine'
+        return l.FindNearestWord(loc.X, loc.Y);
+
+        static double SquaredWeightedEuclidean(in PdfPoint point1, in PdfPoint point2, double wX = 1.0, double wY = 1.0)
+        {
+            double dx = point1.X - point2.X;
+            double dy = point1.Y - point2.Y;
+            return wX * dx * dx + wY * dy * dy;
+        }
+    }
+
+    /// <summary>
+    /// Switch pointer capture to the page under the cursor if we are selecting text and the cursor is outside the current page.
+    /// </summary>
+    private bool TrySwitchCapture(PointerEventArgs e)
+    {
+        PageItem? endPage = GetPageItemOver(e);
+        if (endPage is null)
+        {
+            // Cursor is not over any page, do nothing
+            return false;
+        }
+
+        PageInteractiveLayerControl endTextLayer = endPage.TextLayer ??
+                                                   throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
+
+        e.Pointer.Capture(endTextLayer); // Switch capture to new page
+        return true;
+    }
+    
     protected override void ClearContainerForItemOverride(Control container)
     {
         base.ClearContainerForItemOverride(container);
         
-        if (container is not PageItem cp)
+        if (container is not PageItem pageItem)
         {
             return;
         }
 
-        if (cp.DataContext is PageViewModel vm)
-        {
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: doc vm: {this.DataContext}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: page vm: {vm}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: isTabDragging: {_isTabDragging}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: HasRealisedItems: {HasRealisedItems()}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: IsPageRealised: {IsPageRealised(vm)}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsView?.Count: {ItemsView?.Count}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride: ItemsSource: {(ItemsSource as ObservableCollection<PageViewModel>)?.Count}");
-            System.Diagnostics.Debug.WriteLine($"ClearContainerForItemOverride:  vm.VisibleArea: {vm.VisibleArea}");
-
-            App.Messenger.Send(new UnloadPageMessage(vm));
-
-            if (vm.VisibleArea.HasValue)
-            {
-                vm.VisibleArea = null;
-            }
-            else
-            {
-                // This is a sign that the page won't load properly.
-                // We are trying to cancel a page that needs to be
-                // rendered. The page picture, text and visibility
-                // will not be correct. To fix that, we do that once
-                // when the layout is updated.
-                cp.LayoutUpdated += PageItemLayoutUpdated;
-            }
-        }
-    }
-    
-    private void PageItemLayoutUpdated(object? sender, EventArgs e)
-    {
-        if (sender is not PageItem cp)
-        {
-            return;
-        }
-
-        System.Diagnostics.Debug.WriteLine($"PageItemLayoutUpdated: {cp.DataContext}");
-
-        cp.LayoutUpdated -= PageItemLayoutUpdated; // Only once
-
-        SetPagesVisibility();
+        pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
     }
 
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
@@ -280,7 +826,7 @@ public sealed class PageItemsControl : ItemsControl
     {
         if (ItemsPanelRoot is VirtualizingStackPanel v)
         {
-            return Math.Max(0, v.FirstRealizedIndex);
+            return v.FirstRealizedIndex;
         }
         return 0;
     }
@@ -292,6 +838,11 @@ public sealed class PageItemsControl : ItemsControl
     {
         if (ItemsPanelRoot is VirtualizingStackPanel v && v.LastRealizedIndex != -1)
         {
+            if (v.LastRealizedIndex == -1)
+            {
+                return -1;
+            }
+
             return Math.Min(PageCount, v.LastRealizedIndex + 1);
         }
 
@@ -318,7 +869,12 @@ public sealed class PageItemsControl : ItemsControl
         int minPageIndex = GetMinPageIndex();
         int maxPageIndex = GetMaxPageIndex(); // Exclusive
 
-        int startIndex = SelectedPageIndex.HasValue ? SelectedPageIndex.Value - 1 : 0; // Switch from one-indexed to zero-indexed
+        if (minPageIndex == -1 || maxPageIndex == -1)
+        {
+            return null;
+        }
+
+        int startIndex = SelectedPageNumber.HasValue ? SelectedPageNumber.Value - 1 : 0; // Switch from one-indexed to zero-indexed
 
         bool isAfterSelectedPage = false;
 
@@ -381,9 +937,7 @@ public sealed class PageItemsControl : ItemsControl
 
         return null;
     }
-
-    private Point? _currentPosition = null;
-
+    
     internal void SetPanCursor()
     {
         Debug.ThrowNotOnUiThread();
@@ -401,8 +955,8 @@ public sealed class PageItemsControl : ItemsControl
         base.OnApplyTemplate(e);
 
         Scroll = e.NameScope.FindFromNameScope<ScrollViewer>("PART_ScrollViewer");
-        Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
-        Scroll.AddHandler(SizeChangedEvent, (_, _) => SetPagesVisibility(), RoutingStrategies.Direct);
+        Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => PostUpdatePagesVisibility());
+        Scroll.AddHandler(SizeChangedEvent, (_, _) => PostUpdatePagesVisibility(), RoutingStrategies.Direct);
         Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
         Scroll.AddHandler(KeyUpEvent, OnKeyUpHandler);
         Scroll.Focus(); // Make sure the Scroll has focus
@@ -435,8 +989,8 @@ public sealed class PageItemsControl : ItemsControl
         
         if (Scroll is not null)
         {
-            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => SetPagesVisibility());
-            Scroll.RemoveHandler(SizeChangedEvent, (_, _) => SetPagesVisibility());
+            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => PostUpdatePagesVisibility());
+            Scroll.RemoveHandler(SizeChangedEvent, (_, _) => PostUpdatePagesVisibility());
             Scroll.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
             Scroll.RemoveHandler(KeyUpEvent, OnKeyUpHandler);
         }
@@ -477,23 +1031,19 @@ public sealed class PageItemsControl : ItemsControl
         }
         
         _isTabDragging = false;
-        foreach (Control cp in GetRealizedContainers())
+        foreach (var pageItem in GetRealizedContainers().OfType<PageItem>())
         {
-            if (cp.DataContext is PageViewModel vm)
-            {
-                vm.VisibleArea = null;
-                App.Messenger.Send(new LoadPageMessage(vm));
-            }
+            pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
         }
 
-        if (SelectedPageIndex.HasValue)
+        if (SelectedPageNumber.HasValue)
         {
             // Ensure we are on the correct page
             // and containers are realised
-            GoToPage(SelectedPageIndex.Value);
+            GoToPage(SelectedPageNumber.Value);
         }
-        
-        SetPagesVisibility();
+
+        PostUpdatePagesVisibility();
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
@@ -510,10 +1060,6 @@ public sealed class PageItemsControl : ItemsControl
         ItemsPanelRoot.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
     }
 
-    /// <summary>
-    /// The number of first layout updates to listen to.
-    /// </summary>
-    private int _layoutUpdateCount = 5;
     private void ItemsPanelRoot_LayoutUpdated(object? sender, EventArgs e)
     {
         // When ItemsPanelRoot is first loaded, there is a chance that a container
@@ -524,66 +1070,63 @@ public sealed class PageItemsControl : ItemsControl
 
         if (GetMaxPageIndex() > 0)
         {
-            // We have enough containers realised, we can stop listening to layout updates.
-            _layoutUpdateCount = 0;
-        }
-        
-        if (_layoutUpdateCount == 0)
-        {
-            ItemsPanelRoot!.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
-        }
-        
-        try
-        {
-            SetPagesVisibility();
-        }
-        finally
-        {
-            _layoutUpdateCount--;
+            if (_pendingScrollToPage)
+            {
+                // After a DataContext change (tab/document switch), items are now realized.
+                // Scroll to the correct page before running auto-selection to prevent
+                // UpdatePagesVisibility from selecting the wrong page based on a stale viewport.
+                _pendingScrollToPage = false;
+                if (SelectedPageNumber.HasValue && SelectedPageNumber.Value > 0 && SelectedPageNumber.Value <= PageCount)
+                {
+                    ScrollIntoView(SelectedPageNumber.Value - 1);
+                    return; // Wait for the scroll to trigger another layout update.
+                }
+            }
+
+            if (UpdatePagesVisibility())
+            {
+                // We have enough containers realised, we can stop listening to layout updates.
+                ItemsPanelRoot!.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+            }
         }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ItemsSourceProperty)
-        {
-            if (change.OldValue is not IEnumerable<PageViewModel> items)
-            {
-                return;
-            }
 
-            foreach (var vm in items)
-            {
-                System.Diagnostics.Debug.Assert(!vm.VisibleArea.HasValue);
-
-                if (vm.PdfPicture is not null)
-                {
-                    // TODO - Check why this happens
-                    App.Messenger.Send(new UnloadPageMessage(vm));
-                }
-            }
-        }
-        else if (change.Property == DataContextProperty)
+        if (change.Property == DataContextProperty)
         {
+            ResetState();
+            _pendingScrollToPage = true;
             Scroll?.Focus();
+            EnsureValidContainersVisibility();
+            ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
+        }
+    }
 
-            if (ItemsPanelRoot is VirtualizingStackPanel panel)
+    private void EnsureValidContainersVisibility()
+    {
+        // This is a hack to ensure only valid containers (realised) are visible
+        // See https://github.com/CalyPdf/Caly/issues/11
+
+        if (ItemsPanelRoot is null)
+        {
+            return;
+        }
+
+        var realised = GetRealizedContainers().OfType<PageItem>().ToArray();
+        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<PageItem>().ToArray();
+
+        if (realised.Length != visibleChildren.Length)
+        {
+            foreach (var child in visibleChildren.Except(realised))
             {
-                // This is a hack to ensure PageItem that belongs to not Active documents are not visible
-                // See https://github.com/CalyPdf/Caly/issues/11
-                var children = panel.Children.OfType<PageItem>().ToArray();
-                foreach (var child in children)
-                {
-                    if (child is { IsVisible: true, DataContext: PageViewModel { PdfService.IsActive: false } })
-                    {
-                        child.SetCurrentValue(Visual.IsVisibleProperty, false);
-                    }
-                }
+                child.SetCurrentValue(IsVisibleProperty, false);
             }
         }
     }
-    
+
     private void ItemsPanelRoot_DataContextChanged(object? sender, EventArgs e)
     {
         LayoutUpdated += OnLayoutUpdatedOnce;
@@ -596,7 +1139,7 @@ public sealed class PageItemsControl : ItemsControl
         // Ensure the pages visibility is set when OnApplyTemplate()
         // is not called, i.e. when a new document is opened but the
         // page has exactly the same dimension of the visible page
-        SetPagesVisibility();
+        PostUpdatePagesVisibility();
     }
     
     private bool HasRealisedItems()
@@ -609,234 +1152,215 @@ public sealed class PageItemsControl : ItemsControl
         return false;
     }
 
-    private bool IsPageRealised(PageViewModel vm)
+    private void PostUpdatePagesVisibility()
     {
-        var index = ItemsView.IndexOf(vm);
-        if (index >= 0 && ItemsPanelRoot is VirtualizingStackPanel vsp)
-        {
-            return index >= vsp.FirstRealizedIndex && index <= vsp.LastRealizedIndex;
-        }
-
-        return false;
+        Dispatcher.UIThread.Post(() => UpdatePagesVisibility(), DispatcherPriority.Loaded);
     }
 
-    private void SetPagesVisibility()
+    private bool UpdatePagesVisibility()
     {
-        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: {(DataContext as DocumentViewModel)}");
-
-        if (_isSettingPageVisibility || _isTabDragging)
+        // Exit early if the view is unstable (e.g., user interacting)
+        if (_isSettingPageVisibility || _isTabDragging || _isZooming)
         {
-            return;
-        }
-
-        if (_isZooming)
-        {
-            return;
+            return false;
         }
 
         if (LayoutTransform is null || Scroll is null ||
-            Scroll.Viewport.IsEmpty() || ItemsView.Count == 0 ||
-            !HasRealisedItems())
+            Scroll.Viewport.IsEmpty() || ItemsView.Count == 0 || !HasRealisedItems())
         {
-            return;
+            return false;
         }
 
         Debug.AssertIsNullOrScale(LayoutTransform.LayoutTransform?.Value);
 
+        // Compute viewport in document coordinates
         double invScale = 1.0 / (LayoutTransform.LayoutTransform?.Value.M11 ?? 1.0);
-        Matrix fastInverse = Matrix.CreateScale(invScale, invScale);
+        Rect viewport = Scroll.GetViewportRect().TransformToAABB(Matrix.CreateScale(invScale, invScale));
 
-        Rect viewPort = Scroll.GetViewportRect().TransformToAABB(fastInverse);
+        int firstRealisedIndex = GetMinPageIndex();
+        int lastRealisedIndex = GetMaxPageIndex();
 
-        // Use the following: not visible pages cannot be between visible pages
-        // We cannot have:
-        // nv - v - v - nv - v - nv
-        // We will always have:
-        // nv - v - v - v - nv - nv
-        //
-        // There are 3 possible splits:
-        // [nv] | [v] [nv]
-        // [nv] [v] | [nv]
-        //
-        // [nv] | [nv] [v] [nv]
-        // [nv] [v] [nv] | [nv]
-        //
-        // [nv] [v] | [v] [nv]
-
-        bool isPreviousPageVisible = false;
-        bool needMoreChecks = true;
-
-        double maxOverlap = double.MinValue;
-        int indexMaxOverlap = -1;
-
-        bool CheckPageVisibility(int p, out bool isPageVisible)
+        if (firstRealisedIndex == -1 || lastRealisedIndex == -1)
         {
-            isPageVisible = false;
-
-            if (ContainerFromIndex(p) is not PageItem { Content: PageViewModel vm } cp)
+            SetCurrentValue(RealisedPagesProperty, null);
+            if (VisiblePages.HasValue)
             {
-                // Page is not realised
-                return !isPreviousPageVisible;
+                SetCurrentValue(VisiblePagesProperty, null);
+                RefreshPages?.Execute(null);
             }
-
-            if (!needMoreChecks || cp.Bounds.IsEmpty())
-            {
-                if (!vm.IsPageVisible)
-                {
-                    // Page is not visible and no need for more checks.
-                    // All following pages are already set to IsPageVisible = false
-                    return false;
-                }
-
-                vm.VisibleArea = null;
-                return true;
-            }
-
-            Rect view = cp.Bounds;
-
-            if (view.Height == 0)
-            {
-                // No need for further checks, not visible
-                vm.VisibleArea = null;
-                return true;
-            }
-
-            double vmWidth = vm.IsPortrait ? vm.Width : vm.Height;
-            if (Math.Abs(view.Width - vmWidth) > double.Epsilon)
-            {
-                double delta = (view.Width - vmWidth) / 2.0; // Centered
-                view = new Rect(
-                    view.Position.X + delta,
-                    view.Position.Y,
-                    vmWidth,
-                    view.Height);
-            }
-
-            double top = view.Top;
-            double left = view.Left;
-            double bottom = view.Bottom;
-
-            // Quick check if height overlap
-            if (OverlapsHeight(viewPort.Top, viewPort.Bottom, top, bottom))
-            {
-                // Compute overlap
-                view = view.Intersect(viewPort);
-
-                double overlapArea = view.Height * view.Width;
-
-                // Actual check if page is visible
-                if (overlapArea == 0)
-                {
-                    vm.VisibleArea = null;
-                    // If previous page was visible but current page is not, we have the last visible page
-                    needMoreChecks = !isPreviousPageVisible;
-                    return true;
-                }
-
-                System.Diagnostics.Debug.Assert(view.Height.Equals(Overlap(viewPort.Top, viewPort.Bottom, top, bottom)));
-
-                if (overlapArea > maxOverlap)
-                {
-                    maxOverlap = overlapArea;
-                    indexMaxOverlap = p;
-                }
-
-                isPreviousPageVisible = true;
-                isPageVisible = true;
-
-                // Set overlap area (Translate and inverse transform)
-                Rect visibleArea = view.Translate(new Vector(-left, -top));
-
-                switch (vm.Rotation)
-                {
-                    case 90:
-                        visibleArea = new Rect(visibleArea.Y,
-                            cp.Bounds.Width - visibleArea.Right,
-                            visibleArea.Height,
-                            visibleArea.Width);
-                        break;
-
-                    case 180:
-                        visibleArea = new Rect(cp.Bounds.Width - visibleArea.Right,
-                            cp.Bounds.Height - visibleArea.Bottom,
-                            visibleArea.Width,
-                            visibleArea.Height);
-                        break;
-
-                    case 270:
-                        visibleArea = new Rect(cp.Bounds.Height - visibleArea.Bottom,
-                            visibleArea.X,
-                            visibleArea.Height,
-                            visibleArea.Width);
-                        break;
-
-#if DEBUG
-                    default:
-                        System.Diagnostics.Debug.Assert(vm.Rotation == 0);
-                        break;
-#endif
-                }
-
-                vm.VisibleArea = visibleArea;
-
-                return true;
-            }
-
-            vm.VisibleArea = null;
-            // If previous page was visible but current page is not, we have the last visible page
-            needMoreChecks = !isPreviousPageVisible;
+            
             return true;
         }
 
-        // Check current page visibility
-        int startIndex = SelectedPageIndex.HasValue ? SelectedPageIndex.Value - 1 : 0; // Switch from one-indexed to zero-indexed
-        CheckPageVisibility(startIndex, out bool isSelectedPageVisible);
+        int startIndex = (SelectedPageNumber ?? 1) - 1;
 
-        int minPageIndex = GetMinPageIndex();
-        int maxPageIndex = GetMaxPageIndex(); // Exclusive
-
-        System.Diagnostics.Debug.WriteLine($"SetPagesVisibility: minPageIndex={minPageIndex} maxPageIndex={maxPageIndex}");
-
-        // Start with checking forward.
-        // TODO - While scrolling down, the current selected page can become invisible and force
-        // a full iteration if starting backward
-        isPreviousPageVisible = isSelectedPageVisible; // Previous page is SelectedPageIndex
-        int forwardIndex = startIndex + 1;
-        while (forwardIndex < maxPageIndex && CheckPageVisibility(forwardIndex, out _))
+        // Adjust start if previous visible range is outdated
+        if (VisiblePages is { } prev && (prev.Start.Value < firstRealisedIndex + 1 || prev.End.Value > lastRealisedIndex + 1))
         {
-            forwardIndex++;
+            // Previous visible pages are out of the realised pages.
+            // The previous visible pages were marked as not visible,
+            // on container clearing.
+            // Start from first realised page.
+            startIndex = firstRealisedIndex;
         }
 
-        // Continue with checking backward
-        isPreviousPageVisible = isSelectedPageVisible; // Previous page is SelectedPageIndex
+        bool needMoreChecks = true;
+        bool wasVisible = false;
+        double maxOverlap = double.MinValue;
+        int mostVisibleIndex = -1;
+
+        bool CheckPage(int index, out bool visible)
+        {
+            visible = false;
+            if (ContainerFromIndex(index) is not PageItem page)
+            {
+                return !wasVisible; // Skip unrealised pages but stop after last visible one.
+            }
+
+            if (!needMoreChecks || page.Bounds.IsEmpty())
+            {
+                page.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+                return wasVisible;
+            }
+
+            var bounds = GetAlignedBounds(page);
+            if (!OverlapsHeight(viewport.Top, viewport.Bottom, bounds.Top, bounds.Bottom))
+            {
+                page.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+                needMoreChecks = !wasVisible;
+                return true;
+            }
+
+            var intersect = bounds.Intersect(viewport);
+            double overlapArea = intersect.Height * intersect.Width;
+            if (overlapArea <= 0)
+            {
+                page.SetCurrentValue(PageItem.VisibleAreaProperty, null);
+                needMoreChecks = !wasVisible;
+                return true;
+            }
+
+            if (overlapArea > maxOverlap)
+            {
+                maxOverlap = overlapArea;
+                mostVisibleIndex = index;
+            }
+
+            visible = true;
+            page.SetCurrentValue(PageItem.VisibleAreaProperty, ComputeVisibleArea(page, intersect));
+            return true;
+        }
+
+        // Check visibility starting from current selection, then forward and backward.
+        CheckPage(startIndex, out bool selectedVisible);
+
+        int firstVisibleIndex = selectedVisible ? startIndex : -1;
+        int lastVisibleIndex = selectedVisible ? startIndex : -1;
+
+        wasVisible = selectedVisible;
+        for (int i = startIndex + 1; i <= lastRealisedIndex && CheckPage(i, out bool visible); ++i)
+        {
+            if (visible)
+            {
+                lastVisibleIndex = i;
+                if (!wasVisible)
+                {
+                    firstVisibleIndex = i;
+                }
+            }
+
+            wasVisible = visible;
+        }
+
+        wasVisible = selectedVisible;
         needMoreChecks = true;
-        int backwardIndex = startIndex - 1;
-        while (backwardIndex >= minPageIndex && CheckPageVisibility(backwardIndex, out _))
+        for (int i = startIndex - 1; i >= firstRealisedIndex && CheckPage(i, out bool visible); --i)
         {
-            backwardIndex--;
+            if (visible)
+            {
+                firstVisibleIndex = i;
+                if (lastVisibleIndex == -1)
+                {
+                    lastVisibleIndex = i;
+                }
+            }
+
+            wasVisible = visible;
         }
 
-        indexMaxOverlap++; // Switch to base 1 indexing
+        // Update bound properties
+        SetCurrentValue(RealisedPagesProperty, new Range(firstRealisedIndex + 1, lastRealisedIndex + 2));
 
-        if (indexMaxOverlap == 0 || SelectedPageIndex == indexMaxOverlap)
+        Range? currentVisiblePages = null;
+        if (firstVisibleIndex != -1 && lastVisibleIndex != -1) // No visible pages
         {
-            return;
+            currentVisiblePages = new Range(firstVisibleIndex + 1, lastVisibleIndex + 2);
         }
 
-        try
+        if (!VisiblePages.HasValue || !VisiblePages.Value.Equals(currentVisiblePages))
+        {
+            SetCurrentValue(VisiblePagesProperty, currentVisiblePages);
+            RefreshPages?.Execute(null);
+        }
+
+        // Auto-select the page with the largest overlap
+        if (mostVisibleIndex >= 0 && SelectedPageNumber != mostVisibleIndex + 1)
         {
             _isSettingPageVisibility = true;
-            SetCurrentValue(SelectedPageIndexProperty, indexMaxOverlap);
+            try
+            {
+                SetCurrentValue(SelectedPageNumberProperty, mostVisibleIndex + 1);
+            }
+            finally
+            {
+                _isSettingPageVisibility = false;
+            }
         }
-        finally
+
+#if DEBUG
+        if (VisiblePages.HasValue)
         {
-            _isSettingPageVisibility = false;
+            foreach (var item in Items.OfType<ViewModels.PageViewModel>())
+            {
+                if (item.PageNumber >= VisiblePages.Value.Start.Value && item.PageNumber < VisiblePages.Value.End.Value)
+                {
+                    System.Diagnostics.Debug.Assert(item.IsPageVisible);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(!item.IsPageVisible);
+                }
+            }
         }
+#endif
+
+        return true;
     }
 
-    private static double Overlap(double top1, double bottom1, double top2, double bottom2)
+    private static Rect ComputeVisibleArea(PageItem page, Rect visible)
     {
-        return Math.Max(0, Math.Min(bottom1, bottom2) - Math.Max(top1, top2));
+        visible = visible.Translate(new Vector(-page.Bounds.Left, -page.Bounds.Top));
+        return page.Rotation switch
+        {
+            90 => new Rect(visible.Y, page.Bounds.Width - visible.Right, visible.Height, visible.Width),
+            180 => new Rect(page.Bounds.Width - visible.Right, page.Bounds.Height - visible.Bottom, visible.Width, visible.Height),
+            270 => new Rect(page.Bounds.Height - visible.Bottom, visible.X, visible.Height, visible.Width),
+            _ => visible
+        };
+    }
+
+    private static Rect GetAlignedBounds(PageItem page)
+    {
+        var bounds = page.Bounds;
+        if (bounds.Height == 0) return bounds;
+
+        double expectedWidth = page.Width;
+        if (Math.Abs(bounds.Width - expectedWidth) > double.Epsilon)
+        {
+            double offset = (bounds.Width - expectedWidth) / 2.0;
+            bounds = new Rect(bounds.X + offset, bounds.Y, expectedWidth, bounds.Height);
+        }
+        return bounds;
     }
 
     /// <summary>
@@ -1116,5 +1640,18 @@ public sealed class PageItemsControl : ItemsControl
     {
         double s = 1 - scale;
         return new Vector(x * s, y * s);
+    }
+
+    private void ResetState()
+    {
+        SetCurrentValue(VisiblePagesProperty, null);
+        _currentPosition = null;
+        _isSelecting = false;
+        _isMultipleClickSelection = false;
+        _startPointerPressed = null;
+        _isSettingPageVisibility = false;
+        _isZooming = false;
+        _isTabDragging = false;
+        _pendingScrollToPage = false;
     }
 }

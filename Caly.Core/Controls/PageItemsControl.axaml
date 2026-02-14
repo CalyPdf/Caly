@@ -37,7 +37,8 @@
 									  Focusable="True"
 									  HorizontalAlignment="Stretch"
 									  VerticalAlignment="Stretch"
-									  IsScrollInertiaEnabled="True">
+									  IsScrollInertiaEnabled="True"
+                                      BringIntoViewOnFocusChange="False">
 
 							<ScrollViewer.KeyBindings>
 								<KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.CopyGesture}" Command="{Binding CopyTextCommand}" />

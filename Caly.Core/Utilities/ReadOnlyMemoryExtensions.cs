@@ -22,59 +22,51 @@ using System;
 using System.Buffers;
 using System.Text;
 
-namespace Caly.Core.Utilities
+namespace Caly.Core.Utilities;
+
+internal static class ReadOnlyMemoryExtensions
 {
-    internal static class ReadOnlyMemoryExtensions
+    private const char Padding = '\0';
+    private const char Space = ' ';
+
+    public static void AppendClean(this StringBuilder sb, ReadOnlyMemory<char> memory)
     {
-        private const char Padding = '\0';
-        private const char Space = ' ';
+        Span<char> output = memory.Length < 512 ?
+            stackalloc char[memory.Length] :
+            new char[memory.Length];
 
-        public static void AppendClean(this StringBuilder sb, ReadOnlyMemory<char> memory)
+        memory.Span.CopyTo(output);
+
+        // Padding chars are problematic in string builder, we remove them
+        for (int i = 0; i < output.Length; ++i)
         {
-            Span<char> output = memory.Length < 512 ?
-                stackalloc char[(int)memory.Length] :
-                new char[memory.Length];
-
-            memory.Span.CopyTo(output);
-
-            // Padding chars are problematic in string builder, we remove them
-            for (int i = 0; i < output.Length; ++i)
+            if (output[i] == Padding)
             {
-                if (output[i] == Padding)
-                {
-                    output[i] = Space;
-                }
-            }
-
-            if (!output.IsEmpty && !MemoryExtensions.IsWhiteSpace(output))
-            {
-                sb.Append(output);
+                output[i] = Space;
             }
         }
 
-        public static string GetString(this ReadOnlySequence<char> sequence)
+        if (!output.IsEmpty && !output.IsWhiteSpace())
         {
-            return string.Create((int)sequence.Length, sequence, (chars, state) =>
-            {
-                // https://www.stevejgordon.co.uk/creating-strings-with-no-allocation-overhead-using-string-create-csharp
-                state.CopyTo(chars);
-            });
+            sb.Append(output);
         }
+    }
 
-        public static string GetString(this ReadOnlyMemory<char> memory)
+    public static string GetString(this ReadOnlySequence<char> sequence)
+    {
+        return string.Create((int)sequence.Length, sequence, (chars, state) =>
         {
-            /*
-            if (MemoryMarshal.TryGetString(memory, out string? str, out _, out _))
-            {
-                return str;
-            }
-            */
+            // https://www.stevejgordon.co.uk/creating-strings-with-no-allocation-overhead-using-string-create-csharp
+            state.CopyTo(chars);
+        });
+    }
 
-            return string.Create(memory.Length, memory, (chars, state) =>
-            {
-                // https://www.stevejgordon.co.uk/creating-strings-with-no-allocation-overhead-using-string-create-csharp
-                state.Span.CopyTo(chars);
-            });
-        }
+    public static string GetString(this ReadOnlyMemory<char> memory)
+    {
+        return string.Create(memory.Length, memory, (chars, state) =>
+        {
+            // https://www.stevejgordon.co.uk/creating-strings-with-no-allocation-overhead-using-string-create-csharp
+            state.Span.CopyTo(chars);
+        });
     }
 }

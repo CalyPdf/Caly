@@ -22,30 +22,29 @@ using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
 
-namespace Caly.Core.Views
+namespace Caly.Core.Views;
+
+public partial class MainWindow : Window
 {
-    public partial class MainWindow : Window
+    public WindowNotificationManager? NotificationManager { get; set; }
+
+    public MainWindow()
     {
-        public WindowNotificationManager? NotificationManager { get; set; }
+        InitializeComponent();
+    }
 
-        public MainWindow()
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        NotificationManager = new WindowNotificationManager(this)
         {
-            InitializeComponent();
-        }
-
-        protected override void OnLoaded(RoutedEventArgs e)
-        {
-            NotificationManager = new WindowNotificationManager(this)
-            {
-                Position = NotificationPosition.BottomRight,
+            Position = NotificationPosition.BottomRight,
 #if DEBUG
-                MaxItems = 50
+            MaxItems = 50
 #else
-                MaxItems = 5
+            MaxItems = 5
 #endif
-            };
+        };
 
-            base.OnLoaded(e); // We need to OnLoad() after the NotificationManager is created
-        }
+        base.OnLoaded(e); // We need to OnLoad() after the NotificationManager is created
     }
 }

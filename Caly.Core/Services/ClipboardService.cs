@@ -28,15 +28,14 @@ using System.Threading.Tasks;
 using Avalonia.Input.Platform;
 using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
-using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
 
-namespace Caly.Core.Services
+namespace Caly.Core.Services;
+
+internal sealed class ClipboardService : IClipboardService
 {
-    internal sealed class ClipboardService : IClipboardService
-    {
-        // English rules
-        private static readonly FrozenSet<UnicodeCategory> _noSpaceAfter = new HashSet<UnicodeCategory>
+    // English rules
+    private static readonly FrozenSet<UnicodeCategory> _noSpaceAfter = new HashSet<UnicodeCategory>
         {
             UnicodeCategory.OpenPunctuation,        // ( [ {
             UnicodeCategory.InitialQuotePunctuation,// “ ‘
@@ -44,7 +43,7 @@ namespace Caly.Core.Services
             UnicodeCategory.ConnectorPunctuation    // _
         }.ToFrozenSet();
 
-        private static readonly FrozenSet<UnicodeCategory> _noSpaceBefore = new HashSet<UnicodeCategory>
+    private static readonly FrozenSet<UnicodeCategory> _noSpaceBefore = new HashSet<UnicodeCategory>
         {
             UnicodeCategory.ClosePunctuation,       // ) ] }
             UnicodeCategory.FinalQuotePunctuation,  // ” ’
@@ -54,151 +53,146 @@ namespace Caly.Core.Services
             UnicodeCategory.CurrencySymbol          // $
         }.ToFrozenSet();
 
-        private readonly IClipboard _clipboard;
+    private readonly IClipboard _clipboard;
 
-        public ClipboardService(IClipboard? clipboard)
-        {
+    public ClipboardService(IClipboard? clipboard)
+    {
 #if DEBUG
-            if (Avalonia.Controls.Design.IsDesignMode)
-            {
-                _clipboard = clipboard!;
-                return;
-            }
+        if (Avalonia.Controls.Design.IsDesignMode)
+        {
+            _clipboard = clipboard!;
+            return;
+        }
 #endif
-            _clipboard = clipboard ?? throw new ArgumentNullException($"Could not find {typeof(IClipboard)}.");
+        _clipboard = clipboard ?? throw new ArgumentNullException($"Could not find {typeof(IClipboard)}.");
+    }
+
+    public static bool ShouldDehyphenate(in UnicodeCategory prevCategory, in int previousLine, in int currentLine)
+    {
+        // This is a very basic dehyphenation method
+        return currentLine > previousLine && prevCategory is UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation;
+    }
+
+    private static bool ShouldAddWhitespace(in UnicodeCategory prevCategory, in UnicodeCategory currentCategory)
+    {
+        return !_noSpaceAfter.Contains(prevCategory) &&
+               !_noSpaceBefore.Contains(currentCategory);
+    }
+
+    public async Task<bool> SetAsync(TextSelection selection, PdfPageService pdfPageService, CancellationToken token)
+    {
+        // TODO - Check use of tasks here
+
+        ArgumentNullException.ThrowIfNull(selection, nameof(selection));
+
+        if (!selection.IsValid)
+        {
+            return false;
         }
 
-        public static bool ShouldDehyphenate(in UnicodeCategory prevCategory, in int previousLine, in int currentLine)
+        System.Diagnostics.Debug.WriteLine("Starting IClipboardService.SetAsync");
+
+        string text = await Task.Run(async () =>
         {
-            // This is a very basic dehyphenation method
-            return currentLine > previousLine && prevCategory is UnicodeCategory.ConnectorPunctuation or UnicodeCategory.DashPunctuation;
-        }
+            var request = selection.GetDocumentSelectionAsAsync(
+                GetWord, GetPartialWord,
+                pdfPageService, token);
 
-        private static bool ShouldAddWhitespace(in UnicodeCategory prevCategory, in UnicodeCategory currentCategory)
-        {
-            return !_noSpaceAfter.Contains(prevCategory) &&
-                   !_noSpaceBefore.Contains(currentCategory);
-        }
-
-        public async Task<bool> SetAsync(DocumentViewModel document, CancellationToken token)
-        {
-            // TODO - Check use of tasks here
-
-            ArgumentNullException.ThrowIfNull(document.PageInteractiveLayerHandler, nameof(document.PageInteractiveLayerHandler));
-
-            TextSelection selection = document.PageInteractiveLayerHandler.Selection;
-
-            if (!selection.IsValid)
+            await using (var enumerator = request.GetAsyncEnumerator(token))
             {
-                return false;
-            }
-
-            // https://docs.avaloniaui.net/docs/next/concepts/services/clipboardS
-
-            System.Diagnostics.Debug.WriteLine("Starting IClipboardService.SetAsync");
-
-            string text = await Task.Run(async () =>
-            {
-                var request = selection.GetDocumentSelectionAsAsync(
-                    GetWord, GetPartialWord,
-                    document, token);
-
-                await using (var enumerator = request.GetAsyncEnumerator(token))
+                while (enumerator.Current.IsEmpty && await enumerator.MoveNextAsync())
                 {
-                    while (enumerator.Current.IsEmpty && await enumerator.MoveNextAsync())
-                    {
-                        // Find first word that is not empty
-                    }
-
-                    if (enumerator.Current.IsEmpty)
-                    {
-                        return string.Empty;
-                    }
-
-                    var sb = new StringBuilder().Append(enumerator.Current.Word);
-                    int previousLine = enumerator.Current.LineNumber;
-
-                    while (await enumerator.MoveNextAsync())
-                    {
-                        var blob = enumerator.Current;
-
-                        if (blob.Word.AsSpan().IsEmpty)
-                        {
-                            continue;
-                        }
-
-                        var prevLast = CharUnicodeInfo.GetUnicodeCategory(sb[^1]);
-
-                        if (ShouldDehyphenate(in prevLast, in previousLine, blob.LineNumber))
-                        {
-                            sb.Length--; // Remove hyphen
-                        }
-                        else if (ShouldAddWhitespace(in prevLast, CharUnicodeInfo.GetUnicodeCategory(blob.Word.AsSpan()[0])))
-                        {
-                            sb.Append(' '); // TODO - Add condition to check if next word exist
-                        }
-
-                        sb.Append(blob.Word);
-                        previousLine = blob.LineNumber;
-                    }
-
-                    if (sb.Length > 0 && char.IsWhiteSpace(sb[^1]))
-                    {
-                        sb.Length--; // Last char added was a space
-                    }
-
-                    return sb.ToString();
+                    // Find first word that is not empty
                 }
-            }, token);
 
-            await SetAsync(text);
+                if (enumerator.Current.IsEmpty)
+                {
+                    return string.Empty;
+                }
 
-            System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
+                var sb = new StringBuilder().Append(enumerator.Current.Word);
+                int previousLine = enumerator.Current.LineNumber;
 
-            return true;
-        }
+                while (await enumerator.MoveNextAsync())
+                {
+                    var blob = enumerator.Current;
 
-        public async Task SetAsync(string text)
-        {
-            await _clipboard.SetTextAsync(text);
-        }
+                    if (blob.Word.AsSpan().IsEmpty)
+                    {
+                        continue;
+                    }
 
-        public async Task ClearAsync()
-        {
-            await _clipboard.ClearAsync();
-        }
-        
-        private readonly struct TextBlob
-        {
-            public TextBlob(string word, int lineNumber)
-            {
-                Word = word;
-                LineNumber = lineNumber;
+                    var prevLast = CharUnicodeInfo.GetUnicodeCategory(sb[^1]);
+
+                    if (ShouldDehyphenate(in prevLast, in previousLine, blob.LineNumber))
+                    {
+                        sb.Length--; // Remove hyphen
+                    }
+                    else if (ShouldAddWhitespace(in prevLast, CharUnicodeInfo.GetUnicodeCategory(blob.Word.AsSpan()[0])))
+                    {
+                        sb.Append(' '); // TODO - Add condition to check if next word exist
+                    }
+
+                    sb.Append(blob.Word);
+                    previousLine = blob.LineNumber;
+                }
+
+                if (sb.Length > 0 && char.IsWhiteSpace(sb[^1]))
+                {
+                    sb.Length--; // Last char added was a space
+                }
+
+                return sb.ToString();
             }
+        }, token);
 
-            public string Word { get; }
+        await SetAsync(text);
 
-            public int LineNumber { get; }
+        System.Diagnostics.Debug.WriteLine("Ended IClipboardService.SetAsync");
 
-            public bool IsEmpty => Word.AsSpan().IsEmpty;
-        }
+        return true;
+    }
 
-        private static TextBlob GetWord(PdfWord word)
+    public async Task SetAsync(string text)
+    {
+        await _clipboard.SetTextAsync(text);
+    }
+
+    public async Task ClearAsync()
+    {
+        await _clipboard.ClearAsync();
+    }
+
+    private readonly struct TextBlob
+    {
+        public TextBlob(string word, int lineNumber)
         {
-            return new TextBlob(word.Value, word.TextLineIndex);
+            Word = word;
+            LineNumber = lineNumber;
         }
 
-        private static TextBlob GetPartialWord(PdfWord word, int startIndex, int endIndex)
-        {
-            System.Diagnostics.Debug.Assert(startIndex != -1);
-            System.Diagnostics.Debug.Assert(endIndex != -1);
-            System.Diagnostics.Debug.Assert(startIndex <= endIndex);
+        public string Word { get; }
 
-            endIndex = word.GetCharIndexFromBboxIndex(endIndex);
+        public int LineNumber { get; }
 
-            var span = word.Value.AsSpan().Slice(startIndex, endIndex - startIndex + 1);
+        public bool IsEmpty => Word.AsSpan().IsEmpty;
+    }
 
-            return new TextBlob(span.ToString(), word.TextLineIndex);
-        }
+    private static TextBlob GetWord(PdfWord word)
+    {
+        return new TextBlob(word.Value, word.TextLineIndex);
+    }
+
+    private static TextBlob GetPartialWord(PdfWord word, int startIndex, int endIndex)
+    {
+        System.Diagnostics.Debug.Assert(startIndex != -1);
+        System.Diagnostics.Debug.Assert(endIndex != -1);
+        System.Diagnostics.Debug.Assert(startIndex <= endIndex);
+
+        endIndex = word.GetCharIndexFromBboxIndex(endIndex);
+
+        var span = word.Value.AsSpan().Slice(startIndex, endIndex - startIndex + 1);
+
+        return new TextBlob(span.ToString(), word.TextLineIndex);
     }
 }

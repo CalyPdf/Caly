@@ -18,14 +18,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Caly.Pdf.Models
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
+using Caly.Core.ViewModels;
+
+namespace Caly.Core.Services.Interfaces;
+
+public interface IPdfDocumentsManagerService
 {
-    public readonly struct PdfPageInformation
-    {
-        public int PageNumber { get; init; }
+    /// <summary>
+    /// Open and load pdf document through popup window.
+    /// </summary>
+    Task OpenLoadDocument(CancellationToken cancellationToken);
 
-        public double Height { get; init; }
+    /// <summary>
+    /// Open and load the pdf document.
+    /// </summary>
+    Task OpenLoadDocument(IStorageFile? storageFile, CancellationToken cancellationToken);
 
-        public double Width { get; init; }
-    }
+    /// <summary>
+    /// Open and load the pdf documents.
+    /// </summary>
+    Task<int> OpenLoadDocuments(IEnumerable<IStorageItem?> storageFiles, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Open and load the pdf document.
+    /// </summary>
+    Task OpenLoadDocument(string? path, CancellationToken cancellationToken);
+
+    Task CloseUnloadDocument(DocumentViewModel? document);
 }

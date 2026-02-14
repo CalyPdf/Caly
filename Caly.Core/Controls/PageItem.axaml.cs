@@ -23,10 +23,10 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
-using Avalonia.LogicalTree;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using SkiaSharp;
+using System.Windows.Input;
 
 namespace Caly.Core.Controls;
 
@@ -46,19 +46,21 @@ public sealed class PageItem : ContentControl
     /// Defines the <see cref="Picture"/> property.
     /// </summary>
     public static readonly StyledProperty<IRef<SKPicture>?> PictureProperty =
-        AvaloniaProperty.Register<PageItem, IRef<SKPicture>?>(nameof(Picture), defaultBindingMode: BindingMode.OneWay);
+        AvaloniaProperty.Register<PageItem, IRef<SKPicture>?>(nameof(Picture),
+            defaultBindingMode: BindingMode.OneWay);
 
     /// <summary>
     /// Defines the <see cref="IsPageVisible"/> property.
     /// </summary>
     public static readonly StyledProperty<bool> IsPageVisibleProperty =
-        AvaloniaProperty.Register<PageItem, bool>(nameof(IsPageVisible), false);
+        AvaloniaProperty.Register<PageItem, bool>(nameof(IsPageVisible));
 
     /// <summary>
     /// Defines the <see cref="VisibleArea"/> property.
     /// </summary>
     public static readonly StyledProperty<Rect?> VisibleAreaProperty =
-        AvaloniaProperty.Register<PageItem, Rect?>(nameof(VisibleArea), null, defaultBindingMode: BindingMode.TwoWay);
+        AvaloniaProperty.Register<PageItem, Rect?>(nameof(VisibleArea),
+            defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Defines the <see cref="Exception"/> property.
@@ -68,15 +70,45 @@ public sealed class PageItem : ContentControl
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
-    /// Defines the <see cref="PageInteractiveLayerControl"/> property.
+    /// Defines the <see cref="LoadPage"/> property.
     /// </summary>
-    public static readonly DirectProperty<PageItem, PageInteractiveLayerControl?> TextLayerProperty =
-        AvaloniaProperty.RegisterDirect<PageItem, PageInteractiveLayerControl?>(nameof(LayoutTransformControl),
-            o => o.TextLayer);
+    public static readonly StyledProperty<ICommand?> LoadPageProperty =
+        AvaloniaProperty.Register<PageItem, ICommand?>(nameof(LoadPage));
+
+    /// <summary>
+    /// Defines the <see cref="UnloadPage"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ICommand?> UnloadPageProperty =
+        AvaloniaProperty.Register<PageItem, ICommand?>(nameof(UnloadPage));
+
+    /// <summary>
+    /// Defines the <see cref="Rotation"/> property.
+    /// </summary>
+    public static readonly StyledProperty<int> RotationProperty =
+        AvaloniaProperty.Register<PageItem, int>(nameof(Rotation));
 
     static PageItem()
     {
-        AffectsRender<PageItem>(PictureProperty, IsPageVisibleProperty);
+        AffectsRender<PageItem>(PictureProperty, IsPageVisibleProperty,
+            WidthProperty, HeightProperty);
+    }
+
+    public ICommand? LoadPage
+    {
+        get => GetValue(LoadPageProperty);
+        set => SetValue(LoadPageProperty, value);
+    }
+    
+    public ICommand? UnloadPage
+    {
+        get => GetValue(UnloadPageProperty);
+        set => SetValue(UnloadPageProperty, value);
+    }
+    
+    public int Rotation
+    {
+        get => GetValue(RotationProperty);
+        set => SetValue(RotationProperty, value);
     }
 
     public bool IsPageRendering
@@ -109,16 +141,10 @@ public sealed class PageItem : ContentControl
         set => SetValue(ExceptionProperty, value);
     }
 
-    private PageInteractiveLayerControl? _textLayer;
-
     /// <summary>
     /// Gets the text layer.
     /// </summary>
-    public PageInteractiveLayerControl? TextLayer
-    {
-        get => _textLayer;
-        private set => SetAndRaise(TextLayerProperty, ref _textLayer, value);
-    }
+    public PageInteractiveLayerControl? TextLayer { get; set; }
 
     public PageItem()
     {
@@ -135,11 +161,5 @@ public sealed class PageItem : ContentControl
     {
         base.OnApplyTemplate(e);
         TextLayer = e.NameScope.FindFromNameScope<PageInteractiveLayerControl>("PART_PageTextLayerControl");
-    }
-
-    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromLogicalTree(e);
-        Picture?.Dispose();
     }
 }

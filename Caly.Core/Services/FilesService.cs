@@ -25,62 +25,60 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
 
-namespace Caly.Core.Services
+namespace Caly.Core.Services;
+// https://github.com/AvaloniaUI/AvaloniaUI.QuickGuides/blob/main/IoCFileOps/Services/FilesService.cs
+
+internal sealed class FilesService : IFilesService
 {
-    // https://github.com/AvaloniaUI/AvaloniaUI.QuickGuides/blob/main/IoCFileOps/Services/FilesService.cs
+    private readonly IStorageProvider _storageProvider;
+    private readonly IReadOnlyList<FilePickerFileType> _pdfFileFilter = [FilePickerFileTypes.Pdf];
 
-    internal sealed class FilesService : IFilesService
+    public FilesService(IStorageProvider? storageProvider)
     {
-        private readonly IStorageProvider _storageProvider;
-        private readonly IReadOnlyList<FilePickerFileType> _pdfFileFilter = [FilePickerFileTypes.Pdf];
-
-        public FilesService(IStorageProvider? storageProvider)
-        {
 #if DEBUG
-            if (Avalonia.Controls.Design.IsDesignMode)
-            {
-                _storageProvider = storageProvider!;
-                return;
-            }
+        if (Avalonia.Controls.Design.IsDesignMode)
+        {
+            _storageProvider = storageProvider!;
+            return;
+        }
 #endif
-            _storageProvider = storageProvider ?? throw new ArgumentNullException($"Could not find {typeof(IStorageProvider)}."); ;
-        }
+        _storageProvider = storageProvider ?? throw new ArgumentNullException($"Could not find {typeof(IStorageProvider)}."); ;
+    }
 
-        public async Task<IStorageFile?> OpenPdfFileAsync()
+    public async Task<IStorageFile?> OpenPdfFileAsync()
+    {
+        Debug.ThrowNotOnUiThread();
+
+        IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
         {
-            Debug.ThrowNotOnUiThread();
+            Title = "Open",
+            AllowMultiple = false,
+            FileTypeFilter = _pdfFileFilter
+        });
 
-            IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
-            {
-                Title = "Open",
-                AllowMultiple = false,
-                FileTypeFilter = _pdfFileFilter
-            });
+        return files.Count >= 1 ? files[0] : null;
+    }
 
-            return files.Count >= 1 ? files[0] : null;
-        }
-
-        public Task<IStorageFile?> SavePdfFileAsync()
+    public Task<IStorageFile?> SavePdfFileAsync()
+    {
+        return _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
         {
-            return _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
-            {
-                Title = "Save Pdf File"
-            });
-        }
+            Title = "Save Pdf File"
+        });
+    }
 
-        public async Task<IStorageFile?> TryGetFileFromPathAsync(string path)
+    public async Task<IStorageFile?> TryGetFileFromPathAsync(string path)
+    {
+        try
         {
-            try
-            {
-                // UIThread needed for Avalonia.FreeDesktop.DBusSystemDialog
-                return await Dispatcher.UIThread.InvokeAsync(() => _storageProvider.TryGetFileFromPathAsync(path));
-            }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine($"Could not get TopLevel in FilesService.TryGetFileFromPathAsync (path: '{path}').");
-                Debug.WriteExceptionToFile(e);
-                return null;
-            }
+            // UIThread needed for Avalonia.FreeDesktop.DBusSystemDialog
+            return await Dispatcher.UIThread.InvokeAsync(() => _storageProvider.TryGetFileFromPathAsync(path));
+        }
+        catch (Exception e)
+        {
+            System.Diagnostics.Debug.WriteLine($"Could not get TopLevel in FilesService.TryGetFileFromPathAsync (path: '{path}').");
+            Debug.WriteExceptionToFile(e);
+            return null;
         }
     }
 }

@@ -18,16 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Reactive.Disposables;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
-using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
+using System.Collections.Generic;
+using System.Linq;
+using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Controls;
 
@@ -39,7 +41,8 @@ public sealed class PageInteractiveLayerControl : Control
     // https://github.com/AvaloniaUI/Avalonia/blob/master/src/Avalonia.Controls/Primitives/TextSelectionCanvas.cs#L62
     // Check caret handle
 
-    private CompositeDisposable? _pointerDisposables;
+    private static readonly Color SelectionColor = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
+    private static readonly Color SearchColor = Color.FromArgb(0xa9, 255, 0, 0);
 
     public static readonly StyledProperty<PdfTextLayer?> PdfTextLayerProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, PdfTextLayer?>(nameof(PdfTextLayer));
@@ -47,18 +50,41 @@ public sealed class PageInteractiveLayerControl : Control
     public static readonly StyledProperty<int?> PageNumberProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, int?>(nameof(PageNumber));
 
-    public static readonly StyledProperty<IPageInteractiveLayerHandler?> PageInteractiveLayerHandlerProperty =
-        AvaloniaProperty.Register<PageInteractiveLayerControl, IPageInteractiveLayerHandler?>(
-            nameof(PageInteractiveLayerHandler));
-
-    public static readonly StyledProperty<bool> SelectionChangedFlagProperty =
-        AvaloniaProperty.Register<PageInteractiveLayerControl, bool>(nameof(SelectionChangedFlag));
-
     /// <summary>
     /// Defines the <see cref="VisibleArea"/> property.
     /// </summary>
     public static readonly StyledProperty<Rect?> VisibleAreaProperty =
-        AvaloniaProperty.Register<SkiaPdfPageControl, Rect?>(nameof(VisibleArea));
+        AvaloniaProperty.Register<PageInteractiveLayerControl, Rect?>(nameof(VisibleArea));
+
+    /// <summary>
+    /// Defines the <see cref="SelectedWords"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IReadOnlyList<PdfRectangle>?> SelectedWordsProperty =
+        AvaloniaProperty.Register<PageInteractiveLayerControl, IReadOnlyList<PdfRectangle>?>(nameof(SelectedWords));
+
+    /// <summary>
+    /// Defines the <see cref="SearchResults"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IReadOnlyList<PdfRectangle>?> SearchResultsProperty =
+        AvaloniaProperty.Register<PageInteractiveLayerControl, IReadOnlyList<PdfRectangle>?>(nameof(SearchResults));
+
+    static PageInteractiveLayerControl()
+    {
+        AffectsRender<PageInteractiveLayerControl>(PdfTextLayerProperty, VisibleAreaProperty,
+            SelectedWordsProperty, SearchResultsProperty);
+    }
+
+    public IReadOnlyList<PdfRectangle>? SelectedWords
+    {
+        get => GetValue(SelectedWordsProperty);
+        set => SetValue(SelectedWordsProperty, value);
+    }
+    
+    public IReadOnlyList<PdfRectangle>? SearchResults
+    {
+        get => GetValue(SearchResultsProperty);
+        set => SetValue(SearchResultsProperty, value);
+    }
 
     public PdfTextLayer? PdfTextLayer
     {
@@ -72,30 +98,12 @@ public sealed class PageInteractiveLayerControl : Control
         set => SetValue(PageNumberProperty, value);
     }
 
-    public IPageInteractiveLayerHandler? PageInteractiveLayerHandler
-    {
-        get => GetValue(PageInteractiveLayerHandlerProperty);
-        set => SetValue(PageInteractiveLayerHandlerProperty, value);
-    }
-
-    public bool SelectionChangedFlag
-    {
-        get => GetValue(SelectionChangedFlagProperty);
-        set => SetValue(SelectionChangedFlagProperty, value);
-    }
-
     public Rect? VisibleArea
     {
         get => GetValue(VisibleAreaProperty);
         set => SetValue(VisibleAreaProperty, value);
     }
-
-    static PageInteractiveLayerControl()
-    {
-        AffectsRender<PageInteractiveLayerControl>(PdfTextLayerProperty, SelectionChangedFlagProperty,
-            VisibleAreaProperty);
-    }
-
+    
     internal Matrix GetLayoutTransformMatrix()
     {
         return this.FindAncestorOfType<PageItemsControl>()?
@@ -136,6 +144,85 @@ public sealed class PageInteractiveLayerControl : Control
         }
     }
 
+    public void HideAnnotation()
+    {
+        if (FlyoutBase.GetAttachedFlyout(this) is not Flyout attachedFlyout)
+        {
+            return;
+        }
+
+        attachedFlyout.Hide();
+        attachedFlyout.Content = null;
+    }
+
+    public void ShowAnnotation(PdfAnnotation annotation)
+    {
+        if (FlyoutBase.GetAttachedFlyout(this) is not Flyout attachedFlyout)
+        {
+            return;
+        }
+
+        var contentText = new TextBlock()
+        {
+            MaxWidth = 200,
+            TextWrapping = TextWrapping.Wrap,
+            Text = annotation.Content
+        };
+
+        if (!string.IsNullOrEmpty(annotation.Date))
+        {
+            attachedFlyout.Content = new StackPanel()
+            {
+                Orientation = Orientation.Vertical,
+                Children =
+                {
+                    new TextBlock()
+                    {
+                        Text = annotation.Date
+                    },
+                    contentText
+                }
+            };
+        }
+        else
+        {
+            attachedFlyout.Content = contentText;
+        }
+
+        attachedFlyout.ShowAt(this);
+    }
+
+    private StreamGeometry[]? _selectedWordsGeometry;
+    private StreamGeometry[]? _searchResultsGeometry;
+    
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == SelectedWordsProperty)
+        {
+            if (change.NewValue is IReadOnlyCollection<PdfRectangle> rects)
+            {
+                _selectedWordsGeometry = rects.Count != 0 ? rects.Select(r => PdfWordHelpers.GetGeometry(r, true)).ToArray() : null;
+            }
+            else
+            {
+                _selectedWordsGeometry = null;
+            }
+        }
+        else if (change.Property == SearchResultsProperty)
+        {
+            if (change.NewValue is IReadOnlyCollection<PdfRectangle> rects)
+            {
+                _searchResultsGeometry = rects.Count != 0 ? rects.Select(r => PdfWordHelpers.GetGeometry(r, true)).ToArray() : null;
+            }
+            else
+            {
+                _searchResultsGeometry = null;
+            }
+        }
+    }
+    
     public override void Render(DrawingContext context)
     {
         if (Bounds.Width <= 0 || Bounds.Height <= 0)
@@ -151,47 +238,44 @@ public sealed class PageInteractiveLayerControl : Control
         // We need to fill to get Pointer events
         context.FillRectangle(Brushes.Transparent, Bounds);
 
-        PageInteractiveLayerHandler?.RenderPage(this, context, VisibleArea.Value);
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-        if (change.Property == PageInteractiveLayerHandlerProperty)
+        if (PdfTextLayer?.TextBlocks is null)
         {
-            // If the pageInteractiveLayerHandler was already attached, we unsubscribe
-            _pointerDisposables?.Dispose();
+            return;
+        }
 
-            if (PageInteractiveLayerHandler is not null)
+        DebugRender.RenderAnnotations(this, context, VisibleArea.Value);
+        DebugRender.RenderText(this, context, VisibleArea.Value);
+
+        // Draw search results first
+        if (_searchResultsGeometry is not null && _searchResultsGeometry.Length > 0)
+        {
+            var searchBrush = new ImmutableSolidColorBrush(SearchColor);
+
+            foreach (var geometry in _searchResultsGeometry)
             {
-                var pointerWheelChangedDisposable = this.GetObservable(PointerWheelChangedEvent, handledEventsToo: true)
-                    .Subscribe(PageInteractiveLayerHandler!.OnPointerMoved);
+                if (!geometry.Bounds.Intersects(VisibleArea.Value))
+                {
+                    continue;
+                }
 
-                var pointerMovedDisposable = this.GetObservable(PointerMovedEvent, handledEventsToo: false)
-                    .Subscribe(PageInteractiveLayerHandler!.OnPointerMoved);
-
-                var pointerPressedDisposable = this.GetObservable(PointerPressedEvent, handledEventsToo: false)
-                    .Subscribe(PageInteractiveLayerHandler.OnPointerPressed);
-
-                var pointerReleasedDisposable = this.GetObservable(PointerReleasedEvent, handledEventsToo: false)
-                    .Subscribe(PageInteractiveLayerHandler.OnPointerReleased);
-
-                var pointerCaptureLostDisposable = this.GetObservable(PointerExitedEvent, handledEventsToo: true)
-                    .Subscribe(PageInteractiveLayerHandler.OnPointerExitedEvent);
-
-                _pointerDisposables = new CompositeDisposable(
-                    pointerMovedDisposable,
-                    pointerWheelChangedDisposable,
-                    pointerPressedDisposable,
-                    pointerReleasedDisposable,
-                    pointerCaptureLostDisposable);
+                context.DrawGeometry(searchBrush, null, geometry);
             }
         }
-    }
 
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
-        _pointerDisposables?.Dispose();
+        // Render Selection
+        if (_selectedWordsGeometry is not null && _selectedWordsGeometry.Length > 0)
+        {
+            var selectionBrush = new ImmutableSolidColorBrush(SelectionColor);
+
+            foreach (var geometry in _selectedWordsGeometry)
+            {
+                if (!geometry.Bounds.Intersects(VisibleArea.Value))
+                {
+                    continue;
+                }
+
+                context.DrawGeometry(selectionBrush, null, geometry);
+            }
+        }
     }
 }

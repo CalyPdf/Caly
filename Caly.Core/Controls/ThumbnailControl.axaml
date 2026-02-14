@@ -20,7 +20,7 @@
                             BorderThickness="2"
                             IsEnabled="{Binding IsThumbnailRendering}"
                             IsVisible="{Binding IsThumbnailRendering}"
-                            Background="White"/>
+                            Background="Transparent"/>
                 </Grid>
 
             </ControlTemplate>

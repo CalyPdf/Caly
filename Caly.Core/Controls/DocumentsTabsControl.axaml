@@ -38,9 +38,9 @@
 
 						<!-- Toggle sidebar -->
 						<ToggleButton DockPanel.Dock="Left"
-									  VerticalAlignment="Stretch"
-									  Background="Transparent"
-									  IsChecked="{Binding IsDocumentPaneOpen}">
+                                      VerticalAlignment="Stretch"
+                                      Background="Transparent"
+                                      IsChecked="{Binding IsDocumentPaneOpen}">
 							<ToggleButton.Styles>
 								<Style Selector="PathIcon.closed">
 									<Setter Property="Data" Value="{StaticResource pane_close_regular}" />
@@ -90,7 +90,19 @@
                                  VerticalContentAlignment="Center"
                                  VerticalAlignment="Center"
 								 KeyDown="PageNumberTextBox_OnKeyDown"
-                                 Text="{Binding SelectedPageIndexString}">
+                                 Text="{Binding SelectedPageNumber, UpdateSourceTrigger=Explicit}"
+                                  AcceptsReturn="False">
+							<TextBox.Styles>
+                                <Style Selector="DataValidationErrors">
+                                    <Setter Property="Template">
+                                        <ControlTemplate>
+                                            <ContentPresenter DockPanel.Dock="Left"
+                                                              Content="{TemplateBinding Content}"
+                                                              Margin="0"/>
+                                        </ControlTemplate>
+                                    </Setter>
+                                </Style>
+                            </TextBox.Styles>
                         </TextBox>
 
 						<TextBlock DockPanel.Dock="Left"
@@ -168,7 +180,7 @@
 
 					<SplitView Grid.Row="1"
 							   Name="PART_SplitView"
-							   IsPaneOpen="{Binding IsDocumentPaneOpen}"
+							   IsPaneOpen="{Binding IsDocumentPaneOpen, Mode=TwoWay}"
 							   OpenPaneLength="{Binding PaneSize, Mode=TwoWay}"
 							   CompactPaneLength="0"
 							   DisplayMode="CompactInline">
@@ -205,7 +217,20 @@
 													</PathIcon.RenderTransform>
 												</PathIcon>
 											</TabItem.Header>
-											<controls:ThumbnailsControl IsVisible="{Binding IsDocumentPaneOpen}" />
+											<Grid>
+                                                <controls:ThumbnailItemsControl
+                                                    IsVisible="{Binding IsDocumentPaneOpen}"
+                                                    RefreshThumbnails="{Binding RefreshThumbnailsCommand}"
+													RealisedThumbnails="{Binding RealisedThumbnails}"
+													VisibleThumbnails="{Binding VisibleThumbnails}"
+                                                    Background="Transparent"
+                                                    SelectionMode="Single,AlwaysSelected"
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Stretch"
+                                                    BorderThickness="0"
+                                                    ItemsSource="{Binding Pages}"
+                                                    SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}"/>
+                                            </Grid>
 										</TabItem>
 
 										<!-- Bookmarks tab -->

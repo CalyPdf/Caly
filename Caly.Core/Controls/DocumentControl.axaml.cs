@@ -18,7 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System;
 using System.Collections;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -26,12 +28,8 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
-using Caly.Core.Services;
 using Caly.Core.Utilities;
-using Caly.Core.ViewModels;
-using CommunityToolkit.Mvvm.Messaging;
 
 namespace Caly.Core.Controls;
 
@@ -63,10 +61,27 @@ public sealed class DocumentControl : CalyTemplatedControl
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
-    /// Defines the <see cref="SelectedPageIndex"/> property. Starts at 1.
+    /// Defines the <see cref="SelectedPageNumber"/> property. Starts at 1.
     /// </summary>
-    public static readonly StyledProperty<int?> SelectedPageIndexProperty =
-        AvaloniaProperty.Register<DocumentControl, int?>(nameof(SelectedPageIndex), null,
+    public static readonly StyledProperty<int?> SelectedPageNumberProperty =
+        AvaloniaProperty.Register<DocumentControl, int?>(nameof(SelectedPageNumber),
+            defaultBindingMode: BindingMode.TwoWay);
+
+    public static readonly StyledProperty<ICommand?> RefreshPagesProperty =
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(RefreshPages));
+
+    /// <summary>
+    /// Defines the <see cref="VisiblePages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> VisiblePagesProperty =
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(VisiblePages),
+            defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Defines the <see cref="RealisedPages"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<Range?> RealisedPagesProperty =
+        AvaloniaProperty.Register<DocumentControl, Range?>(nameof(RealisedPages),
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
@@ -75,14 +90,71 @@ public sealed class DocumentControl : CalyTemplatedControl
     public static readonly StyledProperty<PdfBookmarkNode?> SelectedBookmarkProperty =
         AvaloniaProperty.Register<DocumentControl, PdfBookmarkNode?>(nameof(SelectedBookmark));
 
-    public static readonly StyledProperty<TextSearchResultViewModel?> SelectedTextSearchResultProperty =
-        AvaloniaProperty.Register<DocumentControl, TextSearchResultViewModel?>(nameof(SelectedTextSearchResult));
+    /// <summary>
+    /// Defines the <see cref="SelectedTextSearchResult"/> property.
+    /// </summary>
+    public static readonly StyledProperty<TextSearchResult?> SelectedTextSearchResultProperty =
+        AvaloniaProperty.Register<DocumentControl, TextSearchResult?>(nameof(SelectedTextSearchResult));
 
     /// <summary>
-    /// Defines the <see cref="PageInteractiveLayerHandler"/> property.
+    /// Defines the <see cref="TextSelection"/> property.
     /// </summary>
-    public static readonly StyledProperty<IPageInteractiveLayerHandler?> PageInteractiveLayerHandlerProperty =
-        AvaloniaProperty.Register<DocumentControl, IPageInteractiveLayerHandler?>(nameof(PageInteractiveLayerHandler));
+    public static readonly StyledProperty<TextSelection?> TextSelectionProperty =
+        AvaloniaProperty.Register<DocumentControl, TextSelection?>(nameof(TextSelection));
+
+    /// <summary>
+    /// Defines the <see cref="DocumentChanged"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ICommand?> DocumentChangedProperty =
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(DocumentChanged));
+
+    /// <summary>
+    /// Defines the <see cref="TextSelection"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ICommand?> ClearSelectionProperty =
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(DocumentChanged));
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? VisiblePages
+    {
+        get => GetValue(VisiblePagesProperty);
+        set => SetValue(VisiblePagesProperty, value);
+    }
+
+    /// <summary>
+    /// Starts at 1.
+    /// </summary>
+    public Range? RealisedPages
+    {
+        get => GetValue(RealisedPagesProperty);
+        set => SetValue(RealisedPagesProperty, value);
+    }
+
+    public ICommand? RefreshPages
+    {
+        get => GetValue(RefreshPagesProperty);
+        set => SetValue(RefreshPagesProperty, value);
+    }
+    
+    public TextSelection? TextSelection
+    {
+        get => GetValue(TextSelectionProperty);
+        set => SetValue(TextSelectionProperty, value);
+    }
+
+    public ICommand? DocumentChanged
+    {
+        get => GetValue(DocumentChangedProperty);
+        set => SetValue(DocumentChangedProperty, value);
+    }
+    
+    public ICommand? ClearSelection
+    {
+        get => GetValue(ClearSelectionProperty);
+        set => SetValue(ClearSelectionProperty, value);
+    }
 
     public int PageCount
     {
@@ -99,10 +171,10 @@ public sealed class DocumentControl : CalyTemplatedControl
     /// <summary>
     /// Starts at 1.
     /// </summary>
-    public int? SelectedPageIndex
+    public int? SelectedPageNumber
     {
-        get => GetValue(SelectedPageIndexProperty);
-        set => SetValue(SelectedPageIndexProperty, value);
+        get => GetValue(SelectedPageNumberProperty);
+        set => SetValue(SelectedPageNumberProperty, value);
     }
 
     public PdfBookmarkNode? SelectedBookmark
@@ -111,7 +183,7 @@ public sealed class DocumentControl : CalyTemplatedControl
         set => SetValue(SelectedBookmarkProperty, value);
     }
 
-    public TextSearchResultViewModel? SelectedTextSearchResult
+    public TextSearchResult? SelectedTextSearchResult
     {
         get => GetValue(SelectedTextSearchResultProperty);
         set => SetValue(SelectedTextSearchResultProperty, value);
@@ -123,18 +195,12 @@ public sealed class DocumentControl : CalyTemplatedControl
         set => SetValue(ItemsSourceProperty, value);
     }
 
-    public IPageInteractiveLayerHandler? PageInteractiveLayerHandler
-    {
-        get => GetValue(PageInteractiveLayerHandlerProperty);
-        set => SetValue(PageInteractiveLayerHandlerProperty, value);
-    }
-
     public DocumentControl()
     {
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            DataContext = new DocumentViewModel();
+            DataContext = new ViewModels.DocumentViewModel();
         }
 #endif
     }
@@ -145,11 +211,10 @@ public sealed class DocumentControl : CalyTemplatedControl
 
         var pointer = e.GetCurrentPoint(this);
 
-        if (PageInteractiveLayerHandler is not null &&
-            pointer.Properties.IsLeftButtonPressed &&
+        if (pointer.Properties.IsLeftButtonPressed &&
             e.Source is not PageInteractiveLayerControl)
         {
-            PageInteractiveLayerHandler.ClearSelection(this);
+            ClearSelection?.Execute(null);
         }
     }
 
@@ -157,16 +222,12 @@ public sealed class DocumentControl : CalyTemplatedControl
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == DataContextProperty)
+        if (change.Property == DocumentChangedProperty)
         {
-            System.Diagnostics.Debug.WriteLine($"Active Document changed from '{change.OldValue}' to '{change.NewValue}'.");
-
-            if (change.NewValue is DocumentViewModel vm)
-            {
-                App.Messenger.Send(new SelectedDocumentChangedMessage(vm));
-            }
+            System.Diagnostics.Debug.WriteLine("Active Document changed.");
+            DocumentChanged?.Execute(null);
         }
-        else if (change.Property == SelectedPageIndexProperty)
+        else if (change.Property == SelectedPageNumberProperty)
         {
             if (change.NewValue is int p)
             {
@@ -176,16 +237,16 @@ public sealed class DocumentControl : CalyTemplatedControl
         else if (change.Property == SelectedBookmarkProperty)
         {
             if (SelectedBookmark?.PageNumber.HasValue == true &&
-                SelectedBookmark.PageNumber.Value != SelectedPageIndex)
+                SelectedBookmark.PageNumber.Value != SelectedPageNumber)
             {
-                SetCurrentValue(SelectedPageIndexProperty, SelectedBookmark.PageNumber.Value);
+                SetCurrentValue(SelectedPageNumberProperty, SelectedBookmark.PageNumber.Value);
             }
         }
         else if (change.Property == SelectedTextSearchResultProperty)
         {
-            if (change.NewValue is TextSearchResultViewModel { PageNumber: > 0 } r)
+            if (change.NewValue is TextSearchResult { PageNumber: > 0 } r)
             {
-                SetCurrentValue(SelectedPageIndexProperty, r.PageNumber);
+                SetCurrentValue(SelectedPageNumberProperty, r.PageNumber);
             }
         }
         else if (change.Property == ZoomLevelProperty)

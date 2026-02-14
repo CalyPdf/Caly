@@ -117,10 +117,10 @@ public sealed partial class MainViewModel : ViewModelBase
     {
         try
         {
-            var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>();
+            var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsManagerService>();
             if (pdfDocumentsService is null)
             {
-                throw new NullReferenceException($"Missing {nameof(IPdfDocumentsService)} instance.");
+                throw new NullReferenceException($"Missing {nameof(IPdfDocumentsManagerService)} instance.");
             }
 
             await pdfDocumentsService.OpenLoadDocument(token);
@@ -160,7 +160,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
     private static async Task CloseDocumentInternal(DocumentViewModel vm, CancellationToken token)
     {
-        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()!;
+        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsManagerService>()!;
         await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(vm), token);
     }
 

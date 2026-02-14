@@ -61,12 +61,14 @@ namespace Caly.Core.Controls;
         {
             private readonly IRef<SKPicture>? _picture;
             private readonly SKPaint _paint;
-
+            private readonly double _ppiScale;
+            
             private readonly Lock _lock = new Lock();
 
-            public SkiaDrawOperation(Rect bounds, IRef<SKPicture>? picture)
+            public SkiaDrawOperation(Rect bounds, double ppiScale, IRef<SKPicture>? picture)
             {
                 _picture = picture;
+                _ppiScale = ppiScale;
                 Bounds = bounds;
 
                 _paint = new SKPaint()
@@ -119,10 +121,8 @@ namespace Caly.Core.Controls;
 
                         canvas.Save();
                         // The canvas could be clipped here: canvas.ClipRect(_visibleArea);
-
-                        double scaleX = Bounds.Width / _picture.Item.CullRect.Width;
-                        double scaleY = Bounds.Height / _picture.Item.CullRect.Height;
-                        var scale = SKMatrix.CreateScale((float)scaleX, (float)scaleY);
+                        
+                        var scale = SKMatrix.CreateScale((float)_ppiScale, (float)_ppiScale);
                         canvas.DrawPicture(_picture.Item, in scale, _paint);
 
 #if DEBUG
@@ -144,6 +144,12 @@ namespace Caly.Core.Controls;
         }
 
         /// <summary>
+        /// Defines the <see cref="PpiScale"/> property.
+        /// </summary>
+        public static readonly StyledProperty<double> PpiScaleProperty =
+            AvaloniaProperty.Register<SkiaPdfPageControl, double>(nameof(PpiScale));
+
+        /// <summary>
         /// Defines the <see cref="Picture"/> property.
         /// </summary>
         public static readonly StyledProperty<IRef<SKPicture>?> PictureProperty =
@@ -154,6 +160,12 @@ namespace Caly.Core.Controls;
         /// </summary>
         public static readonly StyledProperty<Rect?> VisibleAreaProperty =
             AvaloniaProperty.Register<SkiaPdfPageControl, Rect?>(nameof(VisibleArea));
+
+        /// <summary>
+        /// Defines the <see cref="IsPageVisible"/> property.
+        /// </summary>
+        public static readonly StyledProperty<bool> IsPageVisibleProperty =
+            AvaloniaProperty.Register<SkiaPdfPageControl, bool>(nameof(IsPageVisible));
 
         /// <summary>
         /// Gets or sets the <see cref="SKPicture"/> picture.
@@ -171,11 +183,23 @@ namespace Caly.Core.Controls;
             set => SetValue(VisibleAreaProperty, value);
         }
 
+        public bool IsPageVisible
+        {
+            get => GetValue(IsPageVisibleProperty);
+            set => SetValue(IsPageVisibleProperty, value);
+        }
+        
+        public double PpiScale
+        {
+            get => GetValue(PpiScaleProperty);
+            set => SetValue(PpiScaleProperty, value);
+        }
+        
         static SkiaPdfPageControl()
         {
             ClipToBoundsProperty.OverrideDefaultValue<SkiaPdfPageControl>(true);
 
-            AffectsRender<SkiaPdfPageControl>(PictureProperty);
+            AffectsRender<SkiaPdfPageControl>(PictureProperty, IsPageVisibleProperty);
             AffectsMeasure<SkiaPdfPageControl>(PictureProperty);
         }
 
@@ -208,6 +232,6 @@ namespace Caly.Core.Controls;
             }
 
             System.Diagnostics.Debug.WriteLine($"Creating SkiaDrawOperation {DateTime.UtcNow:O}");
-            context.Custom(new SkiaDrawOperation(viewPort, picture));
+            context.Custom(new SkiaDrawOperation(viewPort, PpiScale, picture));
         }
     }

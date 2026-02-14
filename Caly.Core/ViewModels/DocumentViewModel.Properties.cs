@@ -18,10 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
-using System.Threading.Tasks;
+using Avalonia.Threading;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels;
 
@@ -35,6 +36,10 @@ public partial class DocumentViewModel
     private async Task LoadProperties()
     {
         _mainCts.Token.ThrowIfCancellationRequested();
-        await Task.Run(() => _pdfService.SetDocumentPropertiesAsync(this, _mainCts.Token));
+        var prop = await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainCts.Token), _mainCts.Token);
+        if (prop is not null)
+        {
+            Dispatcher.UIThread.Invoke(() => Properties = prop, DispatcherPriority.Send, _mainCts.Token);
+        }
     }
 }

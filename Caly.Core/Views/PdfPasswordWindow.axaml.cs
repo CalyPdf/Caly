@@ -25,63 +25,62 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 
-namespace Caly.Core.Views
+namespace Caly.Core.Views;
+
+public sealed partial class PdfPasswordWindow : Window
 {
-    public sealed partial class PdfPasswordWindow : Window
+    private TextBox? _textBoxPassword;
+
+    public PdfPasswordWindow()
     {
-        private TextBox? _textBoxPassword;
+        InitializeComponent();
+    }
 
-        public PdfPasswordWindow()
-        {
-            InitializeComponent();
-        }
+    [MemberNotNull(nameof(_textBoxPassword))]
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
 
-        [MemberNotNull(nameof(_textBoxPassword))]
-        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-        {
-            base.OnApplyTemplate(e);
+        _textBoxPassword = this.Find<TextBox>("PART_TextBoxPassword")!;
+        ArgumentNullException.ThrowIfNull(_textBoxPassword, nameof(_textBoxPassword));
+        _textBoxPassword.Loaded += TextBox_Loaded;
+    }
 
-            _textBoxPassword = this.Find<TextBox>("PART_TextBoxPassword")!;
-            ArgumentNullException.ThrowIfNull(_textBoxPassword, nameof(_textBoxPassword));
-            _textBoxPassword.Loaded += TextBox_Loaded;
-        }
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            if (e.Key == Key.Escape)
-            {
-                Close(null);
-                e.Handled = true;
-            }
-            base.OnKeyDown(e);
-        }
-
-        private void CancelButton_OnClick(object? sender, RoutedEventArgs e)
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
         {
             Close(null);
+            e.Handled = true;
+        }
+        base.OnKeyDown(e);
+    }
+
+    private void CancelButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        Close(null);
+    }
+
+    private void OkButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_textBoxPassword?.Text))
+        {
+            Close(_textBoxPassword.Text);
+        }
+    }
+
+    private static void TextBox_Loaded(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox textBox)
+        {
+            return;
         }
 
-        private void OkButton_OnClick(object? sender, RoutedEventArgs e)
+        textBox.Loaded -= TextBox_Loaded;
+
+        if (!textBox.Focus())
         {
-            if (!string.IsNullOrEmpty(_textBoxPassword?.Text))
-            {
-                Close(_textBoxPassword.Text);
-            }
-        }
-
-        private static void TextBox_Loaded(object? sender, RoutedEventArgs e)
-        {
-            if (sender is not TextBox textBox)
-            {
-                return;
-            }
-
-            textBox.Loaded -= TextBox_Loaded;
-
-            if (!textBox.Focus())
-            {
-                System.Diagnostics.Debug.WriteLine("Something wrong happened while setting focus on password box.");
-            }
+            System.Diagnostics.Debug.WriteLine("Something wrong happened while setting focus on password box.");
         }
     }
 }

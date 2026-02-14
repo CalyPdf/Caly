@@ -21,7 +21,6 @@
 using System;
 using Avalonia;
 using Avalonia.Controls.Primitives;
-using Avalonia.LogicalTree;
 using Avalonia.Media;
 
 namespace Caly.Core.Controls;
@@ -49,7 +48,7 @@ public sealed class ThumbnailControl : TemplatedControl
     /// Defines the <see cref="VisibleArea"/> property.
     /// </summary>
     public static readonly StyledProperty<Rect?> VisibleAreaProperty =
-        AvaloniaProperty.Register<ThumbnailControl, Rect?>(nameof(VisibleArea), null);
+        AvaloniaProperty.Register<ThumbnailControl, Rect?>(nameof(VisibleArea));
 
     /// <summary>
     /// Defines the <see cref="ThumbnailWidth"/> property.
@@ -80,6 +79,13 @@ public sealed class ThumbnailControl : TemplatedControl
     /// </summary>
     public static readonly StyledProperty<IImage?> ThumbnailProperty =
         AvaloniaProperty.Register<ThumbnailControl, IImage?>(nameof(Thumbnail));
+
+    static ThumbnailControl()
+    {
+        AffectsRender<ThumbnailControl>(ThumbnailProperty, VisibleAreaProperty,
+            ThumbnailHeightProperty, PageHeightProperty);
+        AffectsMeasure<ThumbnailControl>(ThumbnailHeightProperty, PageHeightProperty);
+    }
 
     public Rect? VisibleArea
     {
@@ -116,15 +122,7 @@ public sealed class ThumbnailControl : TemplatedControl
         get => GetValue(ThumbnailProperty);
         set => SetValue(ThumbnailProperty, value);
     }
-
-    static ThumbnailControl()
-    {
-        AffectsRender<ThumbnailControl>(ThumbnailProperty, VisibleAreaProperty, ThumbnailHeightProperty,
-            PageHeightProperty);
-        AffectsMeasure<ThumbnailControl>(ThumbnailProperty, VisibleAreaProperty, ThumbnailHeightProperty,
-            PageHeightProperty);
-    }
-
+    
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -147,44 +145,50 @@ public sealed class ThumbnailControl : TemplatedControl
             // Bitmap might not be null here but already disposed.
             // We use Dispatcher.UIThread.Invoke(() => t?.Dispose(), DispatcherPriority.Loaded);
             // in the PageViewModel to avoid this issue
-
+            
             var thumbnail = Thumbnail;
             if (thumbnail is not null && Bounds is { Width: > 0, Height: > 0 })
             {
                 context.DrawImage(thumbnail, Bounds);
             }
+            else
+            {
+#if DEBUG
+                context.FillRectangle(Brushes.HotPink, Bounds);
+#else
+                context.FillRectangle(Brushes.White, Bounds);
+#endif
+            }
         }
         catch (Exception e)
         {
             // We just ignore for the moment
+#if DEBUG
+            context.FillRectangle(Brushes.HotPink, Bounds);
+#else
+            context.FillRectangle(Brushes.White, Bounds);
+#endif
             Debug.WriteExceptionToFile(e);
         }
 
-        if (VisibleArea.HasValue)
+        if (!VisibleArea.HasValue)
         {
-            var area = VisibleArea.Value.TransformToAABB(_scale);
+            return;
+        }
 
-            if (area is { Width: > _borderThickness, Height: > _borderThickness })
-            {
-                context.DrawRectangle(AreaTransparentBrush.ToImmutable(), AreaPen.ToImmutable(),
-                    area.Deflate(_borderThickness / 2.0));
-            }
-            else
-            {
-                context.DrawRectangle(AreaBrush.ToImmutable(), null, area);
-            }
+        var area = VisibleArea.Value.TransformToAABB(_scale);
+
+        if (area is { Width: > _borderThickness, Height: > _borderThickness })
+        {
+            context.DrawRectangle(AreaTransparentBrush.ToImmutable(), AreaPen.ToImmutable(),
+                area.Deflate(_borderThickness / 2.0));
+        }
+        else
+        {
+            context.DrawRectangle(AreaBrush.ToImmutable(), null, area);
         }
     }
-
-    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromLogicalTree(e);
-        if (Thumbnail is IDisposable disposable)
-        {
-            disposable.Dispose();
-        }
-    }
-
+    
     private void UpdateScaleMatrix()
     {
         if (IsNotValid(PageHeight) || IsNotValid(ThumbnailHeight))
