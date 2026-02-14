@@ -18,12 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using Caly.Core.ViewModels;
+using System;
 
 namespace Caly.Core.Controls;
 
@@ -141,35 +141,12 @@ public sealed partial class DocumentsTabsControl : UserControl
             return;
         }
 
-        if (sender is TextBox { DataContext: DocumentViewModel vm })
+        if (sender is not TextBox textBox)
         {
-            if (int.TryParse(vm.SelectedPageIndexString, out int pageNumber))
-            {
-                if (pageNumber >= 1 && pageNumber <= vm.PageCount)
-                {
-                    vm.SelectedPageIndex = pageNumber;
-                }
-                else if (pageNumber < 1)
-                {
-                    vm.SelectedPageIndex = 1;
-                }
-                else
-                {
-                    vm.SelectedPageIndex = vm.PageCount;
-                }
-            }
-            else
-            {
-                if (vm.SelectedPageIndex.HasValue)
-                {
-                    vm.SelectedPageIndexString = vm.SelectedPageIndex.Value.ToString("0");
-                }
-                else
-                {
-                    vm.SelectedPageIndexString = string.Empty;
-                }
-            }
+            return;
         }
+
+        BindingOperations.GetBindingExpressionBase(textBox, TextBox.TextProperty)?.UpdateSource();
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -181,14 +158,15 @@ public sealed partial class DocumentsTabsControl : UserControl
             return;
         }
 
-        if (GetSplitView()?.DataContext is not DocumentViewModel vm || !vm.IsDocumentPaneOpen)
+        var splitView = GetSplitView();
+        if (splitView is null)
         {
             return;
         }
-        
-        if (tabsControl.Bounds.Width < vm.PaneSize * 2)
+
+        if (splitView.IsPaneOpen && tabsControl.Bounds.Width < splitView.OpenPaneLength * 2)
         {
-            vm.IsDocumentPaneOpen = false;
+            splitView.SetCurrentValue(SplitView.IsPaneOpenProperty, false);
         }
     }
 }

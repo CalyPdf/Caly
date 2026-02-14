@@ -25,45 +25,44 @@ using Caly.Core.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using UglyToad.PdfPig.Logging;
 
-namespace Caly.Core.Utilities
+namespace Caly.Core.Utilities;
+
+internal sealed class CalyPdfPigLogger : ILog
 {
-    internal sealed class CalyPdfPigLogger : ILog
+    private const string AnnotationTitle = "Error in pdf document";
+
+    public static readonly CalyPdfPigLogger Instance = new CalyPdfPigLogger();
+
+    public void Debug(string message)
     {
-        private const string AnnotationTitle = "Error in pdf document";
+    }
 
-        public static readonly CalyPdfPigLogger Instance = new CalyPdfPigLogger();
+    public void Debug(string message, Exception ex)
+    {
+    }
 
-        public void Debug(string message)
+    public void Warn(string message)
+    {
+    }
+
+    public void Error(string message)
+    {
+        App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
         {
-        }
+            Title = AnnotationTitle,
+            Message = message,
+            Type = NotificationType.Warning
+        }));
+    }
 
-        public void Debug(string message, Exception ex)
+    public void Error(string message, Exception ex)
+    {
+        // We ignore the ex for the moment
+        App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
         {
-        }
-
-        public void Warn(string message)
-        {
-        }
-
-        public void Error(string message)
-        {
-            App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
-            {
-                Title = AnnotationTitle,
-                Message = message,
-                Type = NotificationType.Warning
-            }));
-        }
-
-        public void Error(string message, Exception ex)
-        {
-            // We ignore the ex for the moment
-            App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
-            {
-                Title = AnnotationTitle,
-                Message = message,
-                Type = NotificationType.Warning
-            }));
-        }
+            Title = AnnotationTitle,
+            Message = message,
+            Type = NotificationType.Warning
+        }));
     }
 }

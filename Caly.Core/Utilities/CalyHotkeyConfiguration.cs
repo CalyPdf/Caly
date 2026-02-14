@@ -23,42 +23,41 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Input;
 
-namespace Caly.Core.Utilities
+namespace Caly.Core.Utilities;
+
+internal static class CalyHotkeyConfiguration
 {
-    internal static class CalyHotkeyConfiguration
+    private static readonly KeyModifiers CommandModifiers;
+
+    static CalyHotkeyConfiguration()
     {
-        private static readonly KeyModifiers CommandModifiers;
-
-        static CalyHotkeyConfiguration()
+        if (Application.Current?.PlatformSettings is null)
         {
-            if (Application.Current?.PlatformSettings is null)
-            {
-                throw new NullReferenceException("PlatformSettings is null.");
-            }
-
-            CommandModifiers = Application.Current.PlatformSettings.HotkeyConfiguration.CommandModifiers;
+            throw new NullReferenceException("PlatformSettings is null.");
         }
 
-        /// <summary>
-        /// Gets a platform-specific <see cref="KeyGesture"/> for the Copy action
-        /// </summary>
-        public static KeyGesture? CopyGesture => Application.Current?.PlatformSettings?.HotkeyConfiguration.Copy.FirstOrDefault();
-
-        public static KeyGesture OpenFileGesture => new KeyGesture(Key.O, CommandModifiers);
-
-        public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, CommandModifiers);
-
-        public static KeyGesture DocumentCloseGesture => new KeyGesture(Key.F4, CommandModifiers);
-
-        public static KeyGesture DocumentNextGesture => new KeyGesture(Key.PageDown, CommandModifiers);
-
-        public static KeyGesture DocumentPreviousGesture => new KeyGesture(Key.PageUp, CommandModifiers);
-
-        // TODO
-
-        // See:
-        // - MainView.axaml
-        // - PageItem.axaml
-        // - PageItemsControl.axaml
+        CommandModifiers = Application.Current.PlatformSettings.HotkeyConfiguration.CommandModifiers;
     }
+
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the Copy action
+    /// </summary>
+    public static KeyGesture? CopyGesture => Application.Current?.PlatformSettings?.HotkeyConfiguration.Copy.FirstOrDefault();
+
+    public static KeyGesture OpenFileGesture => new KeyGesture(Key.O, CommandModifiers);
+
+    public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, CommandModifiers);
+
+    public static KeyGesture DocumentCloseGesture => new KeyGesture(Key.F4, CommandModifiers);
+
+    public static KeyGesture DocumentNextGesture => new KeyGesture(Key.PageDown, CommandModifiers);
+
+    public static KeyGesture DocumentPreviousGesture => new KeyGesture(Key.PageUp, CommandModifiers);
+
+    // TODO
+
+    // See:
+    // - MainView.axaml
+    // - PageItem.axaml
+    // - PageItemsControl.axaml
 }

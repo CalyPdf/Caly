@@ -5,7 +5,7 @@
 		<LangVersion>latest</LangVersion>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>Assets\caly-logo.ico</ApplicationIcon>
-		<Version>0.1.7.0</Version>
+		<Version>0.2.0.0</Version>
 		<SignAssembly>True</SignAssembly>
 		<AssemblyOriginatorKeyFile>..\Caly.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
@@ -20,18 +20,18 @@
 
 	<ItemGroup>
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.10" />
+		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.12" />
 
-		<PackageReference Include="Avalonia" Version="11.3.10" />
-		<PackageReference Include="Avalonia.Skia" Version="11.3.10" />
-		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.10" />
-		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.10" />
+		<PackageReference Include="Avalonia" Version="11.3.12" />
+		<PackageReference Include="Avalonia.Skia" Version="11.3.12" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.12" />
 		<PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.1.1" />
 		<PackageReference Include="Caly.Tabalonia" Version="11.3.9.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Deadpikle.AvaloniaProgressRing" Version="0.10.10" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
-		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.12.2" />
+		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.14.1-alpha002" />
 		<PackageReference Include="SkiaSharp" Version="3.119.1" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
 		<PackageReference Include="System.Reactive" Version="6.1.0" />

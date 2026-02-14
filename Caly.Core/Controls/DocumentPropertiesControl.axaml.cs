@@ -33,7 +33,8 @@ public sealed class DocumentPropertiesControl : TemplatedControl
     /// <summary>
     /// Defines the <see cref="FirstColumnWidth"/> property.
     /// </summary>
-    public static readonly StyledProperty<int> FirstColumnWidthProperty = AvaloniaProperty.Register<DocumentPropertiesControl, int>(nameof(FirstColumnWidth), DefaultFirstColumnWidth);
+    public static readonly StyledProperty<int> FirstColumnWidthProperty =
+        AvaloniaProperty.Register<DocumentPropertiesControl, int>(nameof(FirstColumnWidth), DefaultFirstColumnWidth);
 
     public int FirstColumnWidth
     {

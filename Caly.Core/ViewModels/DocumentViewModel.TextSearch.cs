@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using Caly.Core.Models;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -49,15 +50,22 @@ public partial class DocumentViewModel
     [ObservableProperty] private string? _textSearch;
 
     [ObservableProperty]
-    private SortedObservableCollection<TextSearchResultViewModel> _searchResults = new(m => m.PageNumber);
+    private SortedObservableCollection<TextSearchResult> _searchResults = new(m => m.PageNumber);
 
-    [ObservableProperty] private HierarchicalTreeDataGridSource<TextSearchResultViewModel> _searchResultsSource;
+    [ObservableProperty] private HierarchicalTreeDataGridSource<TextSearchResult> _searchResultsSource;
 
-    [ObservableProperty] private TextSearchResultViewModel? _selectedTextSearchResult;
+    [ObservableProperty] private TextSearchResult? _selectedTextSearchResult;
 
     async partial void OnTextSearchChanged(string? value)
     {
-        await SearchText(); // TODO - subscribe to event change instead and use rolling time window
+        try
+        {
+            await SearchText(); // TODO - subscribe to event change instead and use rolling time window
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+        }
     }
 
     [RelayCommand]
@@ -75,7 +83,9 @@ public partial class DocumentViewModel
             BuildIndexProgress = (int)Math.Ceiling((done / (double)PageCount) * 100);
         });
 
-        await Task.Run(() => _pdfService.BuildIndex(this, progress, _mainCts.Token), _mainCts.Token);
+        await Task.Run(() => _textSearchService.BuildPdfDocumentIndex(progress, _mainCts.Token),
+            _mainCts.Token)
+            .ConfigureAwait(false);
 
         SetSearchStatusFinal();
     }
@@ -185,7 +195,7 @@ public partial class DocumentViewModel
                 {
                     token.ThrowIfCancellationRequested();
                     indexBuildTaskComplete = indexBuildTask.IsCompleted;
-                    var searchResults = _pdfService.SearchText(this, TextSearch, pagesDone, token);
+                    var searchResults = _textSearchService.Search(TextSearch, pagesDone, token);
 
                     foreach (var result in searchResults)
                     {
@@ -242,7 +252,7 @@ public partial class DocumentViewModel
     }
 
     private void TextSearchSelectionChanged(object? sender,
-        Avalonia.Controls.Selection.TreeSelectionModelSelectionChangedEventArgs<TextSearchResultViewModel> e)
+        Avalonia.Controls.Selection.TreeSelectionModelSelectionChangedEventArgs<TextSearchResult> e)
     {
         if (e.SelectedItems.Count == 0)
         {

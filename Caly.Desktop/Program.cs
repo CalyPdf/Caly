@@ -77,6 +77,17 @@ namespace Caly.Desktop
                             throw;
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        if (ex is AggregateException a)
+                        {
+                            ex = a.Flatten();
+                        }
+
+                        Debug.WriteExceptionToFile(ex);
+                        ShowExceptionSafely(ex);
+                        throw;
+                    }
                 }
             }
             finally
@@ -119,36 +130,22 @@ namespace Caly.Desktop
 
         private static void SendToRunningInstance(string[] args)
         {
-            try
+            if (args.Length == 0)
             {
-                if (args.Length == 0)
-                {
-                    FilePipeStream.SendBringToFront();
-                    return;
-                }
-
-                string path = args[0];
-
-                if (string.IsNullOrEmpty(path))
-                {
-                    return;
-                }
-
-                if (FilePipeStream.SendPath(path))
-                {
-                    FilePipeStream.SendBringToFront();
-                }
+                FilePipeStream.SendBringToFront();
+                return;
             }
-            catch (Exception ex)
-            {
-                if (ex is AggregateException a)
-                {
-                    ex = a.Flatten();
-                }
 
-                Debug.WriteExceptionToFile(ex);
-                ShowExceptionSafely(ex);
-                throw;
+            string path = args[0];
+
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            if (FilePipeStream.SendPath(path))
+            {
+                FilePipeStream.SendBringToFront();
             }
         }
 

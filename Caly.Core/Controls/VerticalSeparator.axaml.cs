@@ -23,5 +23,4 @@ using Avalonia.Controls.Primitives;
 namespace Caly.Core.Controls;
 
 public sealed class VerticalSeparator : TemplatedControl
-{
-}
+{ }

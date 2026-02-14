@@ -141,16 +141,16 @@ public partial class DocumentViewModel
 
     private void ExecutePreservePage(Action action)
     {
-        // TODO - Investigate why page selection changes
-
-        int? current = SelectedPageIndex;
+        int? current = SelectedPageNumber;
 
         action();
+
+        // TODO - Investigate why page selection changes
 
         Dispatcher.UIThread.Post(() =>
         {
             // We makes sure selected page did not change
-            SelectedPageIndex = current;
-        }, DispatcherPriority.Loaded);
+            SelectedPageNumber = current;
+        }, DispatcherPriority.Loaded); // Loaded so that page is set after layout pass
     }
 }

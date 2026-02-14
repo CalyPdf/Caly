@@ -21,33 +21,32 @@
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using Caly.Core.Handlers.Interfaces;
-using Caly.Core.Services;
-using Caly.Core.Services.Interfaces;
+using Caly.Core.Events;
+using Caly.Core.Models;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.ViewModels;
 
 /// <summary>
 /// View model that represent a PDF page.
 /// </summary>
-[DebuggerDisplay("[{PdfService?.FileName}] Page {_pageNumber}")]
+[DebuggerDisplay("Page {PageNumber}")]
 public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
 {
     public override string ToString()
     {
-        return $"[{PdfService.FileName}] Page {PageNumber}";
+        return $"Page {PageNumber}";
     }
-
-    internal readonly IPdfService PdfService;
 
     [ObservableProperty] private PdfTextLayer? _pdfTextLayer;
 
@@ -55,11 +54,20 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     private IRef<SKPicture>? _pdfPicture;
 
     [ObservableProperty]
+    private double _ppiScale;
+    
+    /// <summary>
+    /// Page Width, scale by <see cref="PpiScale"/>.
+    /// </summary>
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ThumbnailWidth))]
     [NotifyPropertyChangedFor(nameof(DisplayWidth))]
     [NotifyPropertyChangedFor(nameof(DisplayHeight))]
     private double _width;
 
+    /// <summary>
+    /// Page Height, scale by <see cref="PpiScale"/>.
+    /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ThumbnailWidth))]
     [NotifyPropertyChangedFor(nameof(DisplayWidth))]
@@ -81,10 +89,15 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     [NotifyPropertyChangedFor(nameof(DisplayWidth))]
     [NotifyPropertyChangedFor(nameof(DisplayHeight))]
     private int _rotation;
+    
+    [ObservableProperty] private IReadOnlyList<PdfRectangle>? _selectedWords;
 
-    [ObservableProperty] private bool _selectionChangedFlag;
+    private IReadOnlyList<Range>? _searchResultsRanges; // Needed as the text layer might not be available when we set search results
+    [ObservableProperty] private IReadOnlyList<PdfRectangle>? _searchResults;
 
-    public IPageInteractiveLayerHandler PageInteractiveLayerHandler => PdfService.PageInteractiveLayerHandler!;
+    [ObservableProperty] private bool _isPageRendering;
+
+    public TextSelection TextSelection { get; }
 
     public bool IsPageVisible => VisibleArea.HasValue;
 
@@ -95,23 +108,62 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     public double DisplayWidth => IsPortrait ? Width : Height;
 
     public double DisplayHeight => IsPortrait ? Height : Width;
-
-    public bool IsPageRendering => PdfPicture?.Item is null; // TODO - refactor might not be optimal
-
+    
     public bool IsThumbnailRendering => Thumbnail is null;
 
     public bool IsPortrait => Rotation == 0 || Rotation == 180;
 
     private long _isSizeSet;
-    
+
+    public void UpdateSearchResultsRanges(IReadOnlyList<Range>? searchResultsRanges)
+    {
+        if (_searchResultsRanges is null && searchResultsRanges is null)
+        {
+            return;
+        }
+        
+        if (_searchResultsRanges is not null && searchResultsRanges is not null &&
+            _searchResultsRanges.SequenceEqual(searchResultsRanges))
+        {
+            return;
+        }
+        
+        _searchResultsRanges = searchResultsRanges;
+        if (PdfTextLayer is null)
+        {
+            return;
+        }
+        
+        RefreshSearchResults();
+    }
+
+    public void SetSize(double width, double height, double ppiScale)
+    {
+        if (Interlocked.Exchange(ref _isSizeSet, 1) == 1)
+        {
+            return;
+        }
+        
+        Width = width * ppiScale;
+        Height = height * ppiScale;
+        PpiScale = ppiScale;
+    }
+
     public bool IsSizeSet()
     {
         return Interlocked.Read(ref _isSizeSet) == 1;
     }
 
-    public void SetSizeSet()
+    partial void OnPdfTextLayerChanged(PdfTextLayer? value)
     {
-        Interlocked.Exchange(ref _isSizeSet, 1);
+        if (value is null)
+        {
+            return;
+        }
+        
+        // We ensure the correct selection is set now that we have the text layer
+        RefreshTextSelection();
+        RefreshSearchResults();
     }
 
 #if DEBUG
@@ -126,37 +178,133 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
                 $"{typeof(PageViewModel)} empty constructor should only be called in design mode");
         }
 
-        PdfService = null!;
+        TextSelection = null!;
     }
 #endif
-
-    public PageViewModel(int pageNumber, IPdfService pdfService)
+    
+    public PageViewModel(int pageNumber, TextSelection textSelection)
     {
-        ArgumentNullException.ThrowIfNull(pdfService?.PageInteractiveLayerHandler,
-            nameof(pdfService.PageInteractiveLayerHandler));
+        ArgumentNullException.ThrowIfNull(textSelection, nameof(textSelection));
         PageNumber = pageNumber;
-        PdfService = pdfService;
+        TextSelection = textSelection;
+
+        TextSelection.TextSelectionExtended += _onTextSelectionExtended;
+        TextSelection.TextSelectionFocusPageChanged += _onTextSelectionFocusPageChanged;
+        TextSelection.TextSelectionReset += _onTextSelectionReset;
     }
 
-    public async Task LoadPageSizeImmediate(CancellationToken cancellationToken)
+    private void _onTextSelectionReset(object? sender, EventArgs e)
     {
-        await PdfService.SetPageSizeAsync(this, cancellationToken);
+        if (SelectedWords is not null)
+        {
+            Dispatcher.UIThread.Invoke(() => SelectedWords = null);
+        }
     }
 
-    public async Task SetPageTextLayerImmediate(CancellationToken token)
+    private void _onTextSelectionFocusPageChanged(object? sender, TextSelectionFocusPageChangedEventArgs e)
     {
-        await PdfService.SetPageTextLayerAsync(this, token);
+        if (PdfTextLayer is null || PdfTextLayer.Count == 0)
+        {
+            return;
+        }
+        
+        if (e.OldFocusPageIndex == -1)
+        {
+            return;
+        }
+        
+        int start = Math.Min(e.OldFocusPageIndex, e.NewFocusPageIndex);
+        int end = Math.Max(e.OldFocusPageIndex, e.NewFocusPageIndex);
+
+        if (PageNumber < start || PageNumber > end)
+        {
+            return;
+        }
+
+        RefreshTextSelection();
     }
 
-    public void RemovePageTextLayerImmediate()
+    private void _onTextSelectionExtended(object? sender, TextSelectionExtendedEventArgs e)
     {
-        Dispatcher.UIThread.Invoke(() => PdfTextLayer = null);
+        if (PdfTextLayer is null || PdfTextLayer.Count == 0)
+        {
+            return;
+        }
+
+        if (e.FocusPageIndex != PageNumber)
+        {
+            return;
+        }
+
+        RefreshTextSelection();
     }
 
-    public void FlagInteractiveLayerChanged()
+    private void RefreshSearchResults()
     {
-        Debug.ThrowNotOnUiThread();
-        SelectionChangedFlag = !SelectionChangedFlag;
+        if (_searchResultsRanges is null || _searchResultsRanges.Count == 0)
+        {
+            Dispatcher.UIThread.Invoke(() => SearchResults = null);
+            return;
+        }
+
+        System.Diagnostics.Debug.Assert(PdfTextLayer is not null);
+        
+        var results = new List<PdfRectangle>(_searchResultsRanges.Count);
+        foreach (var range in _searchResultsRanges)
+        {
+            var start = PdfTextLayer[range.Start];
+            var end = PdfTextLayer[range.End];
+            results.AddRange(PdfTextLayer.GetWords(start, end)
+                .Select(x => x.BoundingBox));
+        }
+
+        if (results.Count > 0)
+        {
+            Dispatcher.UIThread.Invoke(() => SearchResults = results);
+        }
+        else
+        {
+            Dispatcher.UIThread.Invoke(() => SearchResults = null);
+        }
+    }
+
+    private void RefreshTextSelection()
+    {
+        System.Diagnostics.Debug.Assert(PdfTextLayer is not null);
+        
+        if (!TextSelection.IsPageInSelection(PageNumber))
+        {
+            if (SelectedWords is not null)
+            {
+                Dispatcher.UIThread.Invoke(() => SelectedWords = null);
+            }
+
+            return;
+        }
+
+        var selectedWords = GetSelectedWords().ToArray();
+
+        if (selectedWords.Length == 0)
+        {
+            if (SelectedWords is not null)
+            {
+                Dispatcher.UIThread.Invoke(() => SelectedWords = null);  // TODO - Check if we should do that here
+            }
+        }
+        else
+        {
+            var selectedWordRects = TextSelection.GetPageSelectionAs(
+                    selectedWords, PageNumber,
+                    PdfWordHelpers.GetRectangle, PdfWordHelpers.GetRectangle)
+                .ToArray();
+            Dispatcher.UIThread.Invoke(() => SelectedWords = selectedWordRects);
+        }
+    }
+
+    public IEnumerable<PdfWord> GetSelectedWords()
+    {
+        System.Diagnostics.Debug.Assert(PdfTextLayer is not null);
+        return TextSelection.GetSelectedWords(PageNumber, PdfTextLayer);
     }
 
     internal void RotateClockwise()
@@ -169,10 +317,36 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
         Rotation = (Rotation + 270) % 360;
     }
 
+    public void Clear()
+    {
+        PdfTextLayer = null;
+
+        var picture = PdfPicture;
+        PdfPicture = null;
+
+        var thumbnail = Thumbnail;
+        Thumbnail = null;
+
+        if (picture is not null || thumbnail is not null)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                picture?.Dispose();
+                thumbnail?.Dispose();
+            }, DispatcherPriority.Loaded);
+        }
+    }
+
     public ValueTask DisposeAsync()
     {
-        App.Messenger.Send(new UnloadThumbnailMessage(this));
-        _renderMutex.Dispose();
+        Debug.ThrowOnUiThread();
+
+        TextSelection.TextSelectionExtended -= _onTextSelectionExtended;
+        TextSelection.TextSelectionFocusPageChanged -= _onTextSelectionFocusPageChanged;
+        TextSelection.TextSelectionReset -= _onTextSelectionReset;
+
+        Clear();
+
         return ValueTask.CompletedTask;
     }
 }

@@ -26,7 +26,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Caly.Core.Utilities;
-using Caly.Core.ViewModels;
 
 namespace Caly.Core.Controls;
 
@@ -43,7 +42,7 @@ public sealed class FullSearchPanelControl : TemplatedControl
 #if DEBUG
         if (Design.IsDesignMode)
         {
-            DataContext = new DocumentViewModel();
+            DataContext = new ViewModels.DocumentViewModel();
         }
 #endif
     }

@@ -24,60 +24,59 @@ using System.IO;
 using Avalonia;
 using Caly.Core.Services;
 
-namespace Caly.Core
+namespace Caly.Core;
+
+public static class Debug
 {
-    public static class Debug
+    private static readonly string LogFilePath = Path.Combine(JsonSettingsService.SettingsFilePath, "logs");
+
+
+    [Conditional("DEBUG")]
+    public static void ThrowOnUiThread()
     {
-        private static readonly string LogFilePath = Path.Combine(JsonSettingsService.SettingsFilePath, "logs");
-
-
-        [Conditional("DEBUG")]
-        public static void ThrowOnUiThread()
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
         {
-            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-            {
-                throw new InvalidOperationException("Call from UI thread");
-            }
+            throw new InvalidOperationException("Call from UI thread");
+        }
+    }
+
+    [Conditional("DEBUG")]
+    public static void ThrowNotOnUiThread()
+    {
+        if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            throw new InvalidOperationException("Call from non-UI thread");
+        }
+    }
+
+    //[Conditional("DEBUG")]
+    public static void WriteExceptionToFile(Exception? exception)
+    {
+        Directory.CreateDirectory(LogFilePath);
+
+        string logFile = Path.Combine(LogFilePath, $"{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid()}.txt");
+        if (exception is null)
+        {
+            File.WriteAllText(logFile, "Received null exception");
+            return;
         }
 
-        [Conditional("DEBUG")]
-        public static void ThrowNotOnUiThread()
-        {
-            if (!Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
-            {
-                throw new InvalidOperationException("Call from non-UI thread");
-            }
-        }
+        File.WriteAllText(logFile, exception.ToString());
+    }
 
-        //[Conditional("DEBUG")]
-        public static void WriteExceptionToFile(Exception? exception)
-        {
-            Directory.CreateDirectory(LogFilePath);
+    /// <summary>
+    /// Assert if the matrix is only a scale matrix (or null) and scale X equals scale Y.
+    /// </summary>
+    [Conditional("DEBUG")]
+    public static void AssertIsNullOrScale(Matrix? matrix)
+    {
+        if (!matrix.HasValue) return;
+        System.Diagnostics.Debug.Assert(!matrix.Value.ContainsPerspective());
+        System.Diagnostics.Debug.Assert(matrix.Value.M12.Equals(0));
+        System.Diagnostics.Debug.Assert(matrix.Value.M21.Equals(0));
+        System.Diagnostics.Debug.Assert(matrix.Value.M21.Equals(0));
+        System.Diagnostics.Debug.Assert(matrix.Value.M32.Equals(0));
 
-            string logFile = Path.Combine(LogFilePath, $"{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid()}.txt");
-            if (exception is null)
-            {
-                File.WriteAllText(logFile, "Received null exception");
-                return;
-            }
-
-            File.WriteAllText(logFile, exception.ToString());
-        }
-
-        /// <summary>
-        /// Assert if the matrix is only a scale matrix (or null) and scale X equals scale Y.
-        /// </summary>
-        [Conditional("DEBUG")]
-        public static void AssertIsNullOrScale(Matrix? matrix)
-        {
-            if (!matrix.HasValue) return;
-            System.Diagnostics.Debug.Assert(!matrix.Value.ContainsPerspective());
-            System.Diagnostics.Debug.Assert(matrix.Value.M12.Equals(0));
-            System.Diagnostics.Debug.Assert(matrix.Value.M21.Equals(0));
-            System.Diagnostics.Debug.Assert(matrix.Value.M21.Equals(0));
-            System.Diagnostics.Debug.Assert(matrix.Value.M32.Equals(0));
-
-            System.Diagnostics.Debug.Assert(matrix.Value.M11.Equals(matrix.Value.M22));
-        }
+        System.Diagnostics.Debug.Assert(matrix.Value.M11.Equals(matrix.Value.M22));
     }
 }

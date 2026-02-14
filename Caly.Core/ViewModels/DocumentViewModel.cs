@@ -23,13 +23,14 @@ using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Caly.Core.Handlers.Interfaces;
 using Caly.Core.Models;
+using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -39,8 +40,6 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core.ViewModels;
 
@@ -55,11 +54,14 @@ public sealed partial class DocumentViewModel : ViewModelBase
         return _pdfService?.FileName ?? "FileName NOT SET";
     }
 
-    private readonly IPdfService _pdfService;
+    private readonly IPdfDocumentService _pdfService;
+    private readonly PdfPageService _pdfPageService;
     private readonly ISettingsService _settingsService;
 
     private readonly CancellationTokenSource _mainCts = new();
     internal string? LocalPath { get; private set; }
+
+    public bool IsActive => _pdfService.IsActive;
 
     [ObservableProperty] private ObservableCollection<PageViewModel> _pages = [];
 
@@ -71,30 +73,73 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isPasswordProtected;
 
+    [ObservableProperty] private TextSelection? _textSelection;
+
+    [ObservableProperty] private Range? _visiblePages;
+
+    [ObservableProperty] private Range? _realisedPages;
+
+    [ObservableProperty] private Range? _visibleThumbnails;
+
+    [ObservableProperty] private Range? _realisedThumbnails;
+
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
+    /// <para><c>null</c> if not selected.</para>
     /// </summary>
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(GoToPreviousPageCommand))]
-    [NotifyCanExecuteChangedFor(nameof(GoToNextPageCommand))]
-    private string _selectedPageIndexString = "1";
-
-    private int? _selectedPageIndex = null;
-
-    /// <summary>
-    /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
-    /// </summary>
-    public int? SelectedPageIndex
+    public int? SelectedPageNumber
     {
-        get => _selectedPageIndex;
+        get;
         set
         {
-            if (!SetProperty(ref _selectedPageIndex, value))
+            if (value.HasValue)
+            {
+                if (value.Value <= 0)
+                {
+                    throw new ArgumentException("Selected page should exist in the document.", nameof(SelectedPageNumber));
+                }
+
+                if (value.Value > PageCount)
+                {
+                    throw new ArgumentException("Selected page should exist in the document.", nameof(SelectedPageNumber));
+                }
+            }
+
+            if (!SetProperty(ref field, value))
             {
                 return;
             }
 
-            SelectedPageIndexString = value.HasValue ? value.Value.ToString("0") : string.Empty;
+            OnPropertyChanged(nameof(SelectedPageIndex));
+            GoToPreviousPageCommand.NotifyCanExecuteChanged();
+            GoToNextPageCommand.NotifyCanExecuteChanged();
+        }
+    } = 1;
+
+    /// <summary>
+    /// Starts at <c>0</c>, ends at <see cref="PageCount"/> <c>- 1</c>.
+    /// <para><c>-1</c> if not selected.</para>
+    /// </summary>
+    public int SelectedPageIndex
+    {
+        get
+        {
+            if (SelectedPageNumber.HasValue)
+            {
+                return SelectedPageNumber.Value - 1;
+            }
+
+            return -1;
+        }
+        set
+        {
+            if (value != -1)
+            {
+                SelectedPageNumber = value + 1;
+                return;
+            }
+
+            SelectedPageNumber = null;
         }
     }
 
@@ -103,8 +148,6 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [ObservableProperty] private string? _fileName;
 
     [ObservableProperty] private string? _fileSize;
-
-    public IPageInteractiveLayerHandler? PageInteractiveLayerHandler => _pdfService.PageInteractiveLayerHandler;
 
     private readonly Lazy<Task> _loadPagesTask;
     public Task LoadPagesTask => _loadPagesTask.Value;
@@ -121,6 +164,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     private readonly IDisposable _searchResultsDisposable;
 
+    private readonly ITextSearchService _textSearchService;
+
 #if DEBUG
     public DocumentViewModel()
     {
@@ -136,7 +181,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _buildSearchIndex = null!;
         _searchResultsSource = null!;
 
-        _pdfService = new PdfPigPdfService(new SearchValuesTextSearchService());
+        _pdfService = new PdfPigDocumentService();
         _settingsService = new JsonSettingsService(null!);
         _paneSize = 50;
 
@@ -144,10 +189,11 @@ public sealed partial class DocumentViewModel : ViewModelBase
         FileName = _pdfService.FileName;
         LocalPath = _pdfService.LocalPath;
         PageCount = _pdfService.NumberOfPages;
+        TextSelection = new TextSelection(PageCount);
     }
 #endif
 
-    public DocumentViewModel(IPdfService pdfService, ISettingsService settingsService)
+    public DocumentViewModel(IPdfDocumentService pdfService, PdfPageService pdfPageService, ITextSearchService textSearchService, ISettingsService settingsService)
     {
         ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
         ArgumentNullException.ThrowIfNull(settingsService, nameof(settingsService));
@@ -155,7 +201,9 @@ public sealed partial class DocumentViewModel : ViewModelBase
         System.Diagnostics.Debug.Assert(pdfService.NumberOfPages == 0);
 
         _pdfService = pdfService;
+        _pdfPageService = pdfPageService;
         _settingsService = settingsService;
+        _textSearchService = textSearchService;
 
         _paneSize = _settingsService.GetSettings().PaneSize;
 
@@ -173,39 +221,50 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
                 try
                 {
-                    if (PageInteractiveLayerHandler is null)
-                    {
-                        throw new NullReferenceException(
-                            "The PageInteractiveLayerHandler is null, cannot process search results.");
-                    }
-
                     switch (e.Action)
                     {
                         case NotifyCollectionChangedAction.Reset:
-                            PageInteractiveLayerHandler.ClearTextSearchResults(this);
+                            // Clear selection highlights
+                            foreach (var page in Pages)
+                            {
+                                page.UpdateSearchResultsRanges(null);
+                            }
                             break;
 
                         case NotifyCollectionChangedAction.Add:
                             if (e.NewItems?.Count > 0)
                             {
-                                var searchResult = e.NewItems.OfType<TextSearchResultViewModel>().ToArray();
-                                var first = searchResult.FirstOrDefault();
+                                var searchResults = e.NewItems.OfType<TextSearchResult>().ToArray();
+                                var first = searchResults.FirstOrDefault();
 
                                 if (first is null || first.PageNumber <= 0)
                                 {
-                                    PageInteractiveLayerHandler.ClearTextSearchResults(this);
+                                    // Clear selection highlights
+                                    foreach (var page in Pages)
+                                    {
+                                        if (page.SearchResults is not null)
+                                        {
+                                            page.UpdateSearchResultsRanges(null);
+                                        }
+                                    }
                                 }
                                 else
                                 {
-                                    PageInteractiveLayerHandler.AddTextSearchResults(this, searchResult);
+                                    foreach (var result in searchResults)
+                                    {
+                                        System.Diagnostics.Debug.Assert(result.Nodes is not null);
+
+                                        var searchRange = result.Nodes
+                                            .Where(x => x is
+                                                { ItemType: SearchResultItemType.Word, WordIndex: not null })
+                                            .Select(x => new Range(new Index(x.WordIndex!.Value),
+                                                new Index(x.WordIndex.Value + x.WordCount!.Value - 1))).ToArray();
+
+                                        var page = Pages[result.PageNumber - 1];
+                                        page.UpdateSearchResultsRanges(searchRange);
+                                    }
                                 }
                             }
-
-                            if (e.OldItems?.Count > 0)
-                            {
-                                throw new NotImplementedException($"SearchResults Action '{e.Action}' with OldItems.");
-                            }
-
                             break;
 
                         case NotifyCollectionChangedAction.Remove:
@@ -225,12 +284,12 @@ public sealed partial class DocumentViewModel : ViewModelBase
                 }
             });
 
-        SearchResultsSource = new HierarchicalTreeDataGridSource<TextSearchResultViewModel>(SearchResults)
+        SearchResultsSource = new HierarchicalTreeDataGridSource<TextSearchResult>(SearchResults)
         {
             Columns =
             {
-                new HierarchicalExpanderColumn<TextSearchResultViewModel>(
-                    new TextColumn<TextSearchResultViewModel, string>(null, x => x.ToString()),
+                new HierarchicalExpanderColumn<TextSearchResult>(
+                    new TextColumn<TextSearchResult, string>(null, x => x.ToString()),
                     x => x.Nodes)
             }
         };
@@ -277,22 +336,20 @@ public sealed partial class DocumentViewModel : ViewModelBase
                 }
 
                 PageCount = _pdfService.NumberOfPages;
+                TextSelection = new TextSelection(PageCount);
 
                 if (_pdfService.FileSize.HasValue)
                 {
                     FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
                 }
 
+                _pdfPageService.Initialise();
+
                 return pageCount;
             }
         }, token);
 
         return WaitOpenAsync;
-    }
-
-    public void ClearAllThumbnails()
-    {
-        _pdfService.ClearAllThumbnail();
     }
 
     internal async ValueTask CancelAsync()
@@ -302,92 +359,180 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     private async Task LoadPages()
     {
+        System.Diagnostics.Debug.Assert(TextSelection is not null);
+        
         if (PageCount == 0)
         {
             if (IsPasswordProtected)
             {
                 throw new Exception("Could not open password protected document.");
             }
-            else
-            {
-                throw new Exception("Cannot load pages because document has 0 pages.");
-            }
+            throw new Exception("Cannot load pages because document has 0 pages.");
         }
 
-        await Task.Run((Func<Task?>)(async () =>
+        await Task.Run(async () =>
         {
             // Use 1st page size as default page size
-            var firstPage = new PageViewModel(1, _pdfService);
-            await firstPage.LoadPageSizeImmediate(_mainCts.Token);
-
-            App.Messenger.Send(new LoadPageMessage(firstPage)); // Enqueue first page full loading
+            var firstPage = new PageViewModel(1, TextSelection);
+            var pageInfo = await _pdfPageService.GetPageSize(1, _mainCts.Token);
+            if (pageInfo.HasValue)
+            {
+                Dispatcher.UIThread.Invoke(() =>
+                {
+                    firstPage.SetSize(pageInfo.Value.Width, pageInfo.Value.Height,
+                        _pdfService.PpiScale);
+                });
+            }
 
             double defaultWidth = firstPage.Width * _pdfService.PpiScale;
             double defaultHeight = firstPage.Height * _pdfService.PpiScale;
 
             Pages.Add(firstPage);
 
-            for (int p = 2; p <= PageCount; p++)
+            for (int p = 2; p <= PageCount; ++p)
             {
                 _mainCts.Token.ThrowIfCancellationRequested();
-                var newPage = new PageViewModel(p, _pdfService)
+                var newPage = new PageViewModel(p, TextSelection)
                 {
                     Height = defaultHeight,
                     Width = defaultWidth
                 };
-
-                App.Messenger.Send(new LoadPageSizeMessage(newPage));
+                _pdfPageService.RequestPageSize(newPage);
                 Pages.Add(newPage);
             }
-        }), _mainCts.Token);
+        }, _mainCts.Token);
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]
     private void GoToPreviousPage()
     {
-        if (!SelectedPageIndex.HasValue)
+        if (!SelectedPageNumber.HasValue)
         {
             return;
         }
 
-        SelectedPageIndex = Math.Max(1, SelectedPageIndex.Value - 1);
+        SelectedPageNumber = Math.Max(1, SelectedPageNumber.Value - 1);
     }
 
     private bool CanGoToPreviousPage()
     {
-        if (!SelectedPageIndex.HasValue)
+        if (!SelectedPageNumber.HasValue)
         {
             return false;
         }
 
-        return SelectedPageIndex.Value > 1;
+        return SelectedPageNumber.Value > 1;
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToNextPage))]
     private void GoToNextPage()
     {
-        if (!SelectedPageIndex.HasValue)
+        if (!SelectedPageNumber.HasValue)
         {
             return;
         }
 
-        SelectedPageIndex = Math.Min(PageCount, SelectedPageIndex.Value + 1);
+        SelectedPageNumber = Math.Min(PageCount, SelectedPageNumber.Value + 1);
     }
 
     private bool CanGoToNextPage()
     {
-        if (!SelectedPageIndex.HasValue)
+        if (!SelectedPageNumber.HasValue)
         {
             return false;
         }
 
-        return SelectedPageIndex.Value < PageCount;
+        return SelectedPageNumber.Value < PageCount;
     }
     
     [RelayCommand]
     private async Task CloseDocument(CancellationToken token)
     {
-        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsService>()!;
+        var pdfDocumentsService = App.Current?.Services?.GetRequiredService<IPdfDocumentsManagerService>()!;
         await Task.Run(() => pdfDocumentsService.CloseUnloadDocument(this), token);
+    }
+
+    [RelayCommand]
+    private async Task RefreshPages()
+    {
+        try
+        {
+            await _pdfPageService.RefreshPages(new RefreshPagesRequestMessage()
+            {
+                Document = this,
+                VisiblePages = VisiblePages,
+                RealisedPages = RealisedPages,
+                VisibleThumbnails = VisibleThumbnails,
+                RealisedThumbnails = RealisedThumbnails
+            });
+        }
+        catch (OperationCanceledException)
+        { }
+        catch (Exception ex)
+        {
+            Debug.WriteExceptionToFile(ex);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RefreshThumbnails()
+    {
+        try
+        {
+            await _pdfPageService.RefreshThumbnails(new RefreshPagesRequestMessage()
+            {
+                Document = this,
+                VisiblePages = VisiblePages,
+                RealisedPages = RealisedPages,
+                VisibleThumbnails = VisibleThumbnails,
+                RealisedThumbnails = RealisedThumbnails
+            });
+        }
+        catch (OperationCanceledException)
+        { }
+        catch (Exception ex)
+        {
+            Debug.WriteExceptionToFile(ex);
+        }
+    }
+
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        Debug.ThrowNotOnUiThread();
+
+        if (TextSelection is null)
+        {
+            return;
+        }
+
+        int start = TextSelection.GetStartPageIndex();
+        int end = TextSelection.GetEndPageIndex();
+
+        System.Diagnostics.Debug.Assert(start <= end);
+
+        TextSelection.ResetSelection();
+    }
+
+    [RelayCommand]
+    private async Task Clear()
+    {
+        await Task.Run(() =>
+        {
+            foreach (var page in Pages)
+            {
+                page.Clear();
+            }
+        });
+
+        await _pdfPageService.CancelAndClear();
+
+        GC.Collect(GC.MaxGeneration);
+    }
+
+    [RelayCommand]
+    private void Activated()
+    {
+        App.Messenger.Send(new SelectedDocumentChangedMessage(this));
     }
 }

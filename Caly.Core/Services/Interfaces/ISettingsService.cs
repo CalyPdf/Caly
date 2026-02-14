@@ -22,22 +22,21 @@ using System.Threading.Tasks;
 using Caly.Core.Models;
 using static Caly.Core.Models.CalySettings;
 
-namespace Caly.Core.Services.Interfaces
+namespace Caly.Core.Services.Interfaces;
+
+public interface ISettingsService
 {
-    public interface ISettingsService
-    {
-        void SetProperty(CalySettingsProperty property, object value);
+    void SetProperty(CalySettingsProperty property, object value);
 
-        CalySettings GetSettings();
+    CalySettings GetSettings();
 
-        ValueTask<CalySettings> GetSettingsAsync();
+    ValueTask<CalySettings> GetSettingsAsync();
 
-        void Load();
+    void Load();
 
-        Task LoadAsync();
+    Task LoadAsync();
 
-        void Save();
+    void Save();
 
-        Task SaveAsync();
-    }
+    Task SaveAsync();
 }

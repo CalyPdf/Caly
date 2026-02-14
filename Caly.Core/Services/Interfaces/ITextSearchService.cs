@@ -22,14 +22,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.ViewModels;
+using Caly.Core.Models;
 
-namespace Caly.Core.Services.Interfaces
+namespace Caly.Core.Services.Interfaces;
+
+public interface ITextSearchService : IDisposable
 {
-    public interface ITextSearchService : IDisposable
-    {
-        Task BuildPdfDocumentIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token);
+    Task BuildPdfDocumentIndex(IProgress<int> progress, CancellationToken token);
 
-        IEnumerable<TextSearchResultViewModel> Search(DocumentViewModel document, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
-    }
+    IEnumerable<TextSearchResult> Search(string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token);
 }

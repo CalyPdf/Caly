@@ -20,7 +20,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Caly.Core.ViewModels;
+using Caly.Core.Models;
 
 namespace Caly.Core.Services.Interfaces
 {
@@ -29,7 +29,7 @@ namespace Caly.Core.Services.Interfaces
         /// <summary>
         /// Set clipboard.
         /// </summary>
-        Task<bool> SetAsync(DocumentViewModel document, CancellationToken token);
+        Task<bool> SetAsync(TextSelection selection, PdfPageService pdfPageService, CancellationToken token);
 
         /// <summary>
         /// Set clipboard.

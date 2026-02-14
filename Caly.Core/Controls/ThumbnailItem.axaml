@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Caly.Core.Controls"
+                    xmlns:vm="clr-namespace:Caly.Core.ViewModels">
+
+    <Design.PreviewWith>
+        <StackPanel Width="400" Spacing="10">      
+            <StackPanel Background="{DynamicResource SystemRegionBrush}">
+                <controls:ThumbnailItem />
+            </StackPanel>
+        </StackPanel>
+    </Design.PreviewWith>
+ 
+    <ControlTheme x:Key="{x:Type controls:ThumbnailItem}" TargetType="controls:ThumbnailItem" x:DataType="vm:PageViewModel">
+        <Setter Property="Template">
+            <ControlTemplate>
+
+                <DockPanel HorizontalAlignment="Center">
+                    <Grid DockPanel.Dock="Top"
+                          Margin="2,3,2,0"
+                          Width="{Binding ThumbnailWidth}"
+                          Height="{Binding ThumbnailHeight}">
+                        <controls:ThumbnailControl
+                            VisibleArea="{Binding VisibleArea}"
+                            ThumbnailWidth="{Binding ThumbnailWidth}"
+                            ThumbnailHeight="{Binding ThumbnailHeight}"
+                            PageWidth="{Binding Width}"
+                            PageHeight="{Binding Height}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"/>
+                    </Grid>
+                    <Label DockPanel.Dock="Top"
+                           Content="{Binding PageNumber}"
+                           HorizontalAlignment="Stretch"
+                           HorizontalContentAlignment="Center"
+                           Padding="0"/>
+                </DockPanel>
+
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

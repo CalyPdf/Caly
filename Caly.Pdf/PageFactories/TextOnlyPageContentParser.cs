@@ -13,16 +13,18 @@ namespace Caly.Pdf.PageFactories
     {
         private readonly IGraphicsStateOperationFactory operationFactory;
         private readonly bool useLenientParsing;
+        private readonly StackDepthGuard stackDepthGuard;
 
-        public TextOnlyPageContentParser(IGraphicsStateOperationFactory operationFactory, bool useLenientParsing = false)
+        public TextOnlyPageContentParser(IGraphicsStateOperationFactory operationFactory, StackDepthGuard stackDepthGuard, bool useLenientParsing = false)
         {
             this.operationFactory = operationFactory;
+            this.stackDepthGuard = stackDepthGuard;
             this.useLenientParsing = useLenientParsing;
         }
 
         public IReadOnlyList<IGraphicsStateOperation> Parse(int pageNumber, IInputBytes inputBytes, ILog log)
         {
-            var scanner = new CoreTokenScanner(inputBytes, false, useLenientParsing: useLenientParsing);
+            var scanner = new CoreTokenScanner(inputBytes, false, stackDepthGuard, useLenientParsing: useLenientParsing);
 
             var precedingTokens = new List<IToken>();
             var graphicsStateOperations = new List<IGraphicsStateOperation>();

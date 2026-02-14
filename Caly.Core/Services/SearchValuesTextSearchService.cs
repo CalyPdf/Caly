@@ -1,197 +1,213 @@
-﻿using Caly.Core.Services.Interfaces;
-using Caly.Core.ViewModels;
+﻿using Caly.Core.Models;
+using Caly.Core.Services.Interfaces;
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Caly.Core.Services
-{
-    internal class SearchValuesTextSearchService : ITextSearchService
-    {
-        private const char WordSeparator = ' ';
-        
-        private readonly ConcurrentDictionary<int, string> _index = new ConcurrentDictionary<int, string>();
+namespace Caly.Core.Services;
 
-        public void Dispose()
+internal sealed class SearchValuesTextSearchService : ITextSearchService
+{
+    private const char WordSeparator = ' ';
+
+    private string?[]? _index;
+
+    public void Dispose()
+    {
+        if (_index is null)
         {
-            _index.Clear();
+            return;
         }
 
-        public async Task BuildPdfDocumentIndex(DocumentViewModel document, IProgress<int> progress, CancellationToken token)
+        for (int i = 0; i < _index.Length; ++i)
         {
-            int done = 0;
+            _index[i] = null;
+        }
+    }
 
-            var options = new ParallelOptions()
-            {
-                MaxDegreeOfParallelism = 4,
-                CancellationToken = token
-            };
+    private readonly PdfPageService _pdfPageService;
 
-            await Parallel.ForEachAsync(document.Pages, options, async (p, ct) =>
+    public SearchValuesTextSearchService(PdfPageService pdfPageService)
+    {
+        _pdfPageService = pdfPageService;
+    }
+
+    public async Task BuildPdfDocumentIndex(IProgress<int> progress, CancellationToken token)
+    {
+        System.Diagnostics.Debug.Assert(_pdfPageService.NumberOfPages > 0);
+        _index = new string?[_pdfPageService.NumberOfPages];
+
+        int done = 0;
+
+        var options = new ParallelOptions()
+        {
+            MaxDegreeOfParallelism = 4,
+            CancellationToken = token
+        };
+
+        await Parallel.ForAsync(0, _pdfPageService.NumberOfPages, options, async (p, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+            var textLayer = await _pdfPageService.GetTextLayer(p + 1, ct)
+                .ConfigureAwait(false);
+
+            if (textLayer is null)
             {
                 ct.ThrowIfCancellationRequested();
-                
-                await Task.Run(async () =>
-                {
-                    var textLayer = p.PdfTextLayer;
-                    if (textLayer is null)
-                    {
-                        await p.SetPageTextLayerImmediate(ct);
-                        textLayer = p.PdfTextLayer;
-                        p.RemovePageTextLayerImmediate();
-                    }
-
-                    if (textLayer is null)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        throw new NullReferenceException("Cannot index search on a null PdfTextLayer.");
-                    }
-
-                    _index[p.PageNumber] = string.Join(WordSeparator, textLayer.Select(w => w.Value));
-                    progress.Report(Interlocked.Add(ref done, 1));
-                }, ct);
-            });
-        }
-
-        private static string CleanText(string text, out int count)
-        {
-            List<int> separators = new List<int>();
-            for (int i = 0; i < text.Length; ++i)
-            {
-                if (char.IsPunctuation(text[i]))
-                {
-                    separators.Add(i);
-                }
+                throw new NullReferenceException("Cannot index search on a null PdfTextLayer.");
             }
 
-            if (separators.Count > 0)
+            _index[p] = string.Join(WordSeparator, textLayer.Select(w => w.Value));
+            progress.Report(Interlocked.Add(ref done, 1));
+        });
+    }
+
+    private static string CleanText(string text, out int count)
+    {
+        List<int> separators = new List<int>();
+        for (int i = 0; i < text.Length; ++i)
+        {
+            if (char.IsPunctuation(text[i]))
             {
-                int start = 0;
-                StringBuilder sb = new StringBuilder();
+                separators.Add(i);
+            }
+        }
 
-                foreach (var i in separators)
+        if (separators.Count > 0)
+        {
+            int start = 0;
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var i in separators)
+            {
+                if (i != 0)
                 {
-                    if (i != 0)
-                    {
-                        sb.Append(text, start, i - start);
-                        sb.Append(WordSeparator);
-                    }
-
-                    sb.Append(text, i, 1);
-
-                    if (i == text.Length - 1)
-                    {
-                        start = i + 1;
-                        break;
-                    }
-
+                    sb.Append(text, start, i - start);
                     sb.Append(WordSeparator);
-                    start = i + 1;
                 }
 
-                sb.Append(text, start, text.Length - start);
-                text = sb.ToString();
+                sb.Append(text, i, 1);
+
+                if (i == text.Length - 1)
+                {
+                    start = i + 1;
+                    break;
+                }
+
+                sb.Append(WordSeparator);
+                start = i + 1;
             }
 
-            var span = text.AsSpan();
-            count = span.Count(WordSeparator) + 1;
-
-            if (span.StartsWith(WordSeparator))
-            {
-                count--;
-            }
-
-            if (span.EndsWith(WordSeparator))
-            {
-                count--;
-            }
-
-            return text;
+            sb.Append(text, start, text.Length - start);
+            text = sb.ToString();
         }
 
-        private static ReadOnlyMemory<char> GetSampleText(string pageText, int startIndex, int length)
+        var span = text.AsSpan();
+        count = span.Count(WordSeparator) + 1;
+
+        if (span.StartsWith(WordSeparator))
         {
-            int sampleStart = Math.Max(0, startIndex - 10);
-            int sampleLength = Math.Min(length + 20, pageText.Length - sampleStart);
-            return pageText.AsMemory(sampleStart, sampleLength);
+            count--;
         }
 
-        public IEnumerable<TextSearchResultViewModel> Search(DocumentViewModel document, string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
+        if (span.EndsWith(WordSeparator))
         {
-            Debug.ThrowOnUiThread();
+            count--;
+        }
 
+        return text;
+    }
+
+    private static ReadOnlySpan<char> GetSampleText(string pageText, int startIndex, int length)
+    {
+        int sampleStart = Math.Max(0, startIndex - 10);
+        int sampleLength = Math.Min(length + 20, pageText.Length - sampleStart);
+        return pageText.AsSpan(sampleStart, sampleLength);
+    }
+
+    public IEnumerable<TextSearchResult> Search(string text, IReadOnlyCollection<int> pagesToSkip, CancellationToken token)
+    {
+        Debug.ThrowOnUiThread();
+
+        ArgumentNullException.ThrowIfNull(_index);
+        System.Diagnostics.Debug.Assert(_index.Length > 0);
+
+        token.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrEmpty(text))
+        {
+            yield break;
+        }
+
+        // TODO - Move the below out of here as it reruns while indexing
+        text = CleanText(text, out int count);
+        // END TODO
+
+        var searchValue = SearchValues.Create([text], StringComparison.OrdinalIgnoreCase);
+
+        for (int i = 0; i < _index.Length; ++i)
+        {
             token.ThrowIfCancellationRequested();
-
-            if (string.IsNullOrEmpty(text))
+            int pageNumber = i + 1;
+            if (pagesToSkip.Contains(pageNumber))
             {
-                yield break;
+                continue;
             }
 
-            // TODO - Move the below out of here as it reruns while indexing
-            text = CleanText(text, out int count);
-            // END TODO
+            string? pageText = _index[i];
+            if (string.IsNullOrEmpty(pageText))
+            {
+                continue;
+            }
 
-            var searchValue = SearchValues.Create([text], StringComparison.OrdinalIgnoreCase);
+            int lastSpanIndex = 0;
 
-            foreach (var pageKvp in _index)
+            var pageResults = new List<TextSearchResult>();
+
+            /*
+             * TODO - If the page text start with the word but the word starts with a space.
+             * The search won't be pick up
+             */
+
+            while (lastSpanIndex < pageText.Length)
             {
                 token.ThrowIfCancellationRequested();
 
-                if (pagesToSkip.Contains(pageKvp.Key))
+                int currentSpanIndex = pageText.AsSpan(lastSpanIndex).IndexOfAny(searchValue);
+                if (currentSpanIndex == -1)
                 {
-                    continue;
+                    break;
                 }
 
-                string pageText = _index[pageKvp.Key];
-                int lastSpanIndex = 0;
+                lastSpanIndex += currentSpanIndex;
 
-                var pageResults = new List<TextSearchResultViewModel>();
+                var wordIndex = pageText.AsSpan(0, lastSpanIndex).Count(WordSeparator);
 
-                /*
-                 * TODO - If the page text start with the word but the word starts with a space.
-                 * The search won't be pick up
-                 */
-
-                while (lastSpanIndex < pageText.Length)
+                int k = lastSpanIndex;
+                pageResults.Add(new TextSearchResult()
                 {
-                    token.ThrowIfCancellationRequested();
+                    PageNumber = pageNumber,
+                    ItemType = SearchResultItemType.Word,
+                    WordIndex = wordIndex,
+                    WordCount = count,
+                    SampleText = () => GetSampleText(pageText, k, 20)
+                });
 
-                    int currentSpanIndex = pageText.AsSpan(lastSpanIndex).IndexOfAny(searchValue);
-                    if (currentSpanIndex == -1)
-                    {
-                        break;
-                    }
+                lastSpanIndex += text.Length;
+            }
 
-                    lastSpanIndex += currentSpanIndex;
-                    
-                    var wordIndex = pageText.AsSpan(0, lastSpanIndex).Count(WordSeparator);
-
-                    pageResults.Add(new TextSearchResultViewModel()
-                    {
-                        PageNumber = pageKvp.Key,
-                        ItemType = SearchResultItemType.Word,
-                        WordIndex = wordIndex,
-                        WordCount = count,
-                        SampleText = GetSampleText(pageText, lastSpanIndex, 20)
-                    });
-
-                    lastSpanIndex += text.Length;
-                }
-
-                if (pageResults.Count > 0)
+            if (pageResults.Count > 0)
+            {
+                yield return new TextSearchResult()
                 {
-                    yield return new TextSearchResultViewModel()
-                    {
-                        ItemType = SearchResultItemType.Unspecified,
-                        PageNumber = pageKvp.Key,
-                        Nodes = pageResults
-                    };
-                }
+                    ItemType = SearchResultItemType.Unspecified,
+                    PageNumber = pageNumber,
+                    Nodes = pageResults
+                };
             }
         }
     }

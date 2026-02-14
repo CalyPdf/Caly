@@ -19,37 +19,46 @@
 // SOFTWARE.
 
 using System;
-using System.Globalization;
-using Avalonia.Data;
-using Avalonia.Data.Converters;
+using System.Collections.Generic;
+using System.Diagnostics;
 
-namespace Caly.Core.Converters
+namespace Caly.Core.Models;
+
+[DebuggerDisplay("Page {PageNumber} Word index: {WordIndex} ({WordCount}), Children {Nodes?.Count}")]
+public sealed class TextSearchResult
 {
-    public sealed class ZeroPageIndexConverter : IValueConverter
+    public required SearchResultItemType ItemType { get; init; }
+
+    public required int PageNumber { get; init; }
+
+    public int? WordIndex { get; init; }
+
+    public int? WordCount { get; init; }
+
+    public IReadOnlyList<TextSearchResult>? Nodes { get; init; }
+
+    public Func<ReadOnlySpan<char>>? SampleText { get; init; }
+
+    public override string ToString()
     {
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        var text = SampleText is null ? ReadOnlySpan<char>.Empty : SampleText();
+        if (!text.IsEmpty)
         {
-            if (value is null)
-            {
-                return null;
-            }
-
-            if (value is int i)
-            {
-                return Math.Max(0, i - 1);
-            }
-
-            return new BindingNotification(new InvalidCastException(), BindingErrorType.Error);
+            return $"...{text}...";
         }
 
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        if (Nodes is null)
         {
-            if (value is int i)
-            {
-                return i + 1;
-            }
-
-            return new BindingNotification(new InvalidCastException(), BindingErrorType.Error);
+            return $"{WordIndex} [{ItemType}]";
         }
+
+        return $"{PageNumber} ({Nodes.Count})";
     }
+}
+
+public enum SearchResultItemType : byte
+{
+    Unspecified = 0,
+    Word = 1,
+    Annotation = 2,
 }

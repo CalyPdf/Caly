@@ -43,28 +43,27 @@ public partial class DocumentViewModel
     private async Task LoadBookmarks()
     {
         _mainCts.Token.ThrowIfCancellationRequested();
-        await Task.Run(() => _pdfService.SetPdfBookmark(this, _mainCts.Token));
-        if (Bookmarks?.Count > 0)
+        Bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainCts.Token)) ?? [];
+        if (Bookmarks.Count > 0)
         {
-            BookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(Bookmarks)
-            {
-                Columns =
-                {
-                    new HierarchicalExpanderColumn<PdfBookmarkNode>(
-                        new TextColumn<PdfBookmarkNode, string>(null,
-                            x => x.Title, options: new TextColumnOptions<PdfBookmarkNode>()
-                            {
-                                CanUserSortColumn = false,
-                                IsTextSearchEnabled = false,
-                                TextWrapping = TextWrapping.WrapWithOverflow,
-                                TextAlignment = TextAlignment.Left,
-                                MaxWidth = new GridLength(400)
-                            }), x => x.Nodes)
-                }
-            };
-
             Dispatcher.UIThread.Invoke(() =>
             {
+                BookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(Bookmarks)
+                {
+                    Columns =
+                    {
+                        new HierarchicalExpanderColumn<PdfBookmarkNode>(
+                            new TextColumn<PdfBookmarkNode, string>(null,
+                                x => x.Title, options: new TextColumnOptions<PdfBookmarkNode>()
+                                {
+                                    CanUserSortColumn = false,
+                                    IsTextSearchEnabled = false,
+                                    TextWrapping = TextWrapping.WrapWithOverflow,
+                                    TextAlignment = TextAlignment.Left,
+                                    MaxWidth = new GridLength(400)
+                                }), x => x.Nodes)
+                    }
+                };
                 BookmarksSource.RowSelection!.SingleSelect = true;
                 BookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;
                 BookmarksSource.ExpandAll();

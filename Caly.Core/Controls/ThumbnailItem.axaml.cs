@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 BobLd
+// Copyright (c) 2025 BobLd
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,36 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Avalonia.Platform.Storage;
-using Caly.Core.ViewModels;
+using Avalonia.Controls;
 
-namespace Caly.Core.Services.Interfaces
-{
-    public interface IPdfDocumentsService
-    {
-        /// <summary>
-        /// Open and load pdf document through popup window.
-        /// </summary>
-        Task OpenLoadDocument(CancellationToken cancellationToken);
+namespace Caly.Core.Controls;
 
-        /// <summary>
-        /// Open and load the pdf document.
-        /// </summary>
-        Task OpenLoadDocument(IStorageFile? storageFile, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Open and load the pdf documents.
-        /// </summary>
-        Task<int> OpenLoadDocuments(IEnumerable<IStorageItem?> storageFiles, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Open and load the pdf document.
-        /// </summary>
-        Task OpenLoadDocument(string? path, CancellationToken cancellationToken);
-
-        Task CloseUnloadDocument(DocumentViewModel? document);
-    }
-}
+public sealed class ThumbnailItem : ListBoxItem
+{ }

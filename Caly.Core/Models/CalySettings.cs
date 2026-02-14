@@ -18,30 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Caly.Core.Models
+namespace Caly.Core.Models;
+
+public sealed class CalySettings
 {
-    public sealed class CalySettings
+    public static readonly CalySettings Default = new CalySettings()
     {
-        public static readonly CalySettings Default = new CalySettings()
-        {
-            Width = 1000,
-            Height = 500,
-            PaneSize = 350
-        };
+        Width = 1000,
+        Height = 500,
+        PaneSize = 350
+    };
 
-        // TODO - Add version for compatibility checks
+    // TODO - Add version for compatibility checks
 
-        public int Width { get; set; }
+    public int Width { get; set; }
 
-        public int Height { get; set; }
-        
-        public bool IsMaximised { get; set; }
+    public int Height { get; set; }
 
-        public int PaneSize { get; set; }
+    public bool IsMaximised { get; set; }
 
-        public enum CalySettingsProperty
-        {
-            PaneSize = 0
-        }
+    public int PaneSize { get; set; }
+
+    public enum CalySettingsProperty
+    {
+        PaneSize = 0
     }
 }

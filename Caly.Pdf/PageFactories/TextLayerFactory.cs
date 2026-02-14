@@ -46,6 +46,7 @@ namespace Caly.Pdf.PageFactories
                 resourceStore,
                 filterProvider,
                 new TextOnlyPageContentParser(TextOnlyGraphicsStateOperationFactory.Instance,
+                    new StackDepthGuard(parsingOptions.MaxStackDepth),
                     parsingOptions.UseLenientParsing),
                 parsingOptions)
         {

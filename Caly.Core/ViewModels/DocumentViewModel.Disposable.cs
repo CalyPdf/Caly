@@ -29,6 +29,8 @@ public partial class DocumentViewModel : IAsyncDisposable
     {
         Debug.ThrowOnUiThread();
 
+        System.Diagnostics.Debug.Assert(_mainCts.IsCancellationRequested);
+
         await Parallel.ForEachAsync(Pages, (p, _) => p.DisposeAsync());
 
         Pages.Clear();

@@ -20,13 +20,12 @@
 
 using Avalonia.Controls;
 
-namespace Caly.Core.Views
+namespace Caly.Core.Views;
+
+public sealed partial class MessageWindow : Window
 {
-    public sealed partial class MessageWindow : Window
+    public MessageWindow()
     {
-        public MessageWindow()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
