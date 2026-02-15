@@ -467,12 +467,11 @@ namespace Caly.Core.Services
             _mainCts.Token.ThrowIfCancellationRequested();
 
             var currentCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token);
+            var token = currentCts.Token;
             var oldCts = Interlocked.Exchange(ref _thumbnailsCts, currentCts);
 
             await oldCts.CancelAsync();
             oldCts.Dispose();
-
-            var token = currentCts.Token;
 
             await Task.Run(async () =>
             {
@@ -639,13 +638,12 @@ namespace Caly.Core.Services
             _mainCts.Token.ThrowIfCancellationRequested();
 
             var currentCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token);
+            var token = currentCts.Token;
             var oldCts = Interlocked.Exchange(ref _pagesCts, currentCts);
 
             await oldCts.CancelAsync();
             oldCts.Dispose();
 
-            var token = currentCts.Token;
-            
             await Task.Run(async () =>
             {
                 if (!m.VisiblePages.HasValue || !m.RealisedPages.HasValue)
