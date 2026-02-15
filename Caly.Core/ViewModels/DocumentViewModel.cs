@@ -166,6 +166,18 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     private readonly ITextSearchService _textSearchService;
 
+    /// <summary>
+    /// Delegate set by the hosting control to perform page rotation with scroll anchoring.
+    /// Parameters: page number (1-based), clockwise.
+    /// </summary>
+    internal Action<int, bool>? RotatePageAction { get; set; }
+
+    /// <summary>
+    /// Delegate set by the hosting control to perform rotate-all with scroll anchoring.
+    /// Parameter: clockwise.
+    /// </summary>
+    internal Action<bool>? RotateAllPagesAction { get; set; }
+
 #if DEBUG
     public DocumentViewModel()
     {

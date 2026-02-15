@@ -19,7 +19,6 @@
 // SOFTWARE.
 
 using System;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -96,25 +95,31 @@ public partial class DocumentViewModel
     [RelayCommand]
     private void RotateAllPagesClockwise()
     {
-        ExecutePreservePage(() =>
+        if (RotateAllPagesAction is { } action)
         {
-            foreach (PageViewModel page in Pages)
-            {
-                page.RotateClockwise();
-            }
-        });
+            action(true);
+            return;
+        }
+
+        foreach (PageViewModel page in Pages)
+        {
+            page.RotateClockwise();
+        }
     }
 
     [RelayCommand]
     private void RotateAllPagesCounterclockwise()
     {
-        ExecutePreservePage(() =>
+        if (RotateAllPagesAction is { } action)
         {
-            foreach (PageViewModel page in Pages)
-            {
-                page.RotateCounterclockwise();
-            }
-        });
+            action(false);
+            return;
+        }
+
+        foreach (PageViewModel page in Pages)
+        {
+            page.RotateCounterclockwise();
+        }
     }
 
     [RelayCommand]
@@ -125,7 +130,13 @@ public partial class DocumentViewModel
             return;
         }
 
-        ExecutePreservePage(() => Pages[pageNumber - 1].RotateClockwise());
+        if (RotatePageAction is { } action)
+        {
+            action(pageNumber, true);
+            return;
+        }
+
+        Pages[pageNumber - 1].RotateClockwise();
     }
 
     [RelayCommand]
@@ -136,21 +147,12 @@ public partial class DocumentViewModel
             return;
         }
 
-        ExecutePreservePage(() => Pages[pageNumber - 1].RotateCounterclockwise());
-    }
-
-    private void ExecutePreservePage(Action action)
-    {
-        int? current = SelectedPageNumber;
-
-        action();
-
-        // TODO - Investigate why page selection changes
-
-        Dispatcher.UIThread.Post(() =>
+        if (RotatePageAction is { } action)
         {
-            // We makes sure selected page did not change
-            SelectedPageNumber = current;
-        }, DispatcherPriority.Loaded); // Loaded so that page is set after layout pass
+            action(pageNumber, false);
+            return;
+        }
+
+        Pages[pageNumber - 1].RotateCounterclockwise();
     }
 }

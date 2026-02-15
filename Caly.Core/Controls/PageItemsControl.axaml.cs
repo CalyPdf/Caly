@@ -79,6 +79,7 @@ public sealed class PageItemsControl : ItemsControl
     private bool _isTabDragging;
     private bool _pendingScrollToPage;
 
+
     private TabsControl? _tabsControl;
     
     /// <summary>
@@ -1097,8 +1098,21 @@ public sealed class PageItemsControl : ItemsControl
 
         if (change.Property == DataContextProperty)
         {
+            if (change.OldValue is ViewModels.DocumentViewModel oldVm)
+            {
+                oldVm.RotatePageAction = null;
+                oldVm.RotateAllPagesAction = null;
+            }
+
             ResetState();
             _pendingScrollToPage = true;
+
+            if (change.NewValue is ViewModels.DocumentViewModel newVm)
+            {
+                newVm.RotatePageAction = RotatePageWithScrollAnchor;
+                newVm.RotateAllPagesAction = RotateAllPagesWithScrollAnchor;
+            }
+
             Scroll?.Focus();
             EnsureValidContainersVisibility();
             ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
@@ -1150,6 +1164,118 @@ public sealed class PageItemsControl : ItemsControl
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Rotates a single page while preserving the scroll position.
+    /// Called via <see cref="ViewModels.DocumentViewModel.RotatePageAction"/>.
+    /// </summary>
+    private void RotatePageWithScrollAnchor(int pageNumber, bool clockwise)
+    {
+        int pageIndex = pageNumber - 1;
+        if (pageIndex < 0 || pageIndex >= ItemsView.Count)
+        {
+            return;
+        }
+
+        if (ItemsView[pageIndex] is not ViewModels.PageViewModel pageVm)
+        {
+            return;
+        }
+
+        RotateWithScrollAnchor(() =>
+        {
+            if (clockwise)
+            {
+                pageVm.RotateClockwise();
+            }
+            else
+            {
+                pageVm.RotateCounterclockwise();
+            }
+        });
+    }
+
+    /// <summary>
+    /// Rotates all pages while preserving the scroll position.
+    /// Called via <see cref="ViewModels.DocumentViewModel.RotateAllPagesAction"/>.
+    /// </summary>
+    private void RotateAllPagesWithScrollAnchor(bool clockwise)
+    {
+        RotateWithScrollAnchor(() =>
+        {
+            foreach (var item in Items.OfType<ViewModels.PageViewModel>())
+            {
+                if (clockwise)
+                {
+                    item.RotateClockwise();
+                }
+                else
+                {
+                    item.RotateCounterclockwise();
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// Executes <paramref name="rotateAction"/> while keeping the viewport anchored
+    /// to the page currently at the top of the scroll area.
+    /// </summary>
+    private void RotateWithScrollAnchor(Action rotateAction)
+    {
+        if (Scroll is null)
+        {
+            rotateAction();
+            return;
+        }
+
+        // 1. Find the anchor page: the realised page whose top is closest
+        //    to (but not past) the viewport top.
+        double scrollY = Scroll.Offset.Y;
+        int anchorIndex = -1;
+        double anchorTop = 0;
+
+        int first = GetMinPageIndex();
+        int last = GetMaxPageIndex();
+
+        for (int i = first; i >= 0 && i <= last; i++)
+        {
+            if (ContainerFromIndex(i) is not PageItem page)
+            {
+                continue;
+            }
+
+            // Pick the page that straddles or is just above the viewport top.
+            if (page.Bounds.Top <= scrollY + 1)
+            {
+                anchorIndex = i;
+                anchorTop = page.Bounds.Top;
+            }
+        }
+
+        // 2. Perform the rotation — bindings update page dimensions synchronously.
+        rotateAction();
+
+        if (anchorIndex < 0)
+        {
+            PostUpdatePagesVisibility();
+            return;
+        }
+
+        // 3. Force a synchronous layout so containers get their new Bounds.
+        Scroll.Measure(Size.Infinity);
+        Scroll.Arrange(new Rect(Scroll.DesiredSize));
+
+        // 4. Restore scroll: keep the anchor page at the same visual offset.
+        if (ContainerFromIndex(anchorIndex) is PageItem anchor)
+        {
+            double delta = anchor.Bounds.Top - anchorTop;
+            double newScrollY = Math.Max(0, scrollY + delta);
+            Scroll.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(Scroll.Offset.X, newScrollY));
+        }
+
+        PostUpdatePagesVisibility();
     }
 
     private void PostUpdatePagesVisibility()
@@ -1303,8 +1429,11 @@ public sealed class PageItemsControl : ItemsControl
             RefreshPages?.Execute(null);
         }
 
-        // Auto-select the page with the largest overlap
-        if (mostVisibleIndex >= 0 && SelectedPageNumber != mostVisibleIndex + 1)
+        // Auto-select the page with the largest overlap only when the
+        // currently selected page is no longer visible. This prevents
+        // selection from changing when a page is rotated (which resizes
+        // the page but keeps it in the viewport).
+        if (mostVisibleIndex >= 0 && SelectedPageNumber != mostVisibleIndex + 1 && !selectedVisible)
         {
             _isSettingPageVisibility = true;
             try
