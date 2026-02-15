@@ -267,9 +267,6 @@ namespace Caly.Core.Services
                     if (picture is not null)
                     {
                         System.Diagnostics.Debug.Assert(picture.Item is not null);
-                        System.Diagnostics.Debug.Assert(picture.Item.CullRect.Width > 0);
-                        System.Diagnostics.Debug.Assert(picture.Item.CullRect.Height > 0);
-                        
                         _cachePictures[pageNumber] = picture;
                     }
                 }
