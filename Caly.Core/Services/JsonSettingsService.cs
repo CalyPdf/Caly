@@ -46,6 +46,8 @@ internal sealed class JsonSettingsService : ISettingsService
 
     public static readonly string SettingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Caly");
 
+    public static readonly string LogFilePath = Path.Combine(SettingsFilePath, "logs");
+    
     private static readonly string SettingsFileFullPath = Path.Combine(SettingsFilePath, SettingsFileName);
 
     public JsonSettingsService(Visual target)

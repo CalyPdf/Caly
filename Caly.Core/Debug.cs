@@ -28,9 +28,6 @@ namespace Caly.Core;
 
 public static class Debug
 {
-    private static readonly string LogFilePath = Path.Combine(JsonSettingsService.SettingsFilePath, "logs");
-
-
     [Conditional("DEBUG")]
     public static void ThrowOnUiThread()
     {
@@ -52,9 +49,9 @@ public static class Debug
     //[Conditional("DEBUG")]
     public static void WriteExceptionToFile(Exception? exception)
     {
-        Directory.CreateDirectory(LogFilePath);
+        Directory.CreateDirectory(JsonSettingsService.LogFilePath);
 
-        string logFile = Path.Combine(LogFilePath, $"{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid()}.txt");
+        string logFile = Path.Combine(JsonSettingsService.LogFilePath, $"{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid()}.txt");
         if (exception is null)
         {
             File.WriteAllText(logFile, "Received null exception");
