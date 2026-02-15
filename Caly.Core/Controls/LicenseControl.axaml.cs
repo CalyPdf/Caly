@@ -18,7 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.IO;
+using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
+using Caly.Core.Services;
+using Caly.Core.Utilities;
 
 namespace Caly.Core.Controls;
 
@@ -26,4 +32,26 @@ namespace Caly.Core.Controls;
 /// Control that displays application license information.
 /// </summary>
 public class LicenseControl : TemplatedControl
-{ }
+{
+    private Button? _openLogsButton;
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+
+        _openLogsButton = e.NameScope.Find<Button>("PART_OpenLogsButton");
+        _openLogsButton?.Click += OnOpenLogsButtonClick;
+    }
+
+    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromLogicalTree(e);
+
+        _openLogsButton?.Click -= OnOpenLogsButtonClick;
+    }
+
+    private static void OnOpenLogsButtonClick(object? sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(JsonSettingsService.LogFilePath);
+        CalyExtensions.OpenBrowser(JsonSettingsService.LogFilePath);
+    }
+}
