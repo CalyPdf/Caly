@@ -17,9 +17,10 @@
         public static float Mode(this IEnumerable<float> array)
         {
             if (array?.Any() != true) return float.NaN;
-            var sorted = array.GroupBy(v => v).Select(v => (v.Count(), v.Key)).OrderByDescending(g => g.Item1);
-            var mode = sorted.First();
-            if (sorted.Count() > 1 && mode.Item1 == sorted.ElementAt(1).Item1) return float.NaN;
+            var sorted = array.GroupBy(v => v).Select(v => (v.Count(), v.Key)).OrderByDescending(g => g.Item1).ToArray();
+            if (sorted.Length == 0) return float.NaN;
+            var mode = sorted[0];
+            if (sorted.Length > 1 && mode.Item1 == sorted[1].Item1) return float.NaN;
             return mode.Key;
         }
         

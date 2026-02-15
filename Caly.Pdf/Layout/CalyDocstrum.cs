@@ -248,7 +248,7 @@ namespace Caly.Pdf.Layout
                 {
                     throw new ArgumentOutOfRangeException(nameof(bin), "DocstrumBoundingBoxes: Negative distance found while commputing peak average distance.");
                 }
-                bins[bins.Keys.ElementAt(bin)].Add(distance);
+                bins[bin * binLength].Add(distance);
             }
 
             // TODO - use first and skip 1

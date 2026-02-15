@@ -50,7 +50,8 @@ namespace Caly.Pdf.Layout
              *  (i,j,k) will form a group and (m,n) will form another group.
              *************************************************************************************/
 
-            int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
+            int[] indexes = new int[elements.Count];
+            Array.Fill(indexes, -1);
             CalyKdTree<T> calyKdTree = new CalyKdTree<T>(elements, candidatesPoint);
 
             // 1. Find nearest neighbours indexes
@@ -115,7 +116,8 @@ namespace Caly.Pdf.Layout
              *  (i,j,k) will form a group and (m,n) will form another group.
              *************************************************************************************/
 
-            int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
+            int[] indexes = new int[elements.Count];
+            Array.Fill(indexes, -1);
             CalyKdTree<T> calyKdTree = new CalyKdTree<T>(elements, candidatesPoint);
 
             // 1. Find nearest neighbours indexes
@@ -180,7 +182,11 @@ namespace Caly.Pdf.Layout
              *  (i,j,k) will form a group and (m,n) will form another group.
              *************************************************************************************/
 
-            int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
+            int[] indexes = new int[elements.Count];
+            Array.Fill(indexes, -1);
+
+            // Pre-compute candidate lines once, shared across all parallel iterations
+            PdfLine[] candidatesLines = CalyDistances.PrecomputeLines(elements, candidatesLine);
 
             // 1. Find nearest neighbours indexes
             Parallel.For(0, elements.Count, parallelOptions, e =>
@@ -189,7 +195,7 @@ namespace Caly.Pdf.Layout
 
                 if (filterPivot(pivot))
                 {
-                    int index = CalyDistances.FindIndexNearest(pivot, elements, pivotLine, candidatesLine, distMeasure, out float dist);
+                    int index = CalyDistances.FindIndexNearest(pivot, elements, pivotLine, candidatesLines, distMeasure, out float dist);
 
                     if (index != -1)
                     {

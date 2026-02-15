@@ -78,8 +78,16 @@ namespace Caly.Pdf.Layout
                 cleanLetters = letters.ToList();
             }
 
+            // Mark duplicates for removal instead of using RemoveAt (which is O(n) per call)
+            bool[] remove = new bool[cleanLetters.Count];
+
             for (int i = 0; i < cleanLetters.Count; ++i)
             {
+                if (remove[i])
+                {
+                    continue;
+                }
+
                 if (i % 1000 == 0)
                 {
                     token.ThrowIfCancellationRequested();
@@ -92,22 +100,36 @@ namespace Caly.Pdf.Layout
                 double minY = letter.BoundingBox.BottomLeft.Y - tolerance;
                 double maxY = letter.BoundingBox.BottomLeft.Y + tolerance;
 
-                var duplicatesOverlapping = cleanLetters
-                    .Skip(i + 1)
-                    .Any(l => minX <= l.BoundingBox.BottomLeft.X &&
-                              maxX >= l.BoundingBox.BottomLeft.X &&
-                              minY <= l.BoundingBox.BottomLeft.Y &&
-                              maxY >= l.BoundingBox.BottomLeft.Y &&
-                              l.Value.Equals(letter.Value));
-
-                if (!duplicatesOverlapping)
+                for (int j = i + 1; j < cleanLetters.Count; ++j)
                 {
-                    continue;
-                }
+                    if (remove[j])
+                    {
+                        continue;
+                    }
 
-                cleanLetters.RemoveAt(i);
-                i--;
+                    var l = cleanLetters[j];
+                    if (minX <= l.BoundingBox.BottomLeft.X &&
+                        maxX >= l.BoundingBox.BottomLeft.X &&
+                        minY <= l.BoundingBox.BottomLeft.Y &&
+                        maxY >= l.BoundingBox.BottomLeft.Y &&
+                        l.Value.Equals(letter.Value))
+                    {
+                        remove[i] = true;
+                        break;
+                    }
+                }
             }
+
+            // Single compaction pass — write position tracks where to place kept items
+            int write = 0;
+            for (int i = 0; i < cleanLetters.Count; i++)
+            {
+                if (!remove[i])
+                {
+                    cleanLetters[write++] = cleanLetters[i];
+                }
+            }
+            cleanLetters.RemoveRange(write, cleanLetters.Count - write);
 
             return cleanLetters;
         }

@@ -6,7 +6,6 @@
     
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using UglyToad.PdfPig.Core;
 
     // for kd-tree with line segments, see https://stackoverflow.com/questions/14376679/how-to-represent-line-segments-in-kd-tree 
@@ -273,7 +272,17 @@
         {
             var kdTreeNodes = new KNearestNeighboursQueue(k);
             FindNearestNeighbours(Root, pivot, k, pivotPointFunc, distanceMeasure, kdTreeNodes);
-            return kdTreeNodes.SelectMany(n => n.Value.Select(e => (e.Element, e.Index, n.Key))).ToArray();
+
+            var results = new List<(T, int, float)>();
+            for (int i = 0; i < kdTreeNodes.Count; i++)
+            {
+                float dist = kdTreeNodes.Keys[i];
+                foreach (var e in kdTreeNodes.Values[i])
+                {
+                    results.Add((e.Element, e.Index, dist));
+                }
+            }
+            return results;
         }
 
         private static (CalyKdTreeNode<T>?, float) FindNearestNeighbours(CalyKdTreeNode<T>? node, T pivot, int k,
@@ -400,9 +409,14 @@
 
                 if (this[key].Add(value))
                 {
-                    var last = this.Last();
-                    LastElement = last.Value.Last();
-                    LastDistance = last.Key;
+                    int lastIndex = Count - 1;
+                    LastDistance = Keys[lastIndex];
+                    var lastSet = Values[lastIndex];
+                    // Pick any element from the set — consistent with previous behaviour
+                    foreach (var e in lastSet)
+                    {
+                        LastElement = e;
+                    }
                 }
             }
         }

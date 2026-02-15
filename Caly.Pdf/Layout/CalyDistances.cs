@@ -7,7 +7,6 @@
     using UglyToad.PdfPig.Core;
     using System;
     using System.Collections.Generic;
-    using System.Linq;
 
     /// <summary>
     /// Contains helpful tools for distance measures.
@@ -148,17 +147,45 @@
         }
 
         /// <summary>
+        /// Pre-compute the projected points for all candidates. Call once and reuse across multiple
+        /// <see cref="FindIndexNearest{T}(T,IReadOnlyList{T},Func{T,PdfPoint},PdfPoint[],Func{PdfPoint,PdfPoint,float},out float)"/> calls.
+        /// </summary>
+        public static PdfPoint[] PrecomputePoints<T>(IReadOnlyList<T> candidates, Func<T, PdfPoint> candidatePoint)
+        {
+            var points = new PdfPoint[candidates.Count];
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                points[i] = candidatePoint(candidates[i]);
+            }
+            return points;
+        }
+
+        /// <summary>
+        /// Pre-compute the projected lines for all candidates. Call once and reuse across multiple
+        /// <see cref="FindIndexNearest{T}(T,IReadOnlyList{T},Func{T,PdfLine},PdfLine[],Func{PdfLine,PdfLine,float},out float)"/> calls.
+        /// </summary>
+        public static PdfLine[] PrecomputeLines<T>(IReadOnlyList<T> candidates, Func<T, PdfLine> candidateLine)
+        {
+            var lines = new PdfLine[candidates.Count];
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                lines[i] = candidateLine(candidates[i]);
+            }
+            return lines;
+        }
+
+        /// <summary>
         /// Find the index of the nearest point, excluding itself.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="element">The reference point, for which to find the nearest neighbour.</param>
         /// <param name="candidates">The list of neighbours candidates.</param>
         /// <param name="pivotPoint"></param>
-        /// <param name="candidatePoint"></param>
+        /// <param name="candidatesPoints">Pre-computed candidate points from <see cref="PrecomputePoints{T}"/>.</param>
         /// <param name="distanceMeasure">The distance measure to use.</param>
         /// <param name="distance">The distance between the reference element and its nearest neighbour.</param>
         public static int FindIndexNearest<T>(T element, IReadOnlyList<T> candidates,
-            Func<T, PdfPoint> pivotPoint, Func<T, PdfPoint> candidatePoint,
+            Func<T, PdfPoint> pivotPoint, PdfPoint[] candidatesPoints,
             Func<PdfPoint, PdfPoint, float> distanceMeasure, out float distance)
         {
             if (candidates == null || candidates.Count == 0)
@@ -173,7 +200,6 @@
 
             distance = float.MaxValue;
             int closestPointIndex = -1;
-            var candidatesPoints = candidates.Select(candidatePoint).ToList();
             var pivot = pivotPoint(element);
 
             for (var i = 0; i < candidates.Count; i++)
@@ -196,11 +222,11 @@
         /// <param name="element">The reference line, for which to find the nearest neighbour.</param>
         /// <param name="candidates">The list of neighbours candidates.</param>
         /// <param name="pivotLine"></param>
-        /// <param name="candidateLine"></param>
+        /// <param name="candidatesLines">Pre-computed candidate lines from <see cref="PrecomputeLines{T}"/>.</param>
         /// <param name="distanceMeasure">The distance measure between two lines to use.</param>
         /// <param name="distance">The distance between the reference element and its nearest neighbour.</param>
         public static int FindIndexNearest<T>(T element, IReadOnlyList<T> candidates,
-            Func<T, PdfLine> pivotLine, Func<T, PdfLine> candidateLine,
+            Func<T, PdfLine> pivotLine, PdfLine[] candidatesLines,
             Func<PdfLine, PdfLine, float> distanceMeasure, out float distance)
         {
             if (candidates == null || candidates.Count == 0)
@@ -215,7 +241,6 @@
 
             distance = float.MaxValue;
             int closestLineIndex = -1;
-            var candidatesLines = candidates.Select(candidateLine).ToList();
             var pivot = pivotLine(element);
 
             for (var i = 0; i < candidates.Count; i++)
