@@ -79,6 +79,17 @@ public sealed class PageItemsControl : ItemsControl
     private bool _isTabDragging;
     private bool _pendingScrollToPage;
 
+    /// <summary>
+    /// Index of the page used as scroll anchor during rotation. -1 when no anchor is active.
+    /// </summary>
+    private int _scrollAnchorIndex = -1;
+
+    /// <summary>
+    /// The anchor page's <see cref="Visual.Bounds"/> top relative to the scroll offset
+    /// at the time the anchor was recorded (before layout).
+    /// </summary>
+    private double _scrollAnchorRelativeTop;
+
     private TabsControl? _tabsControl;
     
     /// <summary>
@@ -1152,6 +1163,54 @@ public sealed class PageItemsControl : ItemsControl
         return false;
     }
 
+    /// <summary>
+    /// Called by <see cref="PageItem"/> when its <see cref="PageItem.RotationProperty"/> changes.
+    /// Records a scroll anchor so that after the layout pass the viewport stays on the same page.
+    /// </summary>
+    internal void OnPageRotating(PageItem pageItem)
+    {
+        if (Scroll is null || _scrollAnchorIndex >= 0)
+        {
+            return; // Already anchored (e.g. rotate-all: keep the first anchor).
+        }
+
+        int index = IndexFromContainer(pageItem);
+        if (index < 0)
+        {
+            return;
+        }
+
+        // Record where this page currently sits relative to the viewport top.
+        // Bounds are still pre-layout at this point.
+        _scrollAnchorRelativeTop = pageItem.Bounds.Top - Scroll.Offset.Y;
+        _scrollAnchorIndex = index;
+
+        LayoutUpdated += RestoreScrollAnchor;
+    }
+
+    private void RestoreScrollAnchor(object? sender, EventArgs e)
+    {
+        LayoutUpdated -= RestoreScrollAnchor;
+
+        if (_scrollAnchorIndex < 0 || Scroll is null)
+        {
+            _scrollAnchorIndex = -1;
+            return;
+        }
+
+        if (ContainerFromIndex(_scrollAnchorIndex) is PageItem pageItem)
+        {
+            // The page may have moved due to height changes above it.
+            // Adjust the scroll offset so the page stays at the same visual position.
+            double targetOffsetY = pageItem.Bounds.Top - _scrollAnchorRelativeTop;
+            double maxOffsetY = Scroll.Extent.Height - Scroll.Viewport.Height;
+            targetOffsetY = Math.Max(0, Math.Min(targetOffsetY, maxOffsetY));
+            Scroll.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(Scroll.Offset.X, targetOffsetY));
+        }
+
+        _scrollAnchorIndex = -1;
+    }
+
     private void PostUpdatePagesVisibility()
     {
         Dispatcher.UIThread.Post(() => UpdatePagesVisibility(), DispatcherPriority.Loaded);
@@ -1303,8 +1362,11 @@ public sealed class PageItemsControl : ItemsControl
             RefreshPages?.Execute(null);
         }
 
-        // Auto-select the page with the largest overlap
-        if (mostVisibleIndex >= 0 && SelectedPageNumber != mostVisibleIndex + 1)
+        // Auto-select the page with the largest overlap only when the
+        // currently selected page is no longer visible. This prevents
+        // selection from changing when a page is rotated (which resizes
+        // the page but keeps it in the viewport).
+        if (mostVisibleIndex >= 0 && SelectedPageNumber != mostVisibleIndex + 1 && !selectedVisible)
         {
             _isSettingPageVisibility = true;
             try
@@ -1653,5 +1715,6 @@ public sealed class PageItemsControl : ItemsControl
         _isZooming = false;
         _isTabDragging = false;
         _pendingScrollToPage = false;
+        _scrollAnchorIndex = -1;
     }
 }

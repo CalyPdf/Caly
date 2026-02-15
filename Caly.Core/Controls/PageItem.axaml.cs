@@ -23,6 +23,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
+using Avalonia.VisualTree;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using SkiaSharp;
@@ -155,6 +156,16 @@ public sealed class PageItem : ContentControl
             DataContext = new PageViewModel();
         }
 #endif
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == RotationProperty)
+        {
+            this.FindAncestorOfType<PageItemsControl>()?.OnPageRotating(this);
+        }
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)

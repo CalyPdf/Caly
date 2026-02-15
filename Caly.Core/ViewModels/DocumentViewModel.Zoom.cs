@@ -19,7 +19,6 @@
 // SOFTWARE.
 
 using System;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -96,25 +95,19 @@ public partial class DocumentViewModel
     [RelayCommand]
     private void RotateAllPagesClockwise()
     {
-        ExecutePreservePage(() =>
+        foreach (PageViewModel page in Pages)
         {
-            foreach (PageViewModel page in Pages)
-            {
-                page.RotateClockwise();
-            }
-        });
+            page.RotateClockwise();
+        }
     }
 
     [RelayCommand]
     private void RotateAllPagesCounterclockwise()
     {
-        ExecutePreservePage(() =>
+        foreach (PageViewModel page in Pages)
         {
-            foreach (PageViewModel page in Pages)
-            {
-                page.RotateCounterclockwise();
-            }
-        });
+            page.RotateCounterclockwise();
+        }
     }
 
     [RelayCommand]
@@ -125,7 +118,7 @@ public partial class DocumentViewModel
             return;
         }
 
-        ExecutePreservePage(() => Pages[pageNumber - 1].RotateClockwise());
+        Pages[pageNumber - 1].RotateClockwise();
     }
 
     [RelayCommand]
@@ -136,21 +129,6 @@ public partial class DocumentViewModel
             return;
         }
 
-        ExecutePreservePage(() => Pages[pageNumber - 1].RotateCounterclockwise());
-    }
-
-    private void ExecutePreservePage(Action action)
-    {
-        int? current = SelectedPageNumber;
-
-        action();
-
-        // TODO - Investigate why page selection changes
-
-        Dispatcher.UIThread.Post(() =>
-        {
-            // We makes sure selected page did not change
-            SelectedPageNumber = current;
-        }, DispatcherPriority.Loaded); // Loaded so that page is set after layout pass
+        Pages[pageNumber - 1].RotateCounterclockwise();
     }
 }
