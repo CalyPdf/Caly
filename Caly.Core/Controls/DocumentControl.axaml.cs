@@ -109,10 +109,10 @@ public sealed class DocumentControl : CalyTemplatedControl
         AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(DocumentChanged));
 
     /// <summary>
-    /// Defines the <see cref="TextSelection"/> property.
+    /// Defines the <see cref="ClearSelection"/> property.
     /// </summary>
     public static readonly StyledProperty<ICommand?> ClearSelectionProperty =
-        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(DocumentChanged));
+        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(ClearSelection));
 
     /// <summary>
     /// Starts at 1.

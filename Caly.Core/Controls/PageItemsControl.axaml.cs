@@ -80,7 +80,10 @@ public sealed class PageItemsControl : ItemsControl
     private bool _pendingScrollToPage;
 
     private TabsControl? _tabsControl;
-    
+
+    private readonly EventHandler<ScrollChangedEventArgs> _scrollChangedHandler;
+    private readonly EventHandler<SizeChangedEventArgs> _sizeChangedHandler;
+
     /// <summary>
     /// Defines the <see cref="Scroll"/> property.
     /// </summary>
@@ -147,7 +150,7 @@ public sealed class PageItemsControl : ItemsControl
         AvaloniaProperty.Register<PageItemsControl, ICommand?>(nameof(RefreshPages));
 
     public static readonly StyledProperty<ICommand?> ClearSelectionProperty =
-        AvaloniaProperty.Register<DocumentControl, ICommand?>(nameof(ClearSelection));
+        AvaloniaProperty.Register<PageItemsControl, ICommand?>(nameof(ClearSelection));
 
     static PageItemsControl()
     {
@@ -176,6 +179,8 @@ public sealed class PageItemsControl : ItemsControl
     
     public PageItemsControl()
     {
+        _scrollChangedHandler = (_, _) => PostUpdatePagesVisibility();
+        _sizeChangedHandler = (_, _) => PostUpdatePagesVisibility();
         ResetState();
     }
 
@@ -833,6 +838,7 @@ public sealed class PageItemsControl : ItemsControl
 
     /// <summary>
     /// Starts at 0. Exclusive.
+    /// <para>-1 if not realised.</para>
     /// </summary>
     private int GetMaxPageIndex()
     {
@@ -955,8 +961,8 @@ public sealed class PageItemsControl : ItemsControl
         base.OnApplyTemplate(e);
 
         Scroll = e.NameScope.FindFromNameScope<ScrollViewer>("PART_ScrollViewer");
-        Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => PostUpdatePagesVisibility());
-        Scroll.AddHandler(SizeChangedEvent, (_, _) => PostUpdatePagesVisibility(), RoutingStrategies.Direct);
+        Scroll.AddHandler(ScrollViewer.ScrollChangedEvent, _scrollChangedHandler);
+        Scroll.AddHandler(SizeChangedEvent, _sizeChangedHandler, RoutingStrategies.Direct);
         Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
         Scroll.AddHandler(KeyUpEvent, OnKeyUpHandler);
         Scroll.Focus(); // Make sure the Scroll has focus
@@ -989,8 +995,8 @@ public sealed class PageItemsControl : ItemsControl
         
         if (Scroll is not null)
         {
-            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => PostUpdatePagesVisibility());
-            Scroll.RemoveHandler(SizeChangedEvent, (_, _) => PostUpdatePagesVisibility());
+            Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, _scrollChangedHandler);
+            Scroll.RemoveHandler(SizeChangedEvent, _sizeChangedHandler);
             Scroll.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
             Scroll.RemoveHandler(KeyUpEvent, OnKeyUpHandler);
         }
@@ -1115,15 +1121,12 @@ public sealed class PageItemsControl : ItemsControl
             return;
         }
 
-        var realised = GetRealizedContainers().OfType<PageItem>().ToArray();
-        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<PageItem>().ToArray();
+        var realised = GetRealizedContainers().OfType<PageItem>();
+        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<PageItem>();
 
-        if (realised.Length != visibleChildren.Length)
+        foreach (var child in visibleChildren.Except(realised))
         {
-            foreach (var child in visibleChildren.Except(realised))
-            {
-                child.SetCurrentValue(IsVisibleProperty, false);
-            }
+            child.SetCurrentValue(IsVisibleProperty, false);
         }
     }
 

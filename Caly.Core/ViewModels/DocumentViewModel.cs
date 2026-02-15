@@ -235,9 +235,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
                             if (e.NewItems?.Count > 0)
                             {
                                 var searchResults = e.NewItems.OfType<TextSearchResult>().ToArray();
-                                var first = searchResults.FirstOrDefault();
 
-                                if (first is null || first.PageNumber <= 0)
+                                if (searchResults.Length == 0 || searchResults[0].PageNumber <= 0)
                                 {
                                     // Clear selection highlights
                                     foreach (var page in Pages)
@@ -506,10 +505,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
             return;
         }
 
-        int start = TextSelection.GetStartPageIndex();
-        int end = TextSelection.GetEndPageIndex();
-
-        System.Diagnostics.Debug.Assert(start <= end);
+        System.Diagnostics.Debug.Assert(TextSelection.GetStartPageIndex() <= TextSelection.GetEndPageIndex());
 
         TextSelection.ResetSelection();
     }
@@ -527,7 +523,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         await _pdfPageService.CancelAndClear();
 
-        GC.Collect(GC.MaxGeneration);
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
     }
 
     [RelayCommand]

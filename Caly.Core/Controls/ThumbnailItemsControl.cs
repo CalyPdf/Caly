@@ -38,6 +38,10 @@ public sealed class ThumbnailItemsControl : ListBox
 
     private ScrollViewer? _scrollViewer;
 
+    private readonly EventHandler<ScrollChangedEventArgs> _scrollChangedHandler;
+    private readonly EventHandler<SizeChangedEventArgs> _sizeChangedHandler;
+    private readonly EventHandler<RoutedEventArgs> _loadedHandler;
+
     protected override Type StyleKeyOverride => typeof(ListBox);
 
     /// <summary>
@@ -84,6 +88,9 @@ public sealed class ThumbnailItemsControl : ListBox
 
     public ThumbnailItemsControl()
     {
+        _scrollChangedHandler = (_, _) => PostUpdateThumbnailsVisibility();
+        _sizeChangedHandler = (_, _) => PostUpdateThumbnailsVisibility();
+        _loadedHandler = (_, _) => PostUpdateThumbnailsVisibility();
         ResetState();
     }
 
@@ -92,9 +99,9 @@ public sealed class ThumbnailItemsControl : ListBox
         base.OnApplyTemplate(e);
 
         _scrollViewer = Scroll as ScrollViewer ?? throw new Exception("Scroll is not ScrollViewer.");
-        _scrollViewer.AddHandler(ScrollViewer.ScrollChangedEvent, (_, _) => PostUpdateThumbnailsVisibility());
-        _scrollViewer.AddHandler(SizeChangedEvent, (_, _) => PostUpdateThumbnailsVisibility(), RoutingStrategies.Direct);
-        _scrollViewer.AddHandler(LoadedEvent, (_, _) => PostUpdateThumbnailsVisibility());
+        _scrollViewer.AddHandler(ScrollViewer.ScrollChangedEvent, _scrollChangedHandler);
+        _scrollViewer.AddHandler(SizeChangedEvent, _sizeChangedHandler, RoutingStrategies.Direct);
+        _scrollViewer.AddHandler(LoadedEvent, _loadedHandler);
     }
 
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
@@ -103,9 +110,9 @@ public sealed class ThumbnailItemsControl : ListBox
 
         if (_scrollViewer is not null)
         {
-            _scrollViewer.RemoveHandler(ScrollViewer.ScrollChangedEvent, (_, _) => PostUpdateThumbnailsVisibility());
-            _scrollViewer.RemoveHandler(SizeChangedEvent, (_, _) => PostUpdateThumbnailsVisibility());
-            _scrollViewer.RemoveHandler(LoadedEvent, (_, _) => PostUpdateThumbnailsVisibility());
+            _scrollViewer.RemoveHandler(ScrollViewer.ScrollChangedEvent, _scrollChangedHandler);
+            _scrollViewer.RemoveHandler(SizeChangedEvent, _sizeChangedHandler);
+            _scrollViewer.RemoveHandler(LoadedEvent, _loadedHandler);
         }
     }
 
@@ -236,6 +243,7 @@ public sealed class ThumbnailItemsControl : ListBox
 
     /// <summary>
     /// Starts at 0. Exclusive.
+    /// <para>-1 if not realised.</para>
     /// </summary>
     private int GetMaxPageIndex()
     {
@@ -304,15 +312,12 @@ public sealed class ThumbnailItemsControl : ListBox
             return;
         }
 
-        var realised = GetRealizedContainers().OfType<ThumbnailItem>().ToArray();
-        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<ThumbnailItem>().ToArray();
+        var realised = GetRealizedContainers().OfType<ThumbnailItem>();
+        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<ThumbnailItem>();
 
-        if (realised.Length != visibleChildren.Length)
+        foreach (var child in visibleChildren.Except(realised))
         {
-            foreach (var child in visibleChildren.Except(realised))
-            {
-                child.SetCurrentValue(IsVisibleProperty, false);
-            }
+            child.SetCurrentValue(IsVisibleProperty, false);
         }
     }
     
