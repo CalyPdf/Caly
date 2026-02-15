@@ -26,7 +26,6 @@ using Avalonia.Data;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using SkiaSharp;
-using System.Windows.Input;
 
 namespace Caly.Core.Controls;
 
@@ -70,18 +69,6 @@ public sealed class PageItem : ContentControl
             defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
-    /// Defines the <see cref="LoadPage"/> property.
-    /// </summary>
-    public static readonly StyledProperty<ICommand?> LoadPageProperty =
-        AvaloniaProperty.Register<PageItem, ICommand?>(nameof(LoadPage));
-
-    /// <summary>
-    /// Defines the <see cref="UnloadPage"/> property.
-    /// </summary>
-    public static readonly StyledProperty<ICommand?> UnloadPageProperty =
-        AvaloniaProperty.Register<PageItem, ICommand?>(nameof(UnloadPage));
-
-    /// <summary>
     /// Defines the <see cref="Rotation"/> property.
     /// </summary>
     public static readonly StyledProperty<int> RotationProperty =
@@ -91,18 +78,6 @@ public sealed class PageItem : ContentControl
     {
         AffectsRender<PageItem>(PictureProperty, IsPageVisibleProperty,
             WidthProperty, HeightProperty);
-    }
-
-    public ICommand? LoadPage
-    {
-        get => GetValue(LoadPageProperty);
-        set => SetValue(LoadPageProperty, value);
-    }
-    
-    public ICommand? UnloadPage
-    {
-        get => GetValue(UnloadPageProperty);
-        set => SetValue(UnloadPageProperty, value);
     }
     
     public int Rotation
