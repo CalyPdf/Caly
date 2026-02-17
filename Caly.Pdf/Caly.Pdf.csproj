@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PdfPig" Version="0.1.14-alpha-20260215-0a2b1" />
+		<PackageReference Include="PdfPig" Version="0.1.14-alpha-20260216-7e370" />
 		<PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
 	</ItemGroup>
 

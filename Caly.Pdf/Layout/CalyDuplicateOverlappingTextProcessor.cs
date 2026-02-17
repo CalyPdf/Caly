@@ -26,9 +26,11 @@ namespace Caly.Pdf.Layout
                 return letters;
             }
 
-            var cleanLetters = new List<PdfLetter>() { letters[0] };
+            // Use a dictionary keyed by Value to look up candidate duplicates in O(1)
+            var duplicateIndex = new Dictionary<string, List<int>>();
+            var cleanLetters = new List<PdfLetter>();
 
-            for (int i = 1; i < letters.Count; ++i)
+            for (int i = 0; i < letters.Count; ++i)
             {
                 if (i % 1000 == 0)
                 {
@@ -36,23 +38,43 @@ namespace Caly.Pdf.Layout
                 }
 
                 var letter = letters[i];
-                double tolerance = letter.BoundingBox.Width / (letter.Value.Length == 0 ? 1 : letter.Value.Length) / 3.0;
-                double minX = letter.BoundingBox.BottomLeft.X - tolerance;
-                double maxX = letter.BoundingBox.BottomLeft.X + tolerance;
-                double minY = letter.BoundingBox.BottomLeft.Y - tolerance;
-                double maxY = letter.BoundingBox.BottomLeft.Y + tolerance;
+                bool addLetter = true;
 
-                var duplicates = cleanLetters
-                    .Where(l => minX <= l.BoundingBox.BottomLeft.X &&
-                                maxX >= l.BoundingBox.BottomLeft.X &&
-                                minY <= l.BoundingBox.BottomLeft.Y &&
-                                maxY >= l.BoundingBox.BottomLeft.Y); // do other checks?
-
-                var duplicatesOverlapping = duplicates.Any(l => l.Value.Equals(letter.Value));
-
-                if (!duplicatesOverlapping)
+                var key = letter.Value;
+                if (duplicateIndex.TryGetValue(key, out var candidateIndices))
                 {
+                    double tolerance = letter.BoundingBox.Width / (key.Length == 0 ? 1 : key.Length) / 3.0;
+                    double minX = letter.BoundingBox.BottomLeft.X - tolerance;
+                    double maxX = letter.BoundingBox.BottomLeft.X + tolerance;
+                    double minY = letter.BoundingBox.BottomLeft.Y - tolerance;
+                    double maxY = letter.BoundingBox.BottomLeft.Y + tolerance;
+
+                    for (int ci = 0; ci < candidateIndices.Count; ci++)
+                    {
+                        int idx = candidateIndices[ci];
+                        var l = cleanLetters[idx];
+                        if (minX <= l.BoundingBox.BottomLeft.X &&
+                            maxX >= l.BoundingBox.BottomLeft.X &&
+                            minY <= l.BoundingBox.BottomLeft.Y &&
+                            maxY >= l.BoundingBox.BottomLeft.Y)
+                        {
+                            addLetter = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (addLetter)
+                {
+                    int newIndex = cleanLetters.Count;
                     cleanLetters.Add(letter);
+
+                    if (!duplicateIndex.TryGetValue(key, out var list))
+                    {
+                        list = new List<int>();
+                        duplicateIndex[key] = list;
+                    }
+                    list.Add(newIndex);
                 }
             }
 
@@ -78,6 +100,13 @@ namespace Caly.Pdf.Layout
                 cleanLetters = letters.ToList();
             }
 
+            // Use a dictionary keyed by Value to look up candidate duplicates in O(1).
+            // When a later letter matches an earlier one, mark the earlier one for removal
+            // (keeping the last occurrence, matching original semantics).
+            var duplicateIndex = new Dictionary<string, List<int>>();
+            var toRemove = new bool[cleanLetters.Count];
+            int removeCount = 0;
+
             for (int i = 0; i < cleanLetters.Count; ++i)
             {
                 if (i % 1000 == 0)
@@ -86,27 +115,59 @@ namespace Caly.Pdf.Layout
                 }
 
                 var letter = cleanLetters[i];
-                double tolerance = letter.BoundingBox.Width / (letter.Value.Length == 0 ? 1 : letter.Value.Length) / 3.0;
-                double minX = letter.BoundingBox.BottomLeft.X - tolerance;
-                double maxX = letter.BoundingBox.BottomLeft.X + tolerance;
-                double minY = letter.BoundingBox.BottomLeft.Y - tolerance;
-                double maxY = letter.BoundingBox.BottomLeft.Y + tolerance;
+                var key = letter.Value;
 
-                var duplicatesOverlapping = cleanLetters
-                    .Skip(i + 1)
-                    .Any(l => minX <= l.BoundingBox.BottomLeft.X &&
-                              maxX >= l.BoundingBox.BottomLeft.X &&
-                              minY <= l.BoundingBox.BottomLeft.Y &&
-                              maxY >= l.BoundingBox.BottomLeft.Y &&
-                              l.Value.Equals(letter.Value));
-
-                if (!duplicatesOverlapping)
+                if (duplicateIndex.TryGetValue(key, out var candidateIndices))
                 {
-                    continue;
+                    double tolerance = letter.BoundingBox.Width / (key.Length == 0 ? 1 : key.Length) / 3.0;
+                    double minX = letter.BoundingBox.BottomLeft.X - tolerance;
+                    double maxX = letter.BoundingBox.BottomLeft.X + tolerance;
+                    double minY = letter.BoundingBox.BottomLeft.Y - tolerance;
+                    double maxY = letter.BoundingBox.BottomLeft.Y + tolerance;
+
+                    bool replaced = false;
+                    for (int ci = 0; ci < candidateIndices.Count; ci++)
+                    {
+                        int idx = candidateIndices[ci];
+                        var l = cleanLetters[idx];
+                        if (minX <= l.BoundingBox.BottomLeft.X &&
+                            maxX >= l.BoundingBox.BottomLeft.X &&
+                            minY <= l.BoundingBox.BottomLeft.Y &&
+                            maxY >= l.BoundingBox.BottomLeft.Y)
+                        {
+                            // Mark the earlier letter for removal, keep the later one
+                            toRemove[idx] = true;
+                            removeCount++;
+                            candidateIndices[ci] = i;
+                            replaced = true;
+                            break;
+                        }
+                    }
+
+                    if (!replaced)
+                    {
+                        candidateIndices.Add(i);
+                    }
+                }
+                else
+                {
+                    duplicateIndex[key] = new List<int> { i };
+                }
+            }
+
+            // Compact the list in-place in O(n)
+            if (removeCount > 0)
+            {
+                int writeIdx = 0;
+                for (int readIdx = 0; readIdx < cleanLetters.Count; readIdx++)
+                {
+                    if (!toRemove[readIdx])
+                    {
+                        cleanLetters[writeIdx++] = cleanLetters[readIdx];
+                    }
                 }
 
-                cleanLetters.RemoveAt(i);
-                i--;
+                cleanLetters.RemoveRange(writeIdx, cleanLetters.Count - writeIdx);
             }
 
             return cleanLetters;
