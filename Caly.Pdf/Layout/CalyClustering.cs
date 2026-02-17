@@ -50,7 +50,9 @@ namespace Caly.Pdf.Layout
              *  (i,j,k) will form a group and (m,n) will form another group.
              *************************************************************************************/
 
-            int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
+            int[] indexes = new int[elements.Count];
+            Array.Fill(indexes, -1);
+
             CalyKdTree<T> calyKdTree = new CalyKdTree<T>(elements, candidatesPoint);
 
             // 1. Find nearest neighbours indexes
@@ -115,7 +117,9 @@ namespace Caly.Pdf.Layout
              *  (i,j,k) will form a group and (m,n) will form another group.
              *************************************************************************************/
 
-            int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
+            int[] indexes = new int[elements.Count];
+            Array.Fill(indexes, -1);
+            
             CalyKdTree<T> calyKdTree = new CalyKdTree<T>(elements, candidatesPoint);
 
             // 1. Find nearest neighbours indexes
@@ -180,7 +184,8 @@ namespace Caly.Pdf.Layout
              *  (i,j,k) will form a group and (m,n) will form another group.
              *************************************************************************************/
 
-            int[] indexes = Enumerable.Repeat(-1, elements.Count).ToArray();
+            int[] indexes = new int[elements.Count];
+            Array.Fill(indexes, -1);
 
             // 1. Find nearest neighbours indexes
             Parallel.For(0, elements.Count, parallelOptions, e =>

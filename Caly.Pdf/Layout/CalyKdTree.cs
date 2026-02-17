@@ -6,7 +6,6 @@
     
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using UglyToad.PdfPig.Core;
 
     // for kd-tree with line segments, see https://stackoverflow.com/questions/14376679/how-to-represent-line-segments-in-kd-tree 
@@ -58,9 +57,6 @@
     /// <typeparam name="T"></typeparam>
     public class CalyKdTree<T>
     {
-        private readonly KdTreeComparerY kdTreeComparerY = new KdTreeComparerY();
-        private readonly KdTreeComparerX kdTreeComparerX = new KdTreeComparerX();
-
         /// <summary>
         /// The root of the tree.
         /// </summary>
@@ -93,15 +89,10 @@
                 array[i] = new KdTreeElement<T>(i, elementsPointFunc(el), el);
             }
 
-#if NET6_0_OR_GREATER
             Root = BuildTree(new Span<KdTreeElement<T>>(array))!;
-#else
-            Root = BuildTree(new ArraySegment<KdTreeElement<T>>(array));
-#endif
         }
 
-#if NET6_0_OR_GREATER
-        private CalyKdTreeNode<T>? BuildTree(Span<KdTreeElement<T>> P, int depth = 0)
+        private static CalyKdTreeNode<T>? BuildTree(Span<KdTreeElement<T>> P, int depth = 0)
         {
             if (P.Length == 0)
             {
@@ -115,11 +106,11 @@
 
             if (depth % 2 == 0)
             {
-                P.Sort(kdTreeComparerX);
+                P.Sort((p0, p1) => p0.Value.X.CompareTo(p1.Value.X));
             }
             else
             {
-                P.Sort(kdTreeComparerY);
+                P.Sort((p0, p1) => p0.Value.Y.CompareTo(p1.Value.Y));
             }
 
             if (P.Length == 2)
@@ -134,41 +125,6 @@
 
             return new CalyKdTreeNode<T>(vLeft, vRight, P[median], depth);
         }
-#else
-        private CalyKdTreeNode<T> BuildTree(ArraySegment<KdTreeElement<T>> P, int depth = 0)
-        {
-            if (P.Count == 0)
-            {
-                return null;
-            }
-
-            if (P.Count == 1)
-            {
-                return new CalyKdTreeLeaf<T>(P.GetAt(0), depth);
-            }
-
-            if (depth % 2 == 0)
-            {
-                P.Sort(kdTreeComparerX);
-            }
-            else
-            {
-                P.Sort(kdTreeComparerY);
-            }
-
-            if (P.Count == 2)
-            {
-                return new CalyKdTreeNode<T>(new CalyKdTreeLeaf<T>(P.GetAt(0), depth + 1), null, P.GetAt(1), depth);
-            }
-
-            int median = P.Count / 2;
-
-            CalyKdTreeNode<T> vLeft = BuildTree(P.Take(median), depth + 1);
-            CalyKdTreeNode<T> vRight = BuildTree(P.Skip(median + 1), depth + 1);
-
-            return new CalyKdTreeNode<T>(vLeft, vRight, P.GetAt(median), depth);
-        }
-#endif
 
         #region NN
         /// <summary>
@@ -179,82 +135,82 @@
         /// <param name="pivotPointFunc">The function that converts the pivot element into a <see cref="PdfPoint"/>.</param>
         /// <param name="distanceMeasure">The distance measure used, e.g. the Euclidian distance.</param>
         /// <param name="index">The nearest neighbour's index (returns -1 if not found).</param>
-        /// <param name="distance">The distance between the pivot and the nearest neighbour (returns <see cref="float.NaN"/> if not found).</param>
+        /// <param name="distance">The distance between the pivot and the nearest neighbour (returns <see cref="double.NaN"/> if not found).</param>
         /// <returns>The nearest neighbour's element.</returns>
-        public T? FindNearestNeighbour(T pivot, Func<T, PdfPoint> pivotPointFunc, Func<PdfPoint, PdfPoint, float> distanceMeasure, out int index, out float distance)
+        public T FindNearestNeighbour(T pivot, Func<T, PdfPoint> pivotPointFunc, Func<PdfPoint, PdfPoint, float> distanceMeasure, out int index, out float distance)
         {
-            var result = FindNearestNeighbour(Root, pivot, pivotPointFunc, distanceMeasure);
-            index = result.Item1?.Index ?? -1;
+            var pivotPoint = pivotPointFunc(pivot);
+            var result = FindNearestNeighbour(Root, pivot, pivotPoint, distanceMeasure);
+            index = result.Item1 != null ? result.Item1.Index : -1;
             distance = result.Item2 ?? float.NaN;
-            return result.Item1 is not null ? result.Item1.Element : default;
+            return result.Item1 != null ? result.Item1.Element : default;
         }
 
-        private static (CalyKdTreeNode<T>?, float?) FindNearestNeighbour(CalyKdTreeNode<T>? node, T pivot, Func<T, PdfPoint> pivotPointFunc, Func<PdfPoint, PdfPoint, float> distance)
+        private static (CalyKdTreeNode<T>, float?) FindNearestNeighbour(CalyKdTreeNode<T> node, T pivot, PdfPoint pivotPoint, Func<PdfPoint, PdfPoint, float> distance)
         {
-            if (node is null)
+            if (node == null)
             {
                 return (null, null);
             }
-            
-            if (node.IsLeaf)
+            else if (node.IsLeaf)
             {
-                if (node.Element?.Equals(pivot) == true)
+                if (node.Element.Equals(pivot))
                 {
                     return (null, null);
                 }
-
-                return (node, distance(node.Value, pivotPointFunc(pivot)));
-            }
-
-            var point = pivotPointFunc(pivot);
-            var currentNearestNode = node;
-            var currentDistance = distance(node.Value, point);
-
-            CalyKdTreeNode<T>? newNode;
-            float? newDist;
-
-            var pointValue = node.IsAxisCutX ? point.X : point.Y;
-
-            if (pointValue < node.L)
-            {
-                // start left
-                (newNode, newDist) = FindNearestNeighbour(node.LeftChild, pivot, pivotPointFunc, distance);
-
-                if (newDist.HasValue && newDist <= currentDistance && newNode?.Element?.Equals(pivot) == false)
-                {
-                    currentDistance = newDist.Value;
-                    currentNearestNode = newNode;
-                }
-
-                if (node.RightChild != null && pointValue + currentDistance >= node.L)
-                {
-                    (newNode, newDist) = FindNearestNeighbour(node.RightChild, pivot, pivotPointFunc, distance);
-                }
+                return (node, distance(node.Value, pivotPoint));
             }
             else
             {
-                // start right
-                (newNode, newDist) = FindNearestNeighbour(node.RightChild, pivot, pivotPointFunc, distance);
+                var currentNearestNode = node;
+                var currentDistance = distance(node.Value, pivotPoint);
 
-                if (newDist.HasValue && newDist <= currentDistance && newNode?.Element?.Equals(pivot) == false)
+                CalyKdTreeNode<T> newNode = null;
+                float? newDist = null;
+
+                var pointValue = node.IsAxisCutX ? pivotPoint.X : pivotPoint.Y;
+
+                if (pointValue < node.L)
+                {
+                    // start left
+                    (newNode, newDist) = FindNearestNeighbour(node.LeftChild, pivot, pivotPoint, distance);
+
+                    if (newDist.HasValue && newDist <= currentDistance && !newNode.Element.Equals(pivot))
+                    {
+                        currentDistance = newDist.Value;
+                        currentNearestNode = newNode;
+                    }
+
+                    if (node.RightChild != null && pointValue + currentDistance >= node.L)
+                    {
+                        (newNode, newDist) = FindNearestNeighbour(node.RightChild, pivot, pivotPoint, distance);
+                    }
+                }
+                else
+                {
+                    // start right
+                    (newNode, newDist) = FindNearestNeighbour(node.RightChild, pivot, pivotPoint, distance);
+
+                    if (newDist.HasValue && newDist <= currentDistance && !newNode.Element.Equals(pivot))
+                    {
+                        currentDistance = newDist.Value;
+                        currentNearestNode = newNode;
+                    }
+
+                    if (node.LeftChild != null && pointValue - currentDistance <= node.L)
+                    {
+                        (newNode, newDist) = FindNearestNeighbour(node.LeftChild, pivot, pivotPoint, distance);
+                    }
+                }
+
+                if (newDist.HasValue && newDist <= currentDistance && !newNode.Element.Equals(pivot))
                 {
                     currentDistance = newDist.Value;
                     currentNearestNode = newNode;
                 }
 
-                if (node.LeftChild != null && pointValue - currentDistance <= node.L)
-                {
-                    (newNode, newDist) = FindNearestNeighbour(node.LeftChild, pivot, pivotPointFunc, distance);
-                }
+                return (currentNearestNode, currentDistance);
             }
-
-            if (newDist.HasValue && newDist <= currentDistance && newNode?.Element?.Equals(pivot) == false)
-            {
-                currentDistance = newDist.Value;
-                currentNearestNode = newNode;
-            }
-
-            return (currentNearestNode, currentDistance);
         }
         #endregion
 
@@ -271,27 +227,38 @@
         /// <returns>Returns a list of tuples of the k nearest neighbours. Tuples are (element, index, distance).</returns>
         public IReadOnlyList<(T, int, float)> FindNearestNeighbours(T pivot, int k, Func<T, PdfPoint> pivotPointFunc, Func<PdfPoint, PdfPoint, float> distanceMeasure)
         {
+            var pivotPoint = pivotPointFunc(pivot);
             var kdTreeNodes = new KNearestNeighboursQueue(k);
-            FindNearestNeighbours(Root, pivot, k, pivotPointFunc, distanceMeasure, kdTreeNodes);
-            return kdTreeNodes.SelectMany(n => n.Value.Select(e => (e.Element, e.Index, n.Key))).ToArray();
+            FindNearestNeighbours(Root, pivot, k, pivotPoint, distanceMeasure, kdTreeNodes);
+
+            var results = new List<(T, int, float)>();
+            for (int i = 0; i < kdTreeNodes.Count; i++)
+            {
+                float dist = kdTreeNodes.Keys[i];
+                foreach (var e in kdTreeNodes.Values[i])
+                {
+                    results.Add((e.Element, e.Index, dist));
+                }
+            }
+            return results;
         }
 
-        private static (CalyKdTreeNode<T>?, float) FindNearestNeighbours(CalyKdTreeNode<T>? node, T pivot, int k,
-            Func<T, PdfPoint> pivotPointFunc, Func<PdfPoint, PdfPoint, float> distance, KNearestNeighboursQueue queue)
+        private static (CalyKdTreeNode<T>, float) FindNearestNeighbours(CalyKdTreeNode<T> node, T pivot, int k,
+            PdfPoint pivotPoint, Func<PdfPoint, PdfPoint, float> distance, KNearestNeighboursQueue queue)
         {
-            if (node is null)
+            if (node == null)
             {
                 return (null, float.NaN);
             }
             
             if (node.IsLeaf)
             {
-                if (node.Element?.Equals(pivot) == true)
+                if (node.Element.Equals(pivot))
                 {
                     return (null, float.NaN);
                 }
 
-                var currentDistance = distance(node.Value, pivotPointFunc(pivot));
+                var currentDistance = distance(node.Value, pivotPoint);
                 var currentNearestNode = node;
 
                 if (!queue.IsFull || currentDistance <= queue.LastDistance)
@@ -305,27 +272,26 @@
             }
             else
             {
-                var point = pivotPointFunc(pivot);
                 var currentNearestNode = node;
-                var currentDistance = distance(node.Value, point);
-                if ((!queue.IsFull || currentDistance <= queue.LastDistance) && node?.Element?.Equals(pivot) == false)
+                var currentDistance = distance(node.Value, pivotPoint);
+                if ((!queue.IsFull || currentDistance <= queue.LastDistance) && !node.Element.Equals(pivot))
                 {
                     queue.Add(currentDistance, currentNearestNode);
                     currentDistance = queue.LastDistance;
                     currentNearestNode = queue.LastElement;
                 }
 
-                CalyKdTreeNode<T>? newNode = null;
+                CalyKdTreeNode<T> newNode = null;
                 float newDist = float.NaN;
 
-                var pointValue = node!.IsAxisCutX ? point.X : point.Y;
+                var pointValue = node.IsAxisCutX ? pivotPoint.X : pivotPoint.Y;
 
                 if (pointValue < node.L)
                 {
                     // start left
-                    (newNode, newDist) = FindNearestNeighbours(node.LeftChild, pivot, k, pivotPointFunc, distance, queue);
+                    (newNode, newDist) = FindNearestNeighbours(node.LeftChild, pivot, k, pivotPoint, distance, queue);
 
-                    if (!float.IsNaN(newDist) && newDist <= currentDistance && newNode?.Element?.Equals(pivot) == false)
+                    if (!double.IsNaN(newDist) && newDist <= currentDistance && !newNode.Element.Equals(pivot))
                     {
                         queue.Add(newDist, newNode);
                         currentDistance = queue.LastDistance;
@@ -334,15 +300,15 @@
 
                     if (node.RightChild != null && pointValue + currentDistance >= node.L)
                     {
-                        (newNode, newDist) = FindNearestNeighbours(node.RightChild, pivot, k, pivotPointFunc, distance, queue);
+                        (newNode, newDist) = FindNearestNeighbours(node.RightChild, pivot, k, pivotPoint, distance, queue);
                     }
                 }
                 else
                 {
                     // start right
-                    (newNode, newDist) = FindNearestNeighbours(node.RightChild, pivot, k, pivotPointFunc, distance, queue);
+                    (newNode, newDist) = FindNearestNeighbours(node.RightChild, pivot, k, pivotPoint, distance, queue);
 
-                    if (!float.IsNaN(newDist) && newDist <= currentDistance && newNode?.Element?.Equals(pivot) == false)
+                    if (!double.IsNaN(newDist) && newDist <= currentDistance && !newNode.Element.Equals(pivot))
                     {
                         queue.Add(newDist, newNode);
                         currentDistance = queue.LastDistance;
@@ -351,11 +317,11 @@
 
                     if (node.LeftChild != null && pointValue - currentDistance <= node.L)
                     {
-                        (newNode, newDist) = FindNearestNeighbours(node.LeftChild, pivot, k, pivotPointFunc, distance, queue);
+                        (newNode, newDist) = FindNearestNeighbours(node.LeftChild, pivot, k, pivotPoint, distance, queue);
                     }
                 }
 
-                if (!float.IsNaN(newDist) && newDist <= currentDistance && newNode?.Element?.Equals(pivot) == false)
+                if (!double.IsNaN(newDist) && newDist <= currentDistance && !newNode.Element.Equals(pivot))
                 {
                     queue.Add(newDist, newNode);
                     currentDistance = queue.LastDistance;
@@ -400,9 +366,14 @@
 
                 if (this[key].Add(value))
                 {
-                    var last = this.Last();
-                    LastElement = last.Value.Last();
-                    LastDistance = last.Key;
+                    LastDistance = Keys[Count - 1];
+                    var lastSet = Values[Count - 1];
+                    CalyKdTreeNode<T> lastElement = null;
+                    foreach (var e in lastSet)
+                    {
+                        lastElement = e;
+                    }
+                    LastElement = lastElement;
                 }
             }
         }
@@ -423,23 +394,7 @@
 
             public R Element { get; }
         }
-
-        private sealed class KdTreeComparerY : IComparer<KdTreeElement<T>>
-        {
-            public int Compare(KdTreeElement<T> p0, KdTreeElement<T> p1)
-            {
-                return p0.Value.Y.CompareTo(p1.Value.Y);
-            }
-        }
-
-        private sealed class KdTreeComparerX : IComparer<KdTreeElement<T>>
-        {
-            public int Compare(KdTreeElement<T> p0, KdTreeElement<T> p1)
-            {
-                return p0.Value.X.CompareTo(p1.Value.X);
-            }
-        }
-
+        
         /// <summary>
         /// K-D tree leaf.
         /// </summary>
