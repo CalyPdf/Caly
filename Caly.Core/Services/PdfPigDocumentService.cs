@@ -285,7 +285,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
             return v[..length];
         }
 
-        return v + string.Concat(Enumerable.Repeat(" ", length - v.Length));
+        return v.PadRight(length);
     }
 
     private static string? FormatPdfDate(string? rawDate)

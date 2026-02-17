@@ -68,41 +68,42 @@ internal sealed class SearchValuesTextSearchService : ITextSearchService
 
     private static string CleanText(string text, out int count)
     {
-        List<int> separators = new List<int>();
+        bool hasPunctuation = false;
         for (int i = 0; i < text.Length; ++i)
         {
             if (char.IsPunctuation(text[i]))
             {
-                separators.Add(i);
+                hasPunctuation = true;
+                break;
             }
         }
 
-        if (separators.Count > 0)
+        if (hasPunctuation)
         {
-            int start = 0;
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder(text.Length + text.Length / 2);
 
-            foreach (var i in separators)
+            for (int i = 0; i < text.Length; ++i)
             {
-                if (i != 0)
+                if (char.IsPunctuation(text[i]))
                 {
-                    sb.Append(text, start, i - start);
-                    sb.Append(WordSeparator);
+                    if (i != 0)
+                    {
+                        sb.Append(WordSeparator);
+                    }
+
+                    sb.Append(text[i]);
+
+                    if (i < text.Length - 1)
+                    {
+                        sb.Append(WordSeparator);
+                    }
                 }
-
-                sb.Append(text, i, 1);
-
-                if (i == text.Length - 1)
+                else
                 {
-                    start = i + 1;
-                    break;
+                    sb.Append(text[i]);
                 }
-
-                sb.Append(WordSeparator);
-                start = i + 1;
             }
 
-            sb.Append(text, start, text.Length - start);
             text = sb.ToString();
         }
 

@@ -37,7 +37,7 @@ using Tabalonia.Controls;
 
 namespace Caly.Core.ViewModels;
 
-public sealed partial class MainViewModel : ViewModelBase
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly IDisposable _documentCollectionDisposable;
 
@@ -48,10 +48,9 @@ public sealed partial class MainViewModel : ViewModelBase
     [ObservableProperty] private bool _isSettingsPaneOpen;
 
     public string Version => CalyExtensions.CalyVersion;
-
+    
     public MainViewModel()
     {
-        // TODO - Dispose to unsubscribe
         _documentCollectionDisposable = PdfDocuments
             .GetWeakCollectionChangedObservable()
             .ObserveOn(Scheduler.Default)
@@ -97,6 +96,11 @@ public sealed partial class MainViewModel : ViewModelBase
                     Dispatcher.UIThread.Post(() => Exception = new ExceptionViewModel(ex));
                 }
             });
+    }
+
+    public void Dispose()
+    {
+        _documentCollectionDisposable.Dispose();
     }
 
     private DocumentViewModel? GetCurrentPdfDocument()
