@@ -44,6 +44,9 @@ public sealed class PageInteractiveLayerControl : Control
     private static readonly Color SelectionColor = Color.FromArgb(0xa9, 0x33, 0x99, 0xFF);
     private static readonly Color SearchColor = Color.FromArgb(0xa9, 255, 0, 0);
 
+    private static readonly ImmutableSolidColorBrush SelectionBrush = new(SelectionColor);
+    private static readonly ImmutableSolidColorBrush SearchBrush = new(SearchColor);
+
     public static readonly StyledProperty<PdfTextLayer?> PdfTextLayerProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, PdfTextLayer?>(nameof(PdfTextLayer));
 
@@ -249,8 +252,6 @@ public sealed class PageInteractiveLayerControl : Control
         // Draw search results first
         if (_searchResultsGeometry is not null && _searchResultsGeometry.Length > 0)
         {
-            var searchBrush = new ImmutableSolidColorBrush(SearchColor);
-
             foreach (var geometry in _searchResultsGeometry)
             {
                 if (!geometry.Bounds.Intersects(VisibleArea.Value))
@@ -258,15 +259,13 @@ public sealed class PageInteractiveLayerControl : Control
                     continue;
                 }
 
-                context.DrawGeometry(searchBrush, null, geometry);
+                context.DrawGeometry(SearchBrush, null, geometry);
             }
         }
 
         // Render Selection
         if (_selectedWordsGeometry is not null && _selectedWordsGeometry.Length > 0)
         {
-            var selectionBrush = new ImmutableSolidColorBrush(SelectionColor);
-
             foreach (var geometry in _selectedWordsGeometry)
             {
                 if (!geometry.Bounds.Intersects(VisibleArea.Value))
@@ -274,7 +273,7 @@ public sealed class PageInteractiveLayerControl : Control
                     continue;
                 }
 
-                context.DrawGeometry(selectionBrush, null, geometry);
+                context.DrawGeometry(SelectionBrush, null, geometry);
             }
         }
     }

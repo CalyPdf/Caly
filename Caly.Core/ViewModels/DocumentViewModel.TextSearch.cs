@@ -130,6 +130,10 @@ public partial class DocumentViewModel
                 {
                     /* Ignore */
                 }
+                finally
+                {
+                    previousCts.Dispose();
+                }
             }
 
             newCts.Token.ThrowIfCancellationRequested();

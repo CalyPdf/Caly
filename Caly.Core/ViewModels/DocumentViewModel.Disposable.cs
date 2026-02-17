@@ -37,6 +37,7 @@ public partial class DocumentViewModel : IAsyncDisposable
         Bookmarks?.Clear();
 
         _mainCts.Dispose();
+        _pendingSearchTaskCts?.Dispose();
 
         _searchResultsDisposable.Dispose();
 
