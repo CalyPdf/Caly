@@ -23,7 +23,7 @@
 		<KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.DocumentPreviousGesture}" Command="{Binding ActivatePreviousDocumentCommand}"/>
 	</UserControl.KeyBindings>
 
-	<Grid RowDefinitions="*,20">
+	<Grid RowDefinitions="*,22">
 
 		<SplitView Grid.Row="0"
                    IsPaneOpen="{Binding IsSettingsPaneOpen, Mode=TwoWay}"
@@ -48,8 +48,8 @@
                           VerticalAlignment="Stretch"
                           Background="Transparent"
                           IsChecked="{Binding IsSettingsPaneOpen}">
-				<PathIcon Width="14"
-                          Height="14"
+				<PathIcon Width="15"
+                          Height="15"
                           Data="{StaticResource settings_regular}"
                           VerticalAlignment="Center">
 					<ToolTip.Tip>Settings</ToolTip.Tip>
