@@ -117,7 +117,7 @@ namespace Caly.Core.Controls;
 
                 lock (_lock)
                 {
-                    if (_picture?.Item is null || _picture.Item.Handle == IntPtr.Zero ||
+                    if (_picture?.IsAlive != true || _picture.Item.Handle == IntPtr.Zero ||
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                         !context.TryGetFeature(out ISkiaSharpApiLeaseFeature leaseFeature))
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -239,7 +239,7 @@ namespace Caly.Core.Controls;
             }
 
             var picture = Picture?.Clone();
-            if (picture?.Item is null || picture.Item.CullRect.IsEmpty)
+            if (picture?.IsAlive != true || picture.Item.CullRect.IsEmpty)
             {
                 base.Render(context);
                 return;
