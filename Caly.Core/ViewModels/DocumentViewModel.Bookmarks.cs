@@ -35,7 +35,7 @@ public partial class DocumentViewModel
     private readonly Lazy<Task> _loadBookmarksTask;
     public Task LoadBookmarksTask => _loadBookmarksTask.Value;
 
-    [ObservableProperty] private ObservableCollection<PdfBookmarkNode>? _bookmarks;
+    [ObservableProperty] private ObservableCollection<PdfBookmarkNode>? _bookmarks = [];
     [ObservableProperty] private HierarchicalTreeDataGridSource<PdfBookmarkNode>? _bookmarksSource;
 
     [ObservableProperty] private PdfBookmarkNode? _selectedBookmark;

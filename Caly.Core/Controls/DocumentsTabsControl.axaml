@@ -235,8 +235,8 @@
 
 										<!-- Bookmarks tab -->
 										<TabItem MinHeight="40"
-												 IsVisible="{Binding Bookmarks, Converter={x:Static ObjectConverters.IsNotNull}}"
-												 IsEnabled="{Binding Bookmarks, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                 IsVisible="{Binding !!Bookmarks.Count}"
+                                                 IsEnabled="{Binding !!Bookmarks.Count}">
 											<TabItem.Header>
 												<PathIcon Width="17"
 														  Height="17"
