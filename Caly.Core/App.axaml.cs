@@ -219,7 +219,15 @@ public partial class App : Application
     private void Desktop_Exit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
     {
         _listeningToFilesCts.Cancel();
-        GC.KeepAlive(_listeningToFiles); // TODO - await instead
+        GC.KeepAlive(_listeningToFiles);
+        
+        _listeningToFilesCts.Dispose();
+        _pipeServer.Dispose();
+        
+        if (_pdfDocumentsService is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

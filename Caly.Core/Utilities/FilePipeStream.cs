@@ -36,16 +36,15 @@ namespace Caly.Core.Utilities;
 /// </summary>
 public sealed class FilePipeStream : IDisposable, IAsyncDisposable
 {
-    private static readonly MemoryPool<byte> MemoryPool = MemoryPool<byte>.Shared;
-
     // https://googleprojectzero.blogspot.com/2019/09/windows-exploitation-tricks-spoofing.html
 
-    private static readonly string PipeName = "caly_pdf_files.pipe";
+    private const string PipeName = "caly_pdf_files.pipe";
 
     private static ReadOnlySpan<byte> KeyPhrase => "ca1y k3y pa$$"u8;
 
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(2);
 
+    private readonly MemoryPool<byte> _memoryPool = MemoryPool<byte>.Shared;
     private readonly NamedPipeServerStream _pipeServer;
 
     public FilePipeStream()
@@ -74,7 +73,7 @@ public sealed class FilePipeStream : IDisposable, IAsyncDisposable
                 await _pipeServer.WaitForConnectionAsync(token);
 
                 ushort len = 0;
-                using (var lengthMemoryOwner = MemoryPool.Rent(Math.Max(KeyPhrase.Length, len)))
+                using (var lengthMemoryOwner = _memoryPool.Rent(Math.Max(KeyPhrase.Length, len)))
                 {
                     Memory<byte> lengthBuffer = lengthMemoryOwner.Memory;
                     if (await _pipeServer.ReadAsync(lengthBuffer, token) != 2)
@@ -92,7 +91,7 @@ public sealed class FilePipeStream : IDisposable, IAsyncDisposable
                     continue;
                 }
 
-                using (var memoryOwner = MemoryPool.Rent(Math.Max(KeyPhrase.Length, len)))
+                using (var memoryOwner = _memoryPool.Rent(Math.Max(KeyPhrase.Length, len)))
                 {
                     Memory<byte> buffer = memoryOwner.Memory;
 
@@ -195,11 +194,13 @@ public sealed class FilePipeStream : IDisposable, IAsyncDisposable
     public void Dispose()
     {
         _pipeServer.Dispose();
+        _memoryPool.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
         await _pipeServer.DisposeAsync();
+        _memoryPool.Dispose();
     }
 
     public static bool SendBringToFront()
