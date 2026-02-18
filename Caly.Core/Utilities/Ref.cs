@@ -19,7 +19,7 @@
  */
 
 // Code from Avalonia
-// https://github.com/AvaloniaUI/Avalonia/blob/86609c100c18639454076161c200744631b44c6a/src/Avalonia.Base/Utilities/Ref.cs
+// https://github.com/AvaloniaUI/Avalonia/blob/fe060db1063bb97a344148451b86404e80acdd07/src/Avalonia.Base/Utilities/Ref.cs
 
 using System;
 using System.Runtime.ConstrainedExecution;
@@ -51,6 +51,10 @@ namespace Caly.Core.Utilities
         /// <returns>A reference to the value as the new type but sharing the refcount.</returns>
         IRef<TResult> CloneAs<TResult>() where TResult : class;
 
+        /// <summary>
+        /// Gets whether the reference still tracks a valid item.
+        /// </summary>
+        bool IsAlive { get; }
 
         /// <summary>
         /// The current refcount of the object tracked in this reference. For debugging/unit test use only.
@@ -192,6 +196,8 @@ namespace Caly.Core.Utilities
 
                 return new Ref<TResult>(item, counter);
             }
+
+            public bool IsAlive => _item is not null;
 
             public int RefCount => _counter?.RefCount ?? throw new ObjectDisposedException("Ref<" + typeof(T) + ">");
         }
