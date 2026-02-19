@@ -119,13 +119,13 @@ public sealed class ThumbnailItemsControl : ListBox
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        ItemsPanelRoot!.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
+        ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        ItemsPanelRoot!.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+        ItemsPanelRoot?.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
     }
 
     private void ItemsPanelRoot_LayoutUpdated(object? sender, EventArgs e)
@@ -212,7 +212,7 @@ public sealed class ThumbnailItemsControl : ListBox
         }
 
         // Update bound properties
-        SetCurrentValue(RealisedThumbnailsProperty, new Range(firstRealisedIndex + 1, lastRealisedIndex + 2));
+        SetCurrentValue(RealisedThumbnailsProperty, new Range(firstRealisedIndex + 1, lastRealisedIndex + 1));
 
         Range? currentVisibleThumbnails = null;
         if (firstVisibleIndex != -1 && lastVisibleIndex != -1) // No visible pages
@@ -220,7 +220,7 @@ public sealed class ThumbnailItemsControl : ListBox
             currentVisibleThumbnails = new Range(firstVisibleIndex + 1, lastVisibleIndex + 2);
         }
 
-        if (!VisibleThumbnails.HasValue || !VisibleThumbnails.Value.Equals(currentVisibleThumbnails))
+        if (!Nullable.Equals(VisibleThumbnails, currentVisibleThumbnails))
         {
             SetCurrentValue(VisibleThumbnailsProperty, currentVisibleThumbnails);
             RefreshThumbnails?.Execute(null);
@@ -247,13 +247,13 @@ public sealed class ThumbnailItemsControl : ListBox
     /// </summary>
     private int GetMaxPageIndex()
     {
-        if (ItemsPanelRoot is VirtualizingStackPanel v && v.LastRealizedIndex != -1)
+        if (ItemsPanelRoot is VirtualizingStackPanel v)
         {
             if (v.LastRealizedIndex == -1)
             {
                 return -1;
             }
-
+            
             return Math.Min(ItemCount, v.LastRealizedIndex + 1);
         }
 
@@ -273,6 +273,7 @@ public sealed class ThumbnailItemsControl : ListBox
         {
             ResetState();
             EnsureValidContainersVisibility();
+            ItemsPanelRoot?.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
             ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
         }
         else if (change.Property == IsVisibleProperty)
@@ -323,6 +324,7 @@ public sealed class ThumbnailItemsControl : ListBox
     
     private void ResetState()
     {
+        SetCurrentValue(RealisedThumbnailsProperty, null);
         SetCurrentValue(VisibleThumbnailsProperty, null);
         _isScrollingToPage = false;
     }
