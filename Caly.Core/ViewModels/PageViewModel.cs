@@ -26,6 +26,7 @@ using Caly.Core.Models;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -79,7 +80,7 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
 
     [ObservableProperty] private int _pageNumber;
 
-    [ObservableProperty] private bool _isPagePrepared;
+    [ObservableProperty] private bool _isRotating;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsPageVisible))]
     private Rect? _visibleArea;
@@ -307,14 +308,32 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
         return TextSelection.GetSelectedWords(PageNumber, PdfTextLayer);
     }
 
+    [RelayCommand]
     internal void RotateClockwise()
     {
-        Rotation = (Rotation + 90) % 360;
+        try
+        {
+            IsRotating = true;
+            Rotation = (Rotation + 90) % 360;
+        }
+        finally
+        {
+            IsRotating = false;
+        }
     }
 
+    [RelayCommand]
     internal void RotateCounterclockwise()
     {
-        Rotation = (Rotation + 270) % 360;
+        try
+        {
+            IsRotating = true;
+            Rotation = (Rotation + 270) % 360;
+        }
+        finally
+        {
+            IsRotating = false;
+        }
     }
 
     public void Clear()
