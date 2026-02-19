@@ -1138,6 +1138,7 @@ public sealed class PageItemsControl : ItemsControl
                 if (SelectedPageNumber.HasValue && SelectedPageNumber.Value > 0 && SelectedPageNumber.Value <= PageCount)
                 {
                     ScrollIntoView(SelectedPageNumber.Value - 1);
+                    ApplyYOffset(SelectedPageNumber.Value - 1, 0, false);
                     return; // Wait for the scroll to trigger another layout update.
                 }
             }
