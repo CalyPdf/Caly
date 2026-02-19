@@ -26,6 +26,7 @@ using Avalonia.Data;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using SkiaSharp;
+using System;
 
 namespace Caly.Core.Controls;
 
@@ -74,16 +75,34 @@ public sealed class PageItem : ContentControl
     public static readonly StyledProperty<int> RotationProperty =
         AvaloniaProperty.Register<PageItem, int>(nameof(Rotation));
 
+    /// <summary>
+    /// Defines the <see cref="IsRotating"/> property.
+    /// </summary>
+    public static readonly StyledProperty<bool> IsRotatingProperty =
+        AvaloniaProperty.Register<PageItem, bool>(nameof(IsRotating));
+
     static PageItem()
     {
         AffectsRender<PageItem>(PictureProperty, IsPageVisibleProperty,
             WidthProperty, HeightProperty);
     }
-    
+
+    /// <summary>
+    /// Raised synchronously just before a page rotation action executes, so the view
+    /// can capture its scroll state before the layout changes.
+    /// </summary>
+    public event EventHandler? BeforeRotation;
+
     public int Rotation
     {
         get => GetValue(RotationProperty);
         set => SetValue(RotationProperty, value);
+    }
+
+    public bool IsRotating
+    {
+        get => GetValue(IsRotatingProperty);
+        set => SetValue(IsRotatingProperty, value);
     }
 
     public bool IsPageRendering
@@ -136,5 +155,17 @@ public sealed class PageItem : ContentControl
     {
         base.OnApplyTemplate(e);
         TextLayer = e.NameScope.FindFromNameScope<PageInteractiveLayerControl>("PART_PageTextLayerControl");
+    }
+    
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == IsRotatingProperty)
+        {
+            if (!change.GetOldValue<bool>() && change.GetNewValue<bool>())
+            {
+                BeforeRotation?.Invoke(this, EventArgs.Empty);
+            }
+        }
     }
 }
