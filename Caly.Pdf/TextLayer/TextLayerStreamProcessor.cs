@@ -45,7 +45,8 @@ namespace Caly.Pdf.TextLayer
 
         private readonly double _pageWidth;
         private readonly double _pageHeight;
-
+        private readonly double _ppiScale;
+        
         private readonly AnnotationProvider _annotationProvider;
 
         public TextLayerStreamProcessor(int pageNumber,
@@ -59,6 +60,7 @@ namespace Caly.Pdf.TextLayer
             TransformationMatrix initialMatrix,
             double pageWidth,
             double pageHeight,
+            double ppiScale,
             ParsingOptions parsingOptions,
             AnnotationProvider annotationProvider)
             : base(pageNumber, resourceStore, pdfScanner, pageContentParser, filterProvider, cropBox, userSpaceUnit,
@@ -66,6 +68,7 @@ namespace Caly.Pdf.TextLayer
         {
             _pageWidth = pageWidth;
             _pageHeight = pageHeight;
+            _ppiScale = ppiScale;
 
             _annotationProvider = annotationProvider;
             _annotations = new Lazy<Annotation[]>(() => _annotationProvider.GetAnnotations().ToArray());
