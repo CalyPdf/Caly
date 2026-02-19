@@ -25,6 +25,8 @@ namespace Caly.Pdf.Models
 {
     public sealed class PdfAnnotation
     {
+        public required double PpiScale { get; init; }
+
         /// <summary>
         /// The rectangle completely containing the block.
         /// </summary>

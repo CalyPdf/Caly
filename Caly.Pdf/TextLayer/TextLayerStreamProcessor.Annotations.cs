@@ -91,6 +91,7 @@ namespace Caly.Pdf.TextLayer
 
                     _pdfAnnotations.Add(new PdfAnnotation()
                     {
+                        PpiScale = _ppiScale,
                         BoundingBox = transformedBox,
                         Action = annotation.Action,
                         Content = annotation.Content,

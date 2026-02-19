@@ -270,17 +270,62 @@ public sealed class PageItemsControl : ItemsControl
     }
 
     /// <summary>
-    /// Scrolls to the page number.
+    /// Scrolls to the page number, optionally scrolling to a specific Y position within the page.
     /// </summary>
     /// <param name="pageNumber">The page number. Starts at 1.</param>
-    public void GoToPage(int pageNumber)
+    /// <param name="yOffset">Optional Y offset within the page.</param>
+    /// <param name="offsetPdfCoord"><c>true</c> if the offset is in PDF coordinates (bottom = 0, increasing upward).
+    /// <para><c>false</c> if the offset is in Avalonia coordinates (top = 0, increasing downward, unscaled pixels).</para>
+    /// Default is <c>false</c>.
+    /// </param>
+    public void GoToPage(int pageNumber, double? yOffset = null, bool offsetPdfCoord = false)
     {
-        if (_isSettingPageVisibility || pageNumber <= 0 || pageNumber > PageCount ||  ItemsView.Count == 0)
+        if (_isSettingPageVisibility || pageNumber <= 0 || pageNumber > PageCount || ItemsView.Count == 0)
         {
             return;
         }
 
         ScrollIntoView(pageNumber - 1);
+        if (yOffset.HasValue)
+        {
+            ApplyYOffset(pageNumber, yOffset.Value, offsetPdfCoord);
+        }
+    }
+
+    private void ApplyYOffset(int pageNumber, double yOffset, bool offsetPdfCoord)
+    {
+        if (Scroll is null || LayoutTransform is null)
+        {
+            return;
+        }
+
+        if (ContainerFromIndex(pageNumber - 1) is not PageItem pageItem)
+        {
+            return;
+        }
+
+        if (yOffset > pageItem.Bounds.Height)
+        {
+            yOffset = pageItem.Bounds.Height; // Max offset is page height
+        }
+
+        if (offsetPdfCoord)
+        {
+            if (pageItem.Rotation == 0)
+            {
+                yOffset = pageItem.Bounds.Height - yOffset;
+            }
+            else
+            {
+                // Page wa rotated by user.
+                // Pdf coordinates are not relevant anymore, we just scroll to the top of the page.
+                yOffset = 0;
+            }
+        }
+
+        double scale = LayoutTransform.LayoutTransform?.Value.M11 ?? 1.0;
+        double newOffsetY = (pageItem.Bounds.Top + yOffset) * scale;
+        Scroll.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(Scroll.Offset.X, newOffsetY));
     }
 
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
@@ -499,8 +544,16 @@ public sealed class PageItemsControl : ItemsControl
                             var dest = goToAction?.Destination;
                             if (dest is not null)
                             {
-                                var documentControl = control.FindAncestorOfType<DocumentControl>();
-                                documentControl?.GoToPage(dest.PageNumber);
+                                // Ignore destination types for the moment
+                                if (dest.Coordinates.Top.HasValue)
+                                {
+                                    double scaledTop = dest.Coordinates.Top.Value * annotation.PpiScale;
+                                    GoToPage(dest.PageNumber, scaledTop, true);
+                                }
+                                else
+                                {
+                                    GoToPage(dest.PageNumber, 0); // Top of page
+                                }
                                 return;
                             }
                             else
@@ -1046,7 +1099,7 @@ public sealed class PageItemsControl : ItemsControl
         {
             // Ensure we are on the correct page
             // and containers are realised
-            GoToPage(SelectedPageNumber.Value);
+            GoToPage(SelectedPageNumber.Value, 0);
         }
 
         PostUpdatePagesVisibility();
@@ -1085,6 +1138,7 @@ public sealed class PageItemsControl : ItemsControl
                 if (SelectedPageNumber.HasValue && SelectedPageNumber.Value > 0 && SelectedPageNumber.Value <= PageCount)
                 {
                     ScrollIntoView(SelectedPageNumber.Value - 1);
+                    ApplyYOffset(SelectedPageNumber.Value - 1, 0, false);
                     return; // Wait for the scroll to trigger another layout update.
                 }
             }
