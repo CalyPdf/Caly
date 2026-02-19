@@ -1,4 +1,7 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using Avalonia.Platform.Storage;
+using Caly.Core.Utilities;
+using CommunityToolkit.Mvvm.Messaging;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Caly.Core.Services;
@@ -12,6 +15,29 @@ internal partial class PdfDocumentsManagerService
         App.Messenger.Register<CopyToClipboardRequestMessage>(this, HandleCopyToClipboardRequestMessage);
         App.Messenger.Register<ShowNotificationMessage>(this, HandleShowNotificationMessage);
         App.Messenger.Register<ShowPdfPasswordDialogRequestMessage>(this, HandleShowPdfPasswordDialogRequestMessage);
+        App.Messenger.Register<OpenEmbeddedFileRequestMessage>(this, HandleOpenEmbeddedFileRequestMessage);
+        App.Messenger.Register<SaveEmbeddedFileRequestMessage>(this, HandleSaveEmbeddedFileRequestMessage);
+    }
+
+    private void HandleSaveEmbeddedFileRequestMessage(object r, SaveEmbeddedFileRequestMessage m)
+    {
+        m.Reply(Task.Run(async () => (IStorageItem?)await _filesService.SaveFileAsync(m.EmbeddedFile.Data, m.EmbeddedFile.Name)));
+    }
+
+    private void HandleOpenEmbeddedFileRequestMessage(object r, OpenEmbeddedFileRequestMessage m)
+    {
+        m.Reply(Task.Run(async () =>
+        {
+            using var file = await _filesService.SaveTempFileAsync(m.EmbeddedFile.Data, m.EmbeddedFile.Name);
+            string? path = file?.TryGetLocalPath();
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+            
+            CalyExtensions.OpenBrowser(path);
+            return true;
+        }));
     }
 
     private void HandleOpenLoadDocumentsRequestMessage(object r, OpenLoadDocumentsRequestMessage m)

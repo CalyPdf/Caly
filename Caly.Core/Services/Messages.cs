@@ -43,3 +43,23 @@ internal sealed class OpenLoadDocumentsRequestMessage : AsyncRequestMessage<int>
         Token = token;
     }
 }
+
+internal sealed class OpenEmbeddedFileRequestMessage : AsyncRequestMessage<bool>
+{
+    public PdfEmbeddedFileViewModel EmbeddedFile { get; }
+
+    public OpenEmbeddedFileRequestMessage(PdfEmbeddedFileViewModel embeddedFile)
+    {
+        EmbeddedFile = embeddedFile;
+    }
+}
+
+internal sealed class SaveEmbeddedFileRequestMessage : AsyncRequestMessage<IStorageItem?>
+{
+    public PdfEmbeddedFileViewModel EmbeddedFile { get; }
+
+    public SaveEmbeddedFileRequestMessage(PdfEmbeddedFileViewModel embeddedFile)
+    {
+        EmbeddedFile = embeddedFile;
+    }
+}

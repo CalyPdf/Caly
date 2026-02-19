@@ -24,6 +24,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using System;
+using Caly.Core.ViewModels;
 
 namespace Caly.Core.Controls;
 
@@ -168,5 +169,21 @@ public sealed partial class DocumentsTabsControl : UserControl
         {
             splitView.SetCurrentValue(SplitView.IsPaneOpenProperty, false);
         }
+    }
+
+    private void EmbeddedFiles_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.Properties.IsLeftButtonPressed || e.ClickCount != 2)
+        {
+            return;
+        }
+
+        if (sender is not Control ctrl || ctrl.DataContext is not PdfEmbeddedFileViewModel vm)
+        {
+            return;
+        }
+        
+        vm.OpenCommand.Execute(null);
+        e.Handled = true;
     }
 }

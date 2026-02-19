@@ -22,6 +22,7 @@ using Avalonia.Threading;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels;
@@ -29,9 +30,12 @@ namespace Caly.Core.ViewModels;
 public partial class DocumentViewModel
 {
     private readonly Lazy<Task> _loadPropertiesTask;
+    private readonly Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>> _embeddedFilesTask;
     public Task LoadPropertiesTask => _loadPropertiesTask.Value;
 
     [ObservableProperty] private PdfDocumentProperties? _properties;
+
+    public Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> EmbeddedFiles => _embeddedFilesTask.Value;
 
     private async Task LoadProperties()
     {
@@ -41,5 +45,16 @@ public partial class DocumentViewModel
         {
             Dispatcher.UIThread.Invoke(() => Properties = prop, DispatcherPriority.Send, _mainCts.Token);
         }
+    }
+
+    private async Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> GetEmbeddedFiles()
+    {
+        var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainCts.Token));
+        if (items is null || items.Count == 0)
+        {
+            return ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>.Empty;
+        }
+
+        return new ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>(items);
     }
 }

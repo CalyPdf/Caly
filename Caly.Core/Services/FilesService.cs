@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -42,29 +43,123 @@ internal sealed class FilesService : IFilesService
             return;
         }
 #endif
-        _storageProvider = storageProvider ?? throw new ArgumentNullException($"Could not find {typeof(IStorageProvider)}."); ;
+        _storageProvider = storageProvider ?? throw new ArgumentNullException($"Could not find {typeof(IStorageProvider)}.");
+        // TODO - Validate CanOpen, CanSave, CanPickFolder
     }
 
     public async Task<IStorageFile?> OpenPdfFileAsync()
     {
         Debug.ThrowNotOnUiThread();
 
-        IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+        try
         {
-            Title = "Open",
-            AllowMultiple = false,
-            FileTypeFilter = _pdfFileFilter
-        });
+            IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            {
+                Title = "Open",
+                AllowMultiple = false,
+                FileTypeFilter = _pdfFileFilter
+            });
 
-        return files.Count >= 1 ? files[0] : null;
+            return files.Count >= 1 ? files[0] : null;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
     }
 
-    public Task<IStorageFile?> SavePdfFileAsync()
+    public async Task<IStorageFile?> SaveFileAsync(ReadOnlyMemory<byte> data, string? fileName = null)
     {
-        return _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+        try
         {
-            Title = "Save Pdf File"
-        });
+            var file = await _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+            {
+                Title = "Save File",
+                SuggestedFileName = fileName,
+                DefaultExtension = Path.GetExtension(fileName)
+            }).ConfigureAwait(false);
+
+            if (file is null)
+            {
+                // TODO - logs
+                return null;
+            }
+            
+            await using (var ms = await file.OpenWriteAsync().ConfigureAwait(false))
+            {
+                await ms.WriteAsync(data).ConfigureAwait(false);
+                await ms.FlushAsync().ConfigureAwait(false);
+            }
+
+            return file;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
+    }
+
+    public async Task<IStorageFile?> SaveTempFileAsync(ReadOnlyMemory<byte> data, string? fileName = null)
+    {
+        try
+        {
+            string tempFilePath;
+            string tempDirectory;
+
+            if (string.IsNullOrEmpty(fileName))
+            {
+                string tempFile = Path.GetTempFileName();
+                tempDirectory = Path.GetDirectoryName(tempFile) ?? string.Empty;
+                if (string.IsNullOrEmpty(tempDirectory))
+                {
+                    tempDirectory = Path.GetTempPath();
+                }
+
+                tempFilePath = Path.GetFileName(tempFile);
+            }
+            else
+            {
+                tempDirectory = Path.GetTempPath();
+                string extension = Path.GetExtension(fileName);
+                string rootFileName = Path.GetFileNameWithoutExtension(fileName);
+                tempFilePath = $"{rootFileName}{extension}";
+
+                int i = 0;
+                while (File.Exists(Path.Combine(tempDirectory, tempFilePath)))
+                {
+                    tempFilePath = $"{rootFileName}.{++i}{extension}";
+                }
+            }
+
+            using var tempFolder = await _storageProvider.TryGetFolderFromPathAsync(tempDirectory);
+            if (tempFolder is null)
+            {
+                return null;
+            }
+
+            var file = await tempFolder.CreateFileAsync(tempFilePath)
+                .ConfigureAwait(false);
+            
+            if (file is null)
+            {
+                return null;
+            }
+
+            await using (var ms = await file.OpenWriteAsync().ConfigureAwait(false))
+            {
+                await ms.WriteAsync(data).ConfigureAwait(false);
+                await ms.FlushAsync().ConfigureAwait(false);
+            }
+
+            return file;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
     }
 
     public async Task<IStorageFile?> TryGetFileFromPathAsync(string path)
@@ -72,7 +167,8 @@ internal sealed class FilesService : IFilesService
         try
         {
             // UIThread needed for Avalonia.FreeDesktop.DBusSystemDialog
-            return await Dispatcher.UIThread.InvokeAsync(() => _storageProvider.TryGetFileFromPathAsync(path));
+            return await Dispatcher.UIThread.InvokeAsync(() => _storageProvider.TryGetFileFromPathAsync(path))
+                .ConfigureAwait(false);
         }
         catch (Exception e)
         {
