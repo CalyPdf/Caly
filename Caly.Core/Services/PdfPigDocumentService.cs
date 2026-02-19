@@ -18,6 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Avalonia.Platform.Storage;
+using Caly.Core.Models;
+using Caly.Core.Services.Interfaces;
+using Caly.Core.Utilities;
+using Caly.Core.ViewModels;
+using Caly.Pdf;
+using Caly.Pdf.Models;
+using Caly.Pdf.PageFactories;
+using CommunityToolkit.Mvvm.Messaging;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,15 +35,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Platform.Storage;
-using Caly.Core.Models;
-using Caly.Core.Services.Interfaces;
-using Caly.Core.Utilities;
-using Caly.Pdf;
-using Caly.Pdf.Models;
-using Caly.Pdf.PageFactories;
-using CommunityToolkit.Mvvm.Messaging;
-using SkiaSharp;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Exceptions;
 using UglyToad.PdfPig.Outline;
@@ -51,6 +52,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
     private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
     private const string PdfExtension = ".pdf";
 
+    private IStorageFile? _storageFile;
     private Stream? _fileStream;
     private PdfDocument? _document;
     private Uri? _filePath;
@@ -99,14 +101,14 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                 if (!PdfExtension.Equals(Path.GetExtension(storageFile.Path.LocalPath), StringComparison.OrdinalIgnoreCase) && !CalyExtensions.IsMobilePlatform())
                 {
                     // TODO - Need to handle Mobile
-                    throw new ArgumentOutOfRangeException(
-                        $"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
+                    throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
                 }
 
-                _filePath = storageFile.Path;
+                _storageFile = storageFile;
+                _filePath = _storageFile.Path;
                 System.Diagnostics.Debug.WriteLine($"[INFO] Opening {FileName}...");
 
-                _fileStream = await storageFile.OpenReadAsync();
+                _fileStream = await _storageFile.OpenReadAsync();
                 if (!_fileStream.CanSeek)
                 {
                     var ms = new MemoryStream((int)_fileStream.Length);
@@ -169,7 +171,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                         continue;
                     }
 
-                    var pageCount = await OpenDocument(storageFile, pw, ct);
+                    var pageCount = await OpenDocument(_storageFile, pw, ct);
                     if (pageCount > 0)
                     {
                         // Password OK and document opened
@@ -195,7 +197,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
             }
         }, token);
     }
-
+    
     public async Task<PdfPageSize?> GetPageSizeAsync(int pageNumber, CancellationToken token)
     {
         Debug.ThrowOnUiThread();
@@ -225,6 +227,33 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
             }
 
             return PdfTextLayerHelper.GetTextLayer(pageTextLayer, ct);
+        }, token);
+    }
+
+    public async Task<ObservableCollection<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token)
+    {
+        Debug.ThrowOnUiThread();
+
+        return await GuardDispose(async ct =>
+        {
+            var files = await ExecuteWithLockAsync(
+                _ => _document?.Advanced.TryGetEmbeddedFiles(out var files) == true ? files : null,
+                ct);
+
+            if (files is null || files.Count == 0 || ct.IsCancellationRequested)
+            {
+                return null;
+            }
+
+            var result = new PdfEmbeddedFileViewModel[files.Count];
+
+            for (var i = 0; i < files.Count; i++)
+            {
+                var f = files[i];
+                result[i] = new PdfEmbeddedFileViewModel(f.Name, f.Memory);
+            }
+
+            return new ObservableCollection<PdfEmbeddedFileViewModel>(result);
         }, token);
     }
 
@@ -403,6 +432,9 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                 await _fileStream.DisposeAsync();
                 _fileStream = null;
             }
+
+            _storageFile?.Dispose();
+            _storageFile = null;
 
             if (_document is not null)
             {

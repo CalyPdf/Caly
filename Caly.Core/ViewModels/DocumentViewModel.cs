@@ -211,6 +211,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _loadBookmarksTask = new Lazy<Task>(LoadBookmarks);
         _loadPropertiesTask = new Lazy<Task>(LoadProperties);
         _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
+        _embeddedFilesTask = new Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>>(GetEmbeddedFiles);
 
         _searchResultsDisposable = SearchResults
             .GetWeakCollectionChangedObservable()
