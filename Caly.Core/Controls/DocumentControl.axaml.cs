@@ -291,7 +291,7 @@ public sealed class DocumentControl : CalyTemplatedControl
     /// <param name="pageNumber">The page number. Starts at 1.</param>
     public void GoToPage(int pageNumber)
     {
-        _pageItemsControl?.GoToPage(pageNumber);
+        _pageItemsControl?.GoToPage(pageNumber, 0); // Top of page
     }
 
     /// <summary>

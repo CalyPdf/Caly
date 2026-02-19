@@ -36,7 +36,9 @@ namespace Caly.Pdf.PageFactories
 {
     public sealed class TextLayerFactory : BasePageFactory<PageTextLayerContent>
     {
+        private readonly double _ppiScale = 1;
         private readonly TransformationMatrix _scale;
+        
         public TextLayerFactory(IPdfTokenScanner pdfScanner,
             IResourceStore resourceStore,
             ILookupFilterProvider filterProvider,
@@ -54,12 +56,11 @@ namespace Caly.Pdf.PageFactories
             // This is very hacky but PdfPig does not provide a better way to pass such information
             // to the PageFactory for the moment.
             // TODO - to remove.
-            double ppiScale = 1;
             if (pdfScanner.Get(CalyPdfHelper.FakePpiReference)?.Data is NumericToken ppi)
             {
-                ppiScale = ppi.Double;
+                _ppiScale = ppi.Double;
             }
-            _scale = TransformationMatrix.GetScaleMatrix(ppiScale, ppiScale);
+            _scale = TransformationMatrix.GetScaleMatrix(_ppiScale, _ppiScale);
         }
 
         protected override PageTextLayerContent ProcessPage(int pageNumber, DictionaryToken dictionary,
@@ -83,7 +84,7 @@ namespace Caly.Pdf.PageFactories
 
             var context = new TextLayerStreamProcessor(pageNumber, ResourceStore, PdfScanner, PageContentParser,
                 FilterProvider, cropBox, userSpaceUnit, rotation, initialMatrix,
-                effectiveCropBox.Width, effectiveCropBox.Height,
+                effectiveCropBox.Width, effectiveCropBox.Height, _ppiScale,
                 ParsingOptions, annotationProvider);
 
             return context.Process(pageNumber, operations);
