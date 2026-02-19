@@ -170,13 +170,13 @@ public sealed class PageItemsControl : ItemsControl
         get => GetValue(TextSelectionProperty);
         set => SetValue(TextSelectionProperty, value);
     }
-    
+
     public ICommand? ClearSelection
     {
         get => GetValue(ClearSelectionProperty);
         set => SetValue(ClearSelectionProperty, value);
     }
-    
+
     public PageItemsControl()
     {
         _scrollChangedHandler = (_, _) => PostUpdatePagesVisibility();
@@ -434,12 +434,12 @@ public sealed class PageItemsControl : ItemsControl
     private void TextLayer_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
-        
+
         if (TextSelection is null || sender is not PageInteractiveLayerControl control || control.PdfTextLayer is null)
         {
             return;
         }
-        
+
         if (e.IsPanningOrZooming())
         {
             // Panning pages is not handled here
@@ -502,31 +502,31 @@ public sealed class PageItemsControl : ItemsControl
         switch (e.ClickCount)
         {
             case 2:
-            {
-                // Select whole word
-                startWord = word;
-                endWord = word;
-                break;
-            }
+                {
+                    // Select whole word
+                    startWord = word;
+                    endWord = word;
+                    break;
+                }
             case 3:
-            {
-                // Select whole line
-                var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
-                var line = block.TextLines![word.TextLineIndex - block.TextLines[0].IndexInPage];
+                {
+                    // Select whole line
+                    var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
+                    var line = block.TextLines![word.TextLineIndex - block.TextLines[0].IndexInPage];
 
-                startWord = line.Words[0];
-                endWord = line.Words[^1];
-                break;
-            }
+                    startWord = line.Words[0];
+                    endWord = line.Words[^1];
+                    break;
+                }
             case 4:
-            {
-                // Select whole paragraph
-                var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
+                {
+                    // Select whole paragraph
+                    var block = control.PdfTextLayer.TextBlocks![word.TextBlockIndex];
 
-                startWord = block.TextLines![0].Words![0];
-                endWord = block.TextLines![^1].Words![^1];
-                break;
-            }
+                    startWord = block.TextLines![0].Words![0];
+                    endWord = block.TextLines![^1].Words![^1];
+                    break;
+                }
             default:
                 System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: Not handled, got {e.ClickCount} click(s).");
                 return;
@@ -567,67 +567,67 @@ public sealed class PageItemsControl : ItemsControl
 
             var point = pointerPoint.Position;
 
-                // Annotation
-                PdfAnnotation? annotation = control.PdfTextLayer.FindAnnotationOver(point.X, point.Y);
+            // Annotation
+            PdfAnnotation? annotation = control.PdfTextLayer.FindAnnotationOver(point.X, point.Y);
 
-                if (annotation?.Action is not null)
+            if (annotation?.Action is not null)
+            {
+                switch (annotation.Action.Type)
                 {
-                    switch (annotation.Action.Type)
-                    {
-                        case ActionType.URI:
-                            string? uri = ((UriAction)annotation.Action)?.Uri;
-                            if (!string.IsNullOrEmpty(uri))
-                            {
-                                CalyExtensions.OpenBrowser(uri);
-                                return;
-                            }
-                            break;
+                    case ActionType.URI:
+                        string? uri = ((UriAction)annotation.Action)?.Uri;
+                        if (!string.IsNullOrEmpty(uri))
+                        {
+                            CalyExtensions.OpenBrowser(uri);
+                            return;
+                        }
+                        break;
 
-                        case ActionType.GoTo:
-                        case ActionType.GoToE:
-                        case ActionType.GoToR:
-                            var goToAction = (AbstractGoToAction)annotation.Action;
-                            var dest = goToAction?.Destination;
-                            if (dest is not null)
+                    case ActionType.GoTo:
+                    case ActionType.GoToE:
+                    case ActionType.GoToR:
+                        var goToAction = (AbstractGoToAction)annotation.Action;
+                        var dest = goToAction?.Destination;
+                        if (dest is not null)
+                        {
+                            // Ignore destination types for the moment
+                            if (dest.Coordinates.Top.HasValue)
                             {
-                                // Ignore destination types for the moment
-                                if (dest.Coordinates.Top.HasValue)
-                                {
-                                    double scaledTop = dest.Coordinates.Top.Value * annotation.PpiScale;
-                                    GoToPage(dest.PageNumber, scaledTop, true);
-                                }
-                                else
-                                {
-                                    GoToPage(dest.PageNumber, 0); // Top of page
-                                }
-                                return;
+                                double scaledTop = dest.Coordinates.Top.Value * annotation.PpiScale;
+                                GoToPage(dest.PageNumber, scaledTop, true);
                             }
                             else
                             {
-                                // Log error
+                                GoToPage(dest.PageNumber, 0); // Top of page
                             }
-                            break;
-                    }
+                            return;
+                        }
+                        else
+                        {
+                            // Log error
+                        }
+                        break;
                 }
+            }
 
-                // Words
-                PdfWord? word = control.PdfTextLayer.FindWordOver(point.X, point.Y);
-                if (word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
+            // Words
+            PdfWord? word = control.PdfTextLayer.FindWordOver(point.X, point.Y);
+            if (word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
+            {
+                /*
+                 * TODO - Use TopLevel.GetTopLevel(source)?.Launcher
+                 *  if (e.Source is Control source && TopLevel.GetTopLevel(source)?.Launcher is {}
+                 *  launcher && word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
+                 *  ...
+                 *  launcher.LaunchUriAsync(new Uri(match.ToString()))
+                 */
+
+                var match = PdfTextLayerHelper.GetInteractiveMatch(line);
+                if (!match.IsEmpty)
                 {
-                    /*
-                     * TODO - Use TopLevel.GetTopLevel(source)?.Launcher
-                     *  if (e.Source is Control source && TopLevel.GetTopLevel(source)?.Launcher is {}
-                     *  launcher && word is not null && control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
-                     *  ...
-                     *  launcher.LaunchUriAsync(new Uri(match.ToString()))
-                     */
-
-                    var match = PdfTextLayerHelper.GetInteractiveMatch(line);
-                    if (!match.IsEmpty)
-                    {
-                        CalyExtensions.OpenBrowser(match);
-                    }
+                    CalyExtensions.OpenBrowser(match);
                 }
+            }
         }
 
         _isSelecting = false;
@@ -648,7 +648,7 @@ public sealed class PageItemsControl : ItemsControl
         interactiveLayer.SetDefaultCursor();
         interactiveLayer.HideAnnotation();
     }
-    
+
     private void TextLayer_PointerMoved(object? sender, PointerEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
@@ -902,7 +902,7 @@ public sealed class PageItemsControl : ItemsControl
         e.Pointer.Capture(endPage.TextLayer); // Switch capture to new page
         return true;
     }
-    
+
     protected override void ClearContainerForItemOverride(Control container)
     {
         base.ClearContainerForItemOverride(container);
@@ -1046,7 +1046,7 @@ public sealed class PageItemsControl : ItemsControl
 
         return null;
     }
-    
+
     internal void SetPanCursor()
     {
         Debug.ThrowNotOnUiThread();
@@ -1075,7 +1075,7 @@ public sealed class PageItemsControl : ItemsControl
         LayoutTransform.AddHandler(PointerPressedEvent, OnPointerPressed);
         LayoutTransform.AddHandler(PointerMovedEvent, OnPointerMoved);
         LayoutTransform.AddHandler(PointerReleasedEvent, OnPointerReleased);
-        
+
         _tabsControl = this.FindAncestorOfType<TabsControl>();
         if (_tabsControl is not null)
         {
@@ -1095,7 +1095,7 @@ public sealed class PageItemsControl : ItemsControl
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromLogicalTree(e);
-        
+
         if (Scroll is not null)
         {
             Scroll.RemoveHandler(ScrollViewer.ScrollChangedEvent, _scrollChangedHandler);
@@ -1110,7 +1110,7 @@ public sealed class PageItemsControl : ItemsControl
             LayoutTransform.RemoveHandler(PointerPressedEvent, OnPointerPressed);
             LayoutTransform.RemoveHandler(PointerMovedEvent, OnPointerMoved);
             LayoutTransform.RemoveHandler(PointerReleasedEvent, OnPointerReleased);
-            
+
             if (CalyExtensions.IsMobilePlatform())
             {
                 Gestures.RemovePinchHandler(LayoutTransform, _onPinchChangedHandler);
@@ -1126,7 +1126,7 @@ public sealed class PageItemsControl : ItemsControl
             _tabsControl.TabDragCompleted -= TabControlOnTabDragCompleted;
         }
     }
-    
+
     private void TabControlOnTabDragStarted(object? sender, Tabalonia.Events.DragTabDragStartedEventArgs e)
     {
         _isTabDragging = true;
@@ -1138,7 +1138,7 @@ public sealed class PageItemsControl : ItemsControl
         {
             return;
         }
-        
+
         _isTabDragging = false;
         foreach (var pageItem in GetRealizedContainers().OfType<PageItem>())
         {
@@ -1249,7 +1249,7 @@ public sealed class PageItemsControl : ItemsControl
         // page has exactly the same dimension of the visible page
         PostUpdatePagesVisibility();
     }
-    
+
     private bool HasRealisedItems()
     {
         if (ItemsPanelRoot is VirtualizingStackPanel vsp)
@@ -1296,7 +1296,7 @@ public sealed class PageItemsControl : ItemsControl
                 SetCurrentValue(VisiblePagesProperty, null);
                 RefreshPages?.Execute(null);
             }
-            
+
             return true;
         }
 
@@ -1488,7 +1488,7 @@ public sealed class PageItemsControl : ItemsControl
             Scroll.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
             Scroll.AddHandler(KeyDownEvent, OnKeyDownHandler);
         }
-        
+
         if (e.IsPanningOrZooming())
         {
             ResetPanTo();
@@ -1505,7 +1505,7 @@ public sealed class PageItemsControl : ItemsControl
             Scroll?.RemoveHandler(KeyDownEvent, OnKeyDownHandler);
             ResetPanTo();
         }
-        
+
         switch (e.Key)
         {
             case Key.Right:
@@ -1605,13 +1605,13 @@ public sealed class PageItemsControl : ItemsControl
         {
             return;
         }
-        
+
         if (e.IsPanning())
         {
             SetPanCursor();
             PanTo(e);
         }
-        
+
         e.Handled = true;
     }
 

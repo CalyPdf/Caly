@@ -21,9 +21,11 @@
 using Avalonia.Platform.Storage;
 using Caly.Core.Models;
 using Caly.Core.Utilities;
+using Caly.Core.ViewModels;
 using Caly.Pdf.Models;
 using SkiaSharp;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +58,8 @@ public interface IPdfDocumentService : IAsyncDisposable
     Task<PdfDocumentProperties?> GetDocumentPropertiesAsync(CancellationToken token);
 
     Task<ObservableCollection<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token);
+
+    Task<IReadOnlyList<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token);
 
     Task<PdfPageSize?> GetPageSizeAsync(int pageNumber, CancellationToken token);
 

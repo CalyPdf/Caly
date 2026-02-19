@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 
@@ -27,7 +28,9 @@ public interface IFilesService
 {
     Task<IStorageFile?> OpenPdfFileAsync();
 
-    Task<IStorageFile?> SavePdfFileAsync();
+    Task<IStorageFile?> SaveFileAsync(ReadOnlyMemory<byte> data, string? fileName = null);
+
+    Task<IStorageFile?> SaveTempFileAsync(ReadOnlyMemory<byte> data, string? fileName = null);
 
     Task<IStorageFile?> TryGetFileFromPathAsync(string path);
 }

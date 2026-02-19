@@ -20,6 +20,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -49,22 +50,114 @@ internal sealed class FilesService : IFilesService
     {
         Debug.ThrowNotOnUiThread();
 
-        IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+        try
         {
-            Title = "Open",
-            AllowMultiple = false,
-            FileTypeFilter = _pdfFileFilter
-        });
+            IReadOnlyList<IStorageFile> files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
+            {
+                Title = "Open",
+                AllowMultiple = false,
+                FileTypeFilter = _pdfFileFilter
+            });
 
-        return files.Count >= 1 ? files[0] : null;
+            return files.Count >= 1 ? files[0] : null;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
     }
 
-    public Task<IStorageFile?> SavePdfFileAsync()
+    public async Task<IStorageFile?> SaveFileAsync(ReadOnlyMemory<byte> data, string? fileName = null)
     {
-        return _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+        try
         {
-            Title = "Save Pdf File"
-        });
+            var file = await _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+            {
+                Title = "Save File",
+                SuggestedFileName = fileName,
+                DefaultExtension = Path.GetExtension(fileName)
+            });
+
+            if (file is null)
+            {
+                // TODO - logs
+                return null;
+            }
+
+            await using (var ms = await file.OpenWriteAsync())
+            {
+                await ms.WriteAsync(data);
+                await ms.FlushAsync();
+            }
+
+            return file;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
+    }
+
+    public async Task<IStorageFile?> SaveTempFileAsync(ReadOnlyMemory<byte> data, string? fileName = null)
+    {
+        try
+        {
+            string tempFilePath;
+            string tempDirectory;
+
+            if (string.IsNullOrEmpty(fileName))
+            {
+                string tempFile = Path.GetTempFileName();
+                tempDirectory = Path.GetDirectoryName(tempFile) ?? string.Empty;
+                if (string.IsNullOrEmpty(tempDirectory))
+                {
+                    tempDirectory = Path.GetTempPath();
+                }
+
+                tempFilePath = Path.GetFileName(tempFile);
+            }
+            else
+            {
+                tempDirectory = Path.GetTempPath();
+                string extension = Path.GetExtension(fileName);
+                string rootFileName = Path.GetFileNameWithoutExtension(fileName);
+                tempFilePath = $"{rootFileName}{extension}";
+
+                int i = 0;
+                while (File.Exists(Path.Combine(tempDirectory, tempFilePath)))
+                {
+                    tempFilePath = $"{rootFileName}.{++i}{extension}";
+                }
+            }
+
+            using var tempFolder = await _storageProvider.TryGetFolderFromPathAsync(tempDirectory);
+
+            if (tempFolder is null)
+            {
+                return null;
+            }
+
+            var file = await tempFolder.CreateFileAsync(tempFilePath);
+            if (file is null)
+            {
+                return null;
+            }
+
+            await using (var ms = await file.OpenWriteAsync())
+            {
+                await ms.WriteAsync(data);
+                await ms.FlushAsync();
+            }
+
+            return file;
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+            return null;
+        }
     }
 
     public async Task<IStorageFile?> TryGetFileFromPathAsync(string path)
