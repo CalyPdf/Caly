@@ -372,6 +372,7 @@ public sealed class PageItemsControl : ItemsControl
             return;
         }
 
+        pageItem.Loaded -= PageItem_Loaded;
         pageItem.Unloaded -= PageItem_Unloaded;
 
         if (pageItem.TextLayer is null)
@@ -463,7 +464,10 @@ public sealed class PageItemsControl : ItemsControl
             if (word is not null && TextSelection.IsWordSelected(control.PageNumber!.Value, word))
             {
                 clearSelection = e.ClickCount == 1; // Clear selection if single click
-                HandleMultipleClick(control, e, word); // TODO - we pass 1 click here too
+                if (e.ClickCount >= 2)
+                {
+                    HandleMultipleClick(control, e, word);
+                }
             }
             else if (word is not null && e.ClickCount == 2)
             {
@@ -561,10 +565,7 @@ public sealed class PageItemsControl : ItemsControl
         {
             ClearSelection?.Execute(null);
 
-            // Check link
-            if (!_isSelecting)
-            {
-                var point = pointerPoint.Position;
+            var point = pointerPoint.Position;
 
                 // Annotation
                 PdfAnnotation? annotation = control.PdfTextLayer.FindAnnotationOver(point.X, point.Y);
@@ -627,7 +628,6 @@ public sealed class PageItemsControl : ItemsControl
                         CalyExtensions.OpenBrowser(match);
                     }
                 }
-            }
         }
 
         _isSelecting = false;
@@ -893,22 +893,27 @@ public sealed class PageItemsControl : ItemsControl
             return false;
         }
 
-        PageInteractiveLayerControl endTextLayer = endPage.TextLayer ??
-                                                   throw new NullReferenceException($"{typeof(PageInteractiveLayerControl)} not found.");
+        if (endPage.TextLayer is null)
+        {
+            // Template not yet applied on the target page — do nothing.
+            return false;
+        }
 
-        e.Pointer.Capture(endTextLayer); // Switch capture to new page
+        e.Pointer.Capture(endPage.TextLayer); // Switch capture to new page
         return true;
     }
     
     protected override void ClearContainerForItemOverride(Control container)
     {
         base.ClearContainerForItemOverride(container);
-        
+
         if (container is not PageItem pageItem)
         {
             return;
         }
 
+        pageItem.Loaded -= PageItem_Loaded;
+        pageItem.Unloaded -= PageItem_Unloaded;
         pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
     }
 
@@ -940,7 +945,7 @@ public sealed class PageItemsControl : ItemsControl
     /// </summary>
     private int GetMaxPageIndex()
     {
-        if (ItemsPanelRoot is VirtualizingStackPanel v && v.LastRealizedIndex != -1)
+        if (ItemsPanelRoot is VirtualizingStackPanel v)
         {
             if (v.LastRealizedIndex == -1)
             {
@@ -1183,7 +1188,7 @@ public sealed class PageItemsControl : ItemsControl
                 if (SelectedPageNumber.HasValue && SelectedPageNumber.Value > 0 && SelectedPageNumber.Value <= PageCount)
                 {
                     ScrollIntoView(SelectedPageNumber.Value - 1);
-                    ApplyYOffset(SelectedPageNumber.Value - 1, 0, false);
+                    ApplyYOffset(SelectedPageNumber.Value, 0, false);
                     return; // Wait for the scroll to trigger another layout update.
                 }
             }
@@ -1206,6 +1211,7 @@ public sealed class PageItemsControl : ItemsControl
             _pendingScrollToPage = true;
             Scroll?.Focus();
             EnsureValidContainersVisibility();
+            ItemsPanelRoot?.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
             ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
         }
     }
@@ -1360,7 +1366,7 @@ public sealed class PageItemsControl : ItemsControl
         int lastVisibleIndex = selectedVisible ? startIndex : -1;
 
         wasVisible = selectedVisible;
-        for (int i = startIndex + 1; i <= lastRealisedIndex && CheckPage(i, out bool visible); ++i)
+        for (int i = startIndex + 1; i < lastRealisedIndex && CheckPage(i, out bool visible); ++i)
         {
             if (visible)
             {
@@ -1374,7 +1380,7 @@ public sealed class PageItemsControl : ItemsControl
             wasVisible = visible;
         }
 
-        wasVisible = selectedVisible;
+        wasVisible = false;
         needMoreChecks = true;
         for (int i = startIndex - 1; i >= firstRealisedIndex && CheckPage(i, out bool visible); --i)
         {
@@ -1525,13 +1531,24 @@ public sealed class PageItemsControl : ItemsControl
     }
 
     private double _pinchZoomReference = 1.0;
+    private bool _isPinching;
+
     private void _onPinchEndedHandler(object? sender, PinchEndedEventArgs e)
     {
         _pinchZoomReference = ZoomLevel;
+        _isPinching = false;
     }
 
     private void _onPinchChangedHandler(object? sender, PinchEventArgs e)
     {
+        if (!_isPinching)
+        {
+            // Capture the zoom level at the start of each new pinch gesture so the
+            // first event doesn't compute dZoom against a stale reference of 1.0.
+            _pinchZoomReference = ZoomLevel;
+            _isPinching = true;
+        }
+
         if (e.Scale != 0)
         {
             ZoomTo(e);
@@ -1755,5 +1772,6 @@ public sealed class PageItemsControl : ItemsControl
         _isZooming = false;
         _isTabDragging = false;
         _pendingScrollToPage = false;
+        _isPinching = false;
     }
 }
