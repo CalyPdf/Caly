@@ -21,6 +21,7 @@
         <Setter Property="Exception" Value="{Binding Exception}"/>
 		<Setter Property="Width" Value="{Binding DisplayWidth}"/>
 		<Setter Property="Height" Value="{Binding DisplayHeight}"/>
+        <Setter Property="IsRotating" Value="{Binding IsRotating}"/>
         <Setter Property="Rotation" Value="{Binding Rotation}"/>
 		<Setter Property="Picture" Value="{Binding PdfPicture}"/>
 		<Setter Property="VisibleArea" Value="{Binding VisibleArea}"/>
@@ -37,7 +38,7 @@
 				<Separator/>
 
 				<MenuItem Header="Rotate Clockwise"
-                          Command="{Binding $parent[controls:PageItemsControl].((vm:DocumentViewModel)DataContext).RotatePageClockwiseCommand}"
+                          Command="{Binding RotateClockwiseCommand}"
                           CommandParameter="{Binding PageNumber}">
 					<MenuItem.Icon>
 						<PathIcon Width="15"
@@ -47,7 +48,7 @@
 				</MenuItem>
 
 				<MenuItem Header="Rotate Counterclockwise"
-                          Command="{Binding $parent[controls:PageItemsControl].((vm:DocumentViewModel)DataContext).RotatePageCounterclockwiseCommand}"
+                          Command="{Binding RotateCounterclockwiseCommand}"
                           CommandParameter="{Binding PageNumber}">
 					<MenuItem.Icon>
 						<PathIcon Width="15"

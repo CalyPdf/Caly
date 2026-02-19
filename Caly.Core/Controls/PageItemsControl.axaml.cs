@@ -328,6 +328,28 @@ public sealed class PageItemsControl : ItemsControl
         Scroll.SetCurrentValue(ScrollViewer.OffsetProperty, new Vector(Scroll.Offset.X, newOffsetY));
     }
 
+    /// <summary>
+    /// Gets the Y distance from the viewport top to the top of the currently selected page,
+    /// in unscaled display coordinates (page top = 0, increasing downward).
+    /// Returns <c>null</c> if the selected page is not realized or scroll state is unavailable.
+    /// </summary>
+    internal double? GetCurrentPageRelativeYOffset(int? pageNumber)
+    {
+        if (!pageNumber.HasValue || Scroll is null || LayoutTransform is null || !SelectedPageNumber.HasValue)
+        {
+            return null;
+        }
+
+        if (ContainerFromIndex(pageNumber.Value - 1) is not PageItem pageItem)
+        {
+            return null;
+        }
+
+        double scale = LayoutTransform.LayoutTransform?.Value.M11 ?? 1.0;
+        double relativeOffset = (Scroll.Offset.Y / scale) - pageItem.Bounds.Top;
+        return Math.Max(0, relativeOffset);
+    }
+
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
@@ -362,6 +384,7 @@ public sealed class PageItemsControl : ItemsControl
         pageItem.TextLayer.PointerExited -= TextLayer_PointerExited;
         pageItem.TextLayer.PointerReleased -= TextLayer_PointerReleased;
         pageItem.TextLayer.PointerPressed -= TextLayer_PointerPressed;
+        pageItem.BeforeRotation -= OnBeforePageRotation;
     }
 
     private void PageItem_Loaded(object? sender, RoutedEventArgs e)
@@ -383,6 +406,28 @@ public sealed class PageItemsControl : ItemsControl
         pageItem.TextLayer.PointerExited += TextLayer_PointerExited;
         pageItem.TextLayer.PointerReleased += TextLayer_PointerReleased;
         pageItem.TextLayer.PointerPressed += TextLayer_PointerPressed;
+        pageItem.BeforeRotation += OnBeforePageRotation;
+    }
+
+    private void OnBeforePageRotation(object? sender, EventArgs e)
+    {
+        int? savedPage = VisiblePages?.Start.GetOffset(PageCount);
+        double? savedOffset = GetCurrentPageRelativeYOffset(savedPage);
+
+        if (!savedPage.HasValue || !savedOffset.HasValue)
+        {
+            return;
+        }
+
+        int pageNumber = savedPage.Value;
+        double yOffset = savedOffset.Value;
+
+        // After the rotation action and the resulting layout pass, restore the scroll
+        // position relative to the page that was in view before the rotation.
+        Dispatcher.UIThread.Post(() =>
+        {
+            GoToPage(pageNumber, yOffset);
+        }, DispatcherPriority.Loaded);
     }
 
     private void TextLayer_PointerPressed(object? sender, PointerPressedEventArgs e)
