@@ -21,7 +21,6 @@
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-using Caly.Core.Models;
 using Caly.Core.Services;
 
 namespace Caly.Core.ViewModels;
@@ -34,14 +33,10 @@ public partial class ViewModelBase : ObservableObject
     {
         if (value is null)
         {
+            App.Messenger.Send(new ShowNotificationMessage(NotificationType.Error, "Critical error"));
             return;
         }
 
-        App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
-        {
-            Title = "Critical error",
-            Message = value.Message,
-            Type = NotificationType.Error
-        }));
+        App.Messenger.Send(new ShowNotificationMessage(NotificationType.Error, "Critical error", value.Message));
     }
 }

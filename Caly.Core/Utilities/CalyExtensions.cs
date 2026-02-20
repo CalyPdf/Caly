@@ -26,7 +26,10 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Input;
+using Caly.Core.Services;
+using CommunityToolkit.Mvvm.Messaging;
 using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Utilities;
@@ -173,7 +176,15 @@ internal static class CalyExtensions
         {
             Process.Start(url);
         }
-        catch
+        catch (Exception ex)
+        {
+            OpenBrowserFallback(url);
+        }
+    }
+    
+    private static void OpenBrowserFallback(string url)
+    {
+        try
         {
             // hack because of this: https://github.com/dotnet/corefx/issues/10361
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -189,10 +200,13 @@ internal static class CalyExtensions
             {
                 Process.Start("open", url);
             }
-            else
-            {
-                throw;
-            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteExceptionToFile(ex);
+            App.Messenger.Send(new ShowNotificationMessage(NotificationType.Error,
+                $"Failed to open '{url}'.",
+                ex.Message));
         }
     }
 
