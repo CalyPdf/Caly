@@ -34,8 +34,7 @@ public partial class DocumentViewModel : IAsyncDisposable
         await Parallel.ForEachAsync(Pages, (p, _) => p.DisposeAsync());
 
         Pages.Clear();
-        Bookmarks?.Clear();
-
+        
         _mainCts.Dispose();
         _pendingSearchTaskCts?.Dispose();
 
@@ -45,10 +44,18 @@ public partial class DocumentViewModel : IAsyncDisposable
         {
             SearchResultsSource.RowSelection.SelectionChanged -= TextSearchSelectionChanged;
         }
-
-        if (BookmarksSource?.RowSelection is not null)
+        
+        try
         {
-            BookmarksSource.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
+            var bookmarks = await BookmarksSource;
+            if (bookmarks?.RowSelection is not null)
+            {
+                bookmarks.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
+            }
+        }
+        catch
+        {
+            /* Ignore */
         }
 
         SearchResults.Clear();

@@ -175,7 +175,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _loadPagesTask = null!;
         _searchResultsDisposable = null!;
         _propertiesTask = null!;
-        _loadBookmarksTask = null!;
+        _bookmarksTask = null!;
         _buildSearchIndex = null!;
         _searchResultsSource = null!;
 
@@ -206,9 +206,10 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _paneSize = _settingsService.GetSettings().PaneSize;
 
         _loadPagesTask = new Lazy<Task>(LoadPages);
-        _loadBookmarksTask = new Lazy<Task>(LoadBookmarks);
-        _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
         
+        _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
+
+        _bookmarksTask = new Lazy<Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?>>(GetBookmarks);
         _propertiesTask = new Lazy<Task<DocumentPropertiesViewModel?>>(GetProperties);
         _embeddedFilesTask = new Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>>(GetEmbeddedFiles);
 
