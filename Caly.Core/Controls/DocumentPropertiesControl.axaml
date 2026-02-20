@@ -22,7 +22,7 @@
 						<TextBlock Text="File Name:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding FileName}"
+						<TextBlock Text="{Binding FileName, FallbackValue=Loading...}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
