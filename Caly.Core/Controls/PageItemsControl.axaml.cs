@@ -265,14 +265,35 @@ public sealed class PageItemsControl : ItemsControl
         {
             return presenter;
         }
-
+        
         return null;
     }
 
     /// <summary>
+    /// Scrolls to the page number, attempting to focus on the word.
+    /// </summary>
+    /// <param name="pageNumber">The page number.<para>Starts at 1.</para></param>
+    /// <param name="wordIndex">The word index to focus on, if possible.</param>
+    public void GoToWord(int pageNumber, int wordIndex)
+    {
+        double yOffset = 0; // Top of page
+        
+        var textLayer = GetPageItem(pageNumber)?.TextLayer?.PdfTextLayer;
+        if (textLayer is not null)
+        {
+            var word = textLayer[wordIndex];
+            // NB: We are NOT in pdf coordinates, words y-axis is already inverted.
+            yOffset = word.BoundingBox.Bottom;
+        }
+
+        // We don't attempt to get the text layer if it's not available
+        GoToPage(pageNumber, yOffset);
+    }
+    
+    /// <summary>
     /// Scrolls to the page number, optionally scrolling to a specific Y position within the page.
     /// </summary>
-    /// <param name="pageNumber">The page number. Starts at 1.</param>
+    /// <param name="pageNumber">The page number.<para>Starts at 1.</para></param>
     /// <param name="yOffset">Optional Y offset within the page.</param>
     /// <param name="offsetPdfCoord"><c>true</c> if the offset is in PDF coordinates (bottom = 0, increasing upward).
     /// <para><c>false</c> if the offset is in Avalonia coordinates (top = 0, increasing downward, unscaled pixels).</para>

@@ -236,17 +236,30 @@ public sealed class DocumentControl : CalyTemplatedControl
         }
         else if (change.Property == SelectedBookmarkProperty)
         {
-            if (SelectedBookmark?.PageNumber.HasValue == true &&
-                SelectedBookmark.PageNumber.Value != SelectedPageNumber)
+            if (SelectedBookmark?.PageNumber.HasValue == true)
             {
-                SetCurrentValue(SelectedPageNumberProperty, SelectedBookmark.PageNumber.Value);
+                if (SelectedBookmark.OffsetY.HasValue)
+                {
+                    GoToPage(SelectedBookmark.PageNumber.Value, SelectedBookmark.OffsetY.Value, true);
+                }
+                else
+                {
+                    GoToPage(SelectedBookmark.PageNumber.Value);
+                }
             }
         }
         else if (change.Property == SelectedTextSearchResultProperty)
         {
             if (change.NewValue is TextSearchResult { PageNumber: > 0 } r)
             {
-                SetCurrentValue(SelectedPageNumberProperty, r.PageNumber);
+                if (r.WordIndex.HasValue)
+                {
+                    _pageItemsControl?.GoToWord(r.PageNumber, r.WordIndex.Value);
+                }
+                else
+                {
+                    GoToPage(r.PageNumber);
+                }
             }
         }
         else if (change.Property == ZoomLevelProperty)
@@ -288,10 +301,14 @@ public sealed class DocumentControl : CalyTemplatedControl
     /// <summary>
     /// Scrolls to the page number.
     /// </summary>
-    /// <param name="pageNumber">The page number. Starts at 1.</param>
-    public void GoToPage(int pageNumber)
+    /// <param name="pageNumber">The page number.<para>Starts at 1.</para></param>
+    /// <param name="yOffset">Optional Y offset within the page.<para>Default is 0.</para></param>
+    /// <param name="offsetPdfCoord"><c>true</c> if the offset is in PDF coordinates (bottom = 0, increasing upward).
+    /// <para><c>false</c> if the offset is in Avalonia coordinates (top = 0, increasing downward, unscaled pixels).</para>
+    /// Default is <c>false</c>.</param>
+    public void GoToPage(int pageNumber, double yOffset = 0, bool offsetPdfCoord = false)
     {
-        _pageItemsControl?.GoToPage(pageNumber, 0); // Top of page
+        _pageItemsControl?.GoToPage(pageNumber, yOffset, offsetPdfCoord);
     }
 
     /// <summary>
