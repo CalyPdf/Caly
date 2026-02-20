@@ -18,9 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Avalonia.Threading;
-using Caly.Pdf.Models;
-using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -29,26 +26,21 @@ namespace Caly.Core.ViewModels;
 
 public partial class DocumentViewModel
 {
-    private readonly Lazy<Task> _loadPropertiesTask;
+    private readonly Lazy<Task<DocumentPropertiesViewModel?>> _propertiesTask;
+    public Task<DocumentPropertiesViewModel?> Properties => _propertiesTask.Value;
+
     private readonly Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>> _embeddedFilesTask;
-    public Task LoadPropertiesTask => _loadPropertiesTask.Value;
-
-    [ObservableProperty] private PdfDocumentProperties? _properties;
-
     public Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> EmbeddedFiles => _embeddedFilesTask.Value;
 
-    private async Task LoadProperties()
+    private async Task<DocumentPropertiesViewModel?> GetProperties()
     {
         _mainCts.Token.ThrowIfCancellationRequested();
-        var prop = await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainCts.Token), _mainCts.Token);
-        if (prop is not null)
-        {
-            Dispatcher.UIThread.Invoke(() => Properties = prop, DispatcherPriority.Send, _mainCts.Token);
-        }
+        return await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainCts.Token), _mainCts.Token);
     }
 
     private async Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> GetEmbeddedFiles()
     {
+        _mainCts.Token.ThrowIfCancellationRequested();
         var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainCts.Token));
         if (items is null || items.Count == 0)
         {

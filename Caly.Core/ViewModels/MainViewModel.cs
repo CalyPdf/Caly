@@ -71,8 +71,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                             }
 
                             await newDoc.WaitOpenAsync; // Make sure the doc is open before proceeding
-                            await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask,
-                                newDoc.LoadPropertiesTask);
+                            await Task.WhenAll(newDoc.LoadPagesTask, newDoc.LoadBookmarksTask);
                         }
                     }
                     else if (e.Action == NotifyCollectionChangedAction.Remove)
