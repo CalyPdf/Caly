@@ -13,7 +13,7 @@
 
 	<ControlTheme x:Key="{x:Type controls:DocumentPropertiesControl}"
 				  TargetType="controls:DocumentPropertiesControl"
-				  x:DataType="vm:DocumentViewModel">
+				  x:DataType="vm:DocumentPropertiesViewModel">
 		<Setter Property="Template">
 			<ControlTemplate>
 				<DockPanel>
@@ -22,7 +22,7 @@
 						<TextBlock Text="File Name:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding FileName}"
+						<TextBlock Text="{Binding FileName, FallbackValue=Loading...}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -43,7 +43,7 @@
 						<TextBlock Text="Title:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.Title}"
+						<TextBlock Text="{Binding Title}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -53,7 +53,7 @@
 						<TextBlock Text="Author:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.Author}"
+						<TextBlock Text="{Binding Author}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -63,7 +63,7 @@
 						<TextBlock Text="Subject:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.Subject}"
+						<TextBlock Text="{Binding Subject}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -73,7 +73,7 @@
 						<TextBlock Text="KeyWords:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.Keywords}"
+						<TextBlock Text="{Binding Keywords}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -83,7 +83,7 @@
 						<TextBlock Text="Created:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.CreationDate}"
+						<TextBlock Text="{Binding CreationDate}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -93,7 +93,7 @@
 						<TextBlock Text="Modified:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.ModifiedDate}"
+						<TextBlock Text="{Binding ModifiedDate}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -103,7 +103,7 @@
 						<TextBlock Text="Creator:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.Creator}"
+						<TextBlock Text="{Binding Creator}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -115,7 +115,7 @@
 						<TextBlock Text="Pdf Producer:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.Producer}"
+						<TextBlock Text="{Binding Producer}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />
@@ -125,7 +125,7 @@
 						<TextBlock Text="Pdf Version:"
 								   Width="{TemplateBinding FirstColumnWidth}"
 								   HorizontalAlignment="Left" />
-						<TextBlock Text="{Binding Properties.PdfVersion}"
+						<TextBlock Text="{Binding PdfVersion}"
 								   MinWidth="120"
 								   HorizontalAlignment="Left"
 								   TextWrapping="WrapWithOverflow" />

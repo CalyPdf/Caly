@@ -275,7 +275,7 @@
 												</PathIcon>
 											</TabItem.Header>
 
-											<controls:DocumentPropertiesControl/>
+											<controls:DocumentPropertiesControl DataContext="{Binding Properties^}"/>
 
 										</TabItem>
 

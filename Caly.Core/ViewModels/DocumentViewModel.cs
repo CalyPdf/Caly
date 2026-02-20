@@ -146,9 +146,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [ObservableProperty] private int _pageCount;
 
     [ObservableProperty] private string? _fileName;
-
-    [ObservableProperty] private string? _fileSize;
-
+    
     private readonly Lazy<Task> _loadPagesTask;
     public Task LoadPagesTask => _loadPagesTask.Value;
 
@@ -176,7 +174,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         _loadPagesTask = null!;
         _searchResultsDisposable = null!;
-        _loadPropertiesTask = null!;
+        _propertiesTask = null!;
         _loadBookmarksTask = null!;
         _buildSearchIndex = null!;
         _searchResultsSource = null!;
@@ -209,8 +207,9 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         _loadPagesTask = new Lazy<Task>(LoadPages);
         _loadBookmarksTask = new Lazy<Task>(LoadBookmarks);
-        _loadPropertiesTask = new Lazy<Task>(LoadProperties);
         _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
+        
+        _propertiesTask = new Lazy<Task<DocumentPropertiesViewModel?>>(GetProperties);
         _embeddedFilesTask = new Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>>(GetEmbeddedFiles);
 
         _searchResultsDisposable = SearchResults
@@ -337,11 +336,6 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
                 PageCount = _pdfService.NumberOfPages;
                 TextSelection = new TextSelection(PageCount);
-
-                if (_pdfService.FileSize.HasValue)
-                {
-                    FileSize = Helpers.FormatSizeBytes(_pdfService.FileSize.Value);
-                }
 
                 _pdfPageService.Initialise();
 

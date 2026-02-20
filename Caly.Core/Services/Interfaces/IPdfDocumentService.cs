@@ -55,7 +55,7 @@ public interface IPdfDocumentService : IAsyncDisposable
     /// <returns>The number of pages in the opened document. <c>0</c> if the document was not opened.</returns>
     Task<int> OpenDocument(IStorageFile? storageFile, string? password, CancellationToken token);
 
-    Task<PdfDocumentProperties?> GetDocumentPropertiesAsync(CancellationToken token);
+    Task<DocumentPropertiesViewModel?> GetDocumentPropertiesAsync(CancellationToken token);
 
     Task<ObservableCollection<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token);
 
