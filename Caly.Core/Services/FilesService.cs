@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Services.Interfaces;
+using Caly.Core.Utilities;
 
 namespace Caly.Core.Services;
 // https://github.com/AvaloniaUI/AvaloniaUI.QuickGuides/blob/main/IoCFileOps/Services/FilesService.cs
@@ -73,6 +74,8 @@ internal sealed class FilesService : IFilesService
     {
         try
         {
+            fileName = Helpers.SanitiseFileName(fileName);
+            
             var file = await _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
             {
                 Title = "Save File",
@@ -122,8 +125,11 @@ internal sealed class FilesService : IFilesService
             else
             {
                 tempDirectory = Path.GetTempPath();
-                string extension = Path.GetExtension(fileName);
-                string rootFileName = Path.GetFileNameWithoutExtension(fileName);
+
+                fileName = Helpers.SanitiseFileName(fileName);
+                
+                string extension = Path.GetExtension(fileName)!;
+                string rootFileName = Path.GetFileNameWithoutExtension(fileName)!;
                 tempFilePath = $"{rootFileName}{extension}";
 
                 int i = 0;

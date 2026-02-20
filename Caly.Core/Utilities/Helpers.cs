@@ -19,6 +19,8 @@
 // SOFTWARE.
 
 using System;
+using System.IO;
+using System.Text;
 
 namespace Caly.Core.Utilities;
 
@@ -63,5 +65,44 @@ internal static class Helpers
         }
 
         return string.Format("{0:n" + decimalPlaces + "} {1}", adjustedSize, SizeSuffixes[mag]);
+    }
+
+    public static string? SanitiseFileName(string? fileName, char? substitute = '_')
+    {
+        if (string.IsNullOrEmpty(fileName))
+        {
+            return fileName;
+        }
+        
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+
+        if (fileName.IndexOfAny(invalidChars) == -1)
+        {
+            return fileName;
+        }
+
+        if (substitute.HasValue && substitute.Value != '_')
+        {
+            // If the substitute character is not '_', we need to check if it's valid and not in the invalid chars list.
+            if (Array.IndexOf(invalidChars, substitute.Value) != -1)
+            {
+                throw new ArgumentException($"Substitute character '{substitute.Value}' is invalid for file names.", nameof(substitute));
+            }
+        }
+        
+        var builder = new StringBuilder(fileName.Length);
+        foreach (char c in fileName)
+        {
+            if (Array.IndexOf(invalidChars, c) == -1)
+            {
+                builder.Append(c);
+            }
+            else if (substitute.HasValue)
+            {
+                builder.Append(substitute.Value);
+            }
+        }
+
+        return builder.ToString();
     }
 }
