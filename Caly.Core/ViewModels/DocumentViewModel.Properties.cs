@@ -47,6 +47,6 @@ public partial class DocumentViewModel
             return ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>.Empty;
         }
 
-        return new ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>(new ObservableCollection<PdfEmbeddedFileViewModel>(items));
+        return new ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>(items);
     }
 }

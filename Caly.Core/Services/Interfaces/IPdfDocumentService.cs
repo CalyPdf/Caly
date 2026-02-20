@@ -59,7 +59,7 @@ public interface IPdfDocumentService : IAsyncDisposable
 
     Task<ObservableCollection<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token);
 
-    Task<IReadOnlyList<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token);
+    Task<ObservableCollection<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token);
 
     Task<PdfPageSize?> GetPageSizeAsync(int pageNumber, CancellationToken token);
 

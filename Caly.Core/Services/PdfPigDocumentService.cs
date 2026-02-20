@@ -230,7 +230,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
         }, token);
     }
 
-    public async Task<IReadOnlyList<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token)
+    public async Task<ObservableCollection<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token)
     {
         Debug.ThrowOnUiThread();
 
@@ -253,7 +253,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                 result[i] = new PdfEmbeddedFileViewModel(f.Name, f.Memory);
             }
 
-            return result;
+            return new ObservableCollection<PdfEmbeddedFileViewModel>(result);
         }, token);
     }
 
