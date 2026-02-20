@@ -20,7 +20,6 @@
 
 using System;
 using Avalonia.Controls.Notifications;
-using Caly.Core.Models;
 using Caly.Core.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using UglyToad.PdfPig.Logging;
@@ -47,22 +46,12 @@ internal sealed class CalyPdfPigLogger : ILog
 
     public void Error(string message)
     {
-        App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
-        {
-            Title = AnnotationTitle,
-            Message = message,
-            Type = NotificationType.Warning
-        }));
+        App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning, AnnotationTitle, message));
     }
 
     public void Error(string message, Exception ex)
     {
         // We ignore the ex for the moment
-        App.Messenger.Send(new ShowNotificationMessage(new CalyNotification()
-        {
-            Title = AnnotationTitle,
-            Message = message,
-            Type = NotificationType.Warning
-        }));
+        App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning, AnnotationTitle, message));
     }
 }

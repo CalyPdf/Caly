@@ -1,4 +1,5 @@
-﻿using Avalonia.Platform.Storage;
+﻿using Avalonia.Controls.Notifications;
+using Avalonia.Platform.Storage;
 using Caly.Core.Models;
 using Caly.Core.ViewModels;
 using CommunityToolkit.Mvvm.Messaging.Messages;
@@ -9,7 +10,15 @@ namespace Caly.Core.Services;
 
 internal sealed class SelectedDocumentChangedMessage(DocumentViewModel value) : ValueChangedMessage<DocumentViewModel>(value);
 
-internal sealed class ShowNotificationMessage(CalyNotification value) : ValueChangedMessage<CalyNotification>(value);
+internal sealed class ShowNotificationMessage(CalyNotification value) : ValueChangedMessage<CalyNotification>(value)
+{
+    public ShowNotificationMessage(NotificationType type, string? title = null, string? message = null) : this(new CalyNotification()
+    {
+        Title = title,
+        Message = message,
+        Type = type
+    }) { }
+}
 
 internal sealed class CopyToClipboardRequestMessage : AsyncRequestMessage<bool>
 {
