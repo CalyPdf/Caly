@@ -235,8 +235,8 @@
 
 										<!-- Bookmarks tab -->
 										<TabItem MinHeight="40"
-                                                 IsVisible="{Binding !!Bookmarks.Count}"
-                                                 IsEnabled="{Binding !!Bookmarks.Count}">
+                                                 IsVisible="{Binding BookmarksSource^, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                 IsEnabled="{Binding BookmarksSource^, Converter={x:Static ObjectConverters.IsNotNull}}">
 											<TabItem.Header>
 												<PathIcon Width="17"
 														  Height="17"
@@ -245,8 +245,7 @@
 												</PathIcon>
 											</TabItem.Header>
 
-                                            <TreeDataGrid Source="{Binding BookmarksSource}"
-                                                          IsVisible="{Binding !!Bookmarks.Count}"
+                                            <TreeDataGrid Source="{Binding BookmarksSource^}"
                                                           ShowColumnHeaders="False"
                                                           CanUserSortColumns="False"
                                                           HorizontalAlignment="Stretch"/>

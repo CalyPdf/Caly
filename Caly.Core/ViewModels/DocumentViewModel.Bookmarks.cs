@@ -19,12 +19,10 @@
 // SOFTWARE.
 
 using System;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Media;
-using Avalonia.Threading;
 using Caly.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -32,47 +30,43 @@ namespace Caly.Core.ViewModels;
 
 public partial class DocumentViewModel
 {
-    private readonly Lazy<Task> _loadBookmarksTask;
-    public Task LoadBookmarksTask => _loadBookmarksTask.Value;
-
-    [ObservableProperty] private ObservableCollection<PdfBookmarkNode>? _bookmarks = [];
-    [ObservableProperty] private HierarchicalTreeDataGridSource<PdfBookmarkNode>? _bookmarksSource;
+    private readonly Lazy<Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?>> _bookmarksTask;
+    public Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?> BookmarksSource => _bookmarksTask.Value;
 
     [ObservableProperty] private PdfBookmarkNode? _selectedBookmark;
 
-    private async Task LoadBookmarks()
+    private async Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?> GetBookmarks()
     {
         _mainCts.Token.ThrowIfCancellationRequested();
-        Bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainCts.Token)) ?? [];
-        if (Bookmarks.Count > 0)
+        var bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainCts.Token)) ?? [];
+        if (bookmarks.Count > 0)
         {
-            Dispatcher.UIThread.Invoke(() =>
+            var bookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(bookmarks)
             {
-                BookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(Bookmarks)
+                Columns =
                 {
-                    Columns =
-                    {
-                        new HierarchicalExpanderColumn<PdfBookmarkNode>(
-                            new TextColumn<PdfBookmarkNode, string>(null,
-                                x => x.Title, options: new TextColumnOptions<PdfBookmarkNode>()
-                                {
-                                    CanUserSortColumn = false,
-                                    IsTextSearchEnabled = false,
-                                    TextWrapping = TextWrapping.WrapWithOverflow,
-                                    TextAlignment = TextAlignment.Left,
-                                    MaxWidth = new GridLength(400)
-                                }), x => x.Nodes)
-                    }
-                };
-                BookmarksSource.RowSelection!.SingleSelect = true;
-                BookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;
-                BookmarksSource.ExpandAll();
-            }, DispatcherPriority.Send, _mainCts.Token);
+                    new HierarchicalExpanderColumn<PdfBookmarkNode>(
+                        new TextColumn<PdfBookmarkNode, string>(null,
+                            x => x.Title, options: new TextColumnOptions<PdfBookmarkNode>()
+                            {
+                                CanUserSortColumn = false,
+                                IsTextSearchEnabled = false,
+                                TextWrapping = TextWrapping.WrapWithOverflow,
+                                TextAlignment = TextAlignment.Left,
+                                MaxWidth = new GridLength(400)
+                            }), x => x.Nodes)
+                }
+            };
+            bookmarksSource.RowSelection!.SingleSelect = true;
+            bookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;
+            bookmarksSource.ExpandAll();
+            return bookmarksSource;
         }
+
+        return null;
     }
 
-    private void BookmarksSelectionChanged(object? sender,
-        Avalonia.Controls.Selection.TreeSelectionModelSelectionChangedEventArgs<PdfBookmarkNode> e)
+    private void BookmarksSelectionChanged(object? sender, Avalonia.Controls.Selection.TreeSelectionModelSelectionChangedEventArgs<PdfBookmarkNode> e)
     {
         if (e.SelectedItems.Count == 0)
         {
