@@ -35,7 +35,7 @@ internal partial class PdfDocumentsManagerService
                 return false;
             }
             
-            CalyExtensions.OpenBrowser(path);
+            CalyExtensions.OpenLink(path);
             return true;
         }));
     }
