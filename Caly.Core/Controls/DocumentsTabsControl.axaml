@@ -292,12 +292,31 @@
 											
                                             <ListBox ItemsSource="{Binding EmbeddedFiles^}"
                                                      Background="Transparent">
+                                                <ListBox.Styles>
+                                                    <Style Selector="ListBoxItem">
+                                                        <Setter Property="Padding" Value="5,0" />
+                                                    </Style>
+                                                </ListBox.Styles>
+
+
                                                 <ListBox.ItemTemplate>
                                                     <DataTemplate>
-                                                        <DockPanel HorizontalSpacing="5" HorizontalAlignment="Stretch" PointerPressed="EmbeddedFiles_OnPointerPressed">
+                                                        <DockPanel Background="Transparent"
+                                                                   HorizontalSpacing="5"
+                                                                   HorizontalAlignment="Stretch"
+																   VerticalAlignment="Stretch"
+                                                                   PointerPressed="EmbeddedFiles_OnPointerPressed"
+                                                                   MinHeight="20">
 
-                                                            <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" HorizontalAlignment="Left"/>
-                                                            <TextBlock DockPanel.Dock="Right" Text="{Binding FileSize}" HorizontalAlignment="Right"/>
+                                                            <TextBlock DockPanel.Dock="Left"
+                                                                       Text="{Binding Name}"
+                                                                       HorizontalAlignment="Left"
+                                                                       VerticalAlignment="Center"/>
+
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Text="{Binding FileSize}"
+                                                                       HorizontalAlignment="Right"
+                                                                       VerticalAlignment="Center"/>
 
                                                             <DockPanel.ContextFlyout>
                                                                 <MenuFlyout>
