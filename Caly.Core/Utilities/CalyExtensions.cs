@@ -163,12 +163,18 @@ internal static class CalyExtensions
         }
     }
 
-    internal static void OpenBrowser(ReadOnlySpan<char> url)
+    /// <summary>
+    /// Open a link (local path, url, etc.).
+    /// </summary>
+    internal static void OpenLink(ReadOnlySpan<char> url)
     {
-        OpenBrowser(new string(url));
+        OpenLink(new string(url));
     }
 
-    internal static void OpenBrowser(string url)
+    /// <summary>
+    /// Open a link (local path, url, etc.).
+    /// </summary>
+    internal static void OpenLink(string url)
     {
         // https://brockallen.com/2016/09/24/process-start-for-urls-on-net-core/
 
@@ -178,11 +184,11 @@ internal static class CalyExtensions
         }
         catch (Exception ex)
         {
-            OpenBrowserFallback(url);
+            OpenLinkFallback(url);
         }
     }
     
-    private static void OpenBrowserFallback(string url)
+    private static void OpenLinkFallback(string url)
     {
         try
         {
@@ -190,7 +196,7 @@ internal static class CalyExtensions
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 url = url.Replace("&", "^&");
-                Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+                Process.Start(new ProcessStartInfo("cmd", $"/c start \"\" \"{url}\"") { CreateNoWindow = true });
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {

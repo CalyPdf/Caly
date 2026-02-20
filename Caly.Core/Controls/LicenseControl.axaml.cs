@@ -52,6 +52,6 @@ public class LicenseControl : TemplatedControl
     private static void OnOpenLogsButtonClick(object? sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(JsonSettingsService.LogFilePath);
-        CalyExtensions.OpenBrowser(JsonSettingsService.LogFilePath);
+        CalyExtensions.OpenLink(JsonSettingsService.LogFilePath);
     }
 }
