@@ -257,7 +257,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
         }, token);
     }
 
-    public Task<PdfDocumentProperties?> GetDocumentPropertiesAsync(CancellationToken token)
+    public Task<DocumentPropertiesViewModel?> GetDocumentPropertiesAsync(CancellationToken token)
     {
         Debug.ThrowOnUiThread();
 
@@ -278,8 +278,21 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                 return null;
             }
 
-            return new PdfDocumentProperties()
+            if (string.IsNullOrEmpty(FileName))
             {
+                throw new InvalidOperationException("FileName should not be null or empty at this stage.");
+            }
+
+            if (!FileSize.HasValue)
+            {
+                throw new InvalidOperationException("FileSize should have a value at this stage.");
+            }
+            
+            return new DocumentPropertiesViewModel()
+            {
+                FileName = FileName,
+                FileSize = Helpers.FormatSizeBytes(FileSize.Value),
+                PageCount = NumberOfPages,
                 PdfVersion = _document?.Version.ToString(PdfVersionFormat) ?? string.Empty,
                 Title = info.Title,
                 Author = info.Author,
