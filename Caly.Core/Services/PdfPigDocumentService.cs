@@ -384,19 +384,21 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
         }, token);
     }
 
-    private static PdfBookmarkNode BuildPdfBookmarkNode(BookmarkNode node, CancellationToken token)
+    private PdfBookmarkNode BuildPdfBookmarkNode(BookmarkNode node, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
 
         int? pageNumber = null;
+        double? offsetY = null;
         if (node is DocumentBookmarkNode bookmarkNode)
         {
             pageNumber = bookmarkNode.PageNumber;
+            offsetY = bookmarkNode.Destination?.Coordinates?.Top * PpiScale;
         }
 
         if (node.IsLeaf)
         {
-            return new PdfBookmarkNode(node.Title, pageNumber, null);
+            return new PdfBookmarkNode(node.Title, pageNumber, offsetY, null);
         }
 
         var children = new List<PdfBookmarkNode>();
@@ -407,7 +409,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
             children.Add(n);
         }
 
-        return new PdfBookmarkNode(node.Title, pageNumber, children.Count == 0 ? null : children);
+        return new PdfBookmarkNode(node.Title, pageNumber, offsetY, children.Count == 0 ? null : children);
     }
 
     public async ValueTask DisposeAsync()

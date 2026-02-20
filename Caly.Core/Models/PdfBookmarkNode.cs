@@ -31,10 +31,13 @@ public sealed record PdfBookmarkNode
 
     public int? PageNumber { get; }
 
-    public PdfBookmarkNode(string title, int? pageNumber, IEnumerable<PdfBookmarkNode>? children)
+    public double? OffsetY { get; }
+    
+    public PdfBookmarkNode(string title, int? pageNumber, double? offsetY, IEnumerable<PdfBookmarkNode>? children)
     {
         Title = title;
         PageNumber = pageNumber;
+        OffsetY = offsetY;
         if (children is not null)
         {
             Nodes = new ObservableCollection<PdfBookmarkNode>(children);
