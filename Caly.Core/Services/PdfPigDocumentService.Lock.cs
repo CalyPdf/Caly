@@ -45,7 +45,7 @@ internal partial class PdfPigDocumentService
         bool hasLock = false;
         try
         {
-            await _semaphore.WaitAsync(token);
+            await _semaphore.WaitAsync(token).ConfigureAwait(false);
             hasLock = true;
 
             if (IsDisposed())
@@ -78,7 +78,7 @@ internal partial class PdfPigDocumentService
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
             {
                 linkedCts.Token.ThrowIfCancellationRequested();
-                await action(linkedCts.Token);
+                await action(linkedCts.Token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -102,7 +102,7 @@ internal partial class PdfPigDocumentService
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
             {
                 linkedCts.Token.ThrowIfCancellationRequested();
-                return await action(linkedCts.Token);
+                return await action(linkedCts.Token).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)

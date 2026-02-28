@@ -340,14 +340,16 @@ internal sealed class JsonSettingsService : ISettingsService
 
                 await using (FileStream createStream = File.Create(SettingsFileFullPath))
                 {
-                    await JsonSerializer.SerializeAsync(createStream, _current, SourceGenerationContext.Default.CalySettings);
+                    await JsonSerializer.SerializeAsync(createStream, _current, SourceGenerationContext.Default.CalySettings)
+                        .ConfigureAwait(false);
                 }
                 return;
             }
 
             await using (FileStream createStream = File.OpenRead(SettingsFileFullPath))
             {
-                _current = await JsonSerializer.DeserializeAsync(createStream, SourceGenerationContext.Default.CalySettings);
+                _current = await JsonSerializer.DeserializeAsync(createStream, SourceGenerationContext.Default.CalySettings)
+                    .ConfigureAwait(false);
                 ValidateSetting(_current);
             }
         }
@@ -405,7 +407,8 @@ internal sealed class JsonSettingsService : ISettingsService
             {
                 await using (FileStream createStream = File.Create(SettingsFileFullPath))
                 {
-                    await JsonSerializer.SerializeAsync(createStream, _current, SourceGenerationContext.Default.CalySettings);
+                    await JsonSerializer.SerializeAsync(createStream, _current, SourceGenerationContext.Default.CalySettings)
+                        .ConfigureAwait(false);
                 }
             }
             catch (JsonException jsonEx)

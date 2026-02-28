@@ -108,13 +108,14 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                 _filePath = _storageFile.Path;
                 System.Diagnostics.Debug.WriteLine($"[INFO] Opening {FileName}...");
 
-                _fileStream = await _storageFile.OpenReadAsync();
+                _fileStream = await _storageFile.OpenReadAsync().ConfigureAwait(false);
+
                 if (!_fileStream.CanSeek)
                 {
                     var ms = new MemoryStream((int)_fileStream.Length);
-                    await _fileStream.CopyToAsync(ms, ct);
+                    await _fileStream.CopyToAsync(ms, ct).ConfigureAwait(false);
                     ms.Position = 0;
-                    await _fileStream.DisposeAsync();
+                    await _fileStream.DisposeAsync().ConfigureAwait(false);
                     _fileStream = ms;
                 }
 
@@ -171,7 +172,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                         continue;
                     }
 
-                    var pageCount = await OpenDocument(_storageFile, pw, ct);
+                    var pageCount = await OpenDocument(_storageFile, pw, ct).ConfigureAwait(false);
                     if (pageCount > 0)
                     {
                         // Password OK and document opened
