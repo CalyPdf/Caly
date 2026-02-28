@@ -32,6 +32,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -320,31 +321,40 @@ public sealed partial class DocumentViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(storageFile, nameof(storageFile));
         LocalPath = storageFile.Path.LocalPath;
 
-        WaitOpenAsync = Task.Run(async () =>
-        {
-            using (var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token, token))
-            {
-                int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token);
-
-                IsPasswordProtected = _pdfService.IsPasswordProtected;
-                FileName = _pdfService.FileName;
-                System.Diagnostics.Debug.Assert(_pdfService.LocalPath == LocalPath);
-
-                if (pageCount == 0)
-                {
-                    return pageCount;
-                }
-
-                PageCount = _pdfService.NumberOfPages;
-                TextSelection = new TextSelection(PageCount);
-
-                _pdfPageService.Initialise();
-
-                return pageCount;
-            }
-        }, token);
-
+        WaitOpenAsync = OpenDocumentCore(storageFile, password, token);
         return WaitOpenAsync;
+    }
+
+    private async Task<int> OpenDocumentCore(IStorageFile? storageFile, string? password, CancellationToken token)
+    {
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token, token);
+
+        int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token).ConfigureAwait(false);
+
+        System.Diagnostics.Debug.Assert(_pdfService.LocalPath == LocalPath);
+
+        bool isPasswordProtected = _pdfService.IsPasswordProtected;
+        string? fileName = _pdfService.FileName;
+        int numberOfPages = _pdfService.NumberOfPages;
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            IsPasswordProtected = isPasswordProtected;
+            FileName = fileName;
+
+            if (pageCount > 0)
+            {
+                PageCount = numberOfPages;
+                TextSelection = new TextSelection(numberOfPages);
+            }
+        });
+
+        if (pageCount > 0)
+        {
+            _pdfPageService.Initialise();
+        }
+
+        return pageCount;
     }
 
     internal async ValueTask CancelAsync()
@@ -354,8 +364,10 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     private async Task LoadPages()
     {
+        Debug.ThrowOnUiThread();
+
         System.Diagnostics.Debug.Assert(TextSelection is not null);
-        
+
         if (PageCount == 0)
         {
             if (IsPasswordProtected)
@@ -365,37 +377,42 @@ public sealed partial class DocumentViewModel : ViewModelBase
             throw new Exception("Cannot load pages because document has 0 pages.");
         }
 
-        await Task.Run(async () =>
+        // Use 1st page size as default page size
+        var firstPage = new PageViewModel(1, TextSelection);
+        var pageInfo = await _pdfPageService.GetPageSize(1, _mainCts.Token).ConfigureAwait(false);
+        if (pageInfo.HasValue)
         {
-            // Use 1st page size as default page size
-            var firstPage = new PageViewModel(1, TextSelection);
-            var pageInfo = await _pdfPageService.GetPageSize(1, _mainCts.Token);
-            if (pageInfo.HasValue)
+            // Page is not yet in the collection — no UI observer yet, safe to call from thread pool
+            firstPage.SetSize(pageInfo.Value.Width, pageInfo.Value.Height, _pdfService.PpiScale);
+        }
+
+        double defaultWidth = firstPage.Width * _pdfService.PpiScale;
+        double defaultHeight = firstPage.Height * _pdfService.PpiScale;
+
+        // Build all page view models on the thread pool
+        var allPages = new PageViewModel[PageCount];
+        allPages[0] = firstPage;
+
+        for (int p = 2; p <= PageCount; ++p)
+        {
+            _mainCts.Token.ThrowIfCancellationRequested();
+            var newPage = new PageViewModel(p, TextSelection)
             {
-                Dispatcher.UIThread.Invoke(() =>
-                {
-                    firstPage.SetSize(pageInfo.Value.Width, pageInfo.Value.Height,
-                        _pdfService.PpiScale);
-                });
-            }
+                Height = defaultHeight,
+                Width = defaultWidth
+            };
+            _pdfPageService.RequestPageSize(newPage);
+            allPages[p - 1] = newPage;
+        }
 
-            double defaultWidth = firstPage.Width * _pdfService.PpiScale;
-            double defaultHeight = firstPage.Height * _pdfService.PpiScale;
-
-            Pages.Add(firstPage);
-
-            for (int p = 2; p <= PageCount; ++p)
+        // Add all pages to the UI-bound collection in a single UI-thread dispatch
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            foreach (var page in allPages)
             {
-                _mainCts.Token.ThrowIfCancellationRequested();
-                var newPage = new PageViewModel(p, TextSelection)
-                {
-                    Height = defaultHeight,
-                    Width = defaultWidth
-                };
-                _pdfPageService.RequestPageSize(newPage);
-                Pages.Add(newPage);
+                Pages.Add(page);
             }
-        }, _mainCts.Token);
+        });
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]
@@ -509,15 +526,28 @@ public sealed partial class DocumentViewModel : ViewModelBase
     [RelayCommand]
     private async Task Clear()
     {
-        await Task.Run(() =>
+        // Capture pictures/thumbnails and clear all UI-bound page properties on the UI thread
+        // in one batch, then dispose the captured resources off the UI thread.
+        var toDispose = new List<IDisposable?>();
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
             foreach (var page in Pages)
             {
-                page.Clear();
+                toDispose.Add(page.PdfPicture);
+                toDispose.Add(page.Thumbnail);
+                page.PdfTextLayer = null;
+                page.PdfPicture = null;
+                page.Thumbnail = null;
             }
         });
 
-        await _pdfPageService.CancelAndClear();
+        foreach (var item in toDispose)
+        {
+            item?.Dispose();
+        }
+
+        await _pdfPageService.CancelAndClear().ConfigureAwait(false);
 
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
     }

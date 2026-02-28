@@ -56,16 +56,9 @@ public partial class DocumentViewModel
 
     [ObservableProperty] private TextSearchResult? _selectedTextSearchResult;
 
-    async partial void OnTextSearchChanged(string? value)
+    partial void OnTextSearchChanged(string? value)
     {
-        try
-        {
-            await SearchText(); // TODO - subscribe to event change instead and use rolling time window
-        }
-        catch (Exception e)
-        {
-            Debug.WriteExceptionToFile(e);
-        }
+        SearchTextCommand.Execute(null);
     }
 
     [RelayCommand]

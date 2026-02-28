@@ -52,6 +52,7 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
 
     private readonly ChannelWriter<IStorageFile?> _channelWriter;
     private readonly ChannelReader<IStorageFile?> _channelReader;
+    private readonly CancellationTokenSource _processingQueueCts = new();
 
     private readonly ConcurrentDictionary<string, PdfDocumentRecord> _openedFiles = new();
 
@@ -113,7 +114,7 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
 
         RegisterMessagesHandlers();
 
-        _ = Task.Run(() => ProcessDocumentsQueue(CancellationToken.None));
+        _ = Task.Run(() => ProcessDocumentsQueue(_processingQueueCts.Token));
     }
 
     public async Task OpenLoadDocument(CancellationToken cancellationToken)
@@ -281,7 +282,7 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
             }
 
             // TODO - Log error
-            await Task.Run(scope.DisposeAsync, CancellationToken.None);
+            await scope.DisposeAsync();
         }
     }
 
@@ -293,7 +294,8 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
 
     public void Dispose()
     {
-        // https://formatexception.com/2024/03/using-messenger-in-the-communitytoolkit-mvvm/
+        _processingQueueCts.Cancel();
+        _processingQueueCts.Dispose();
         App.Messenger.UnregisterAll(this);
     }
 }
