@@ -18,12 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Caly.Pdf.Models
-{
-    public sealed record PageTextLayerContent
-    {
-        public required IReadOnlyList<PdfLetter> Letters { get; init; }
+namespace Caly.Pdf.Models;
 
-        public required IReadOnlyList<PdfAnnotation> Annotations { get; init; }
-    }
+public sealed record PageTextLayerContent
+{
+    public required IReadOnlyList<PdfLetter> Letters { get; init; }
+
+    public required IReadOnlyList<PdfAnnotation> Annotations { get; init; }
 }
