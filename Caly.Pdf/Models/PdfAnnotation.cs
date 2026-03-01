@@ -21,23 +21,22 @@
 using UglyToad.PdfPig.Actions;
 using UglyToad.PdfPig.Core;
 
-namespace Caly.Pdf.Models
+namespace Caly.Pdf.Models;
+
+public sealed class PdfAnnotation
 {
-    public sealed class PdfAnnotation
-    {
-        public required double PpiScale { get; init; }
+    public required double PpiScale { get; init; }
 
-        /// <summary>
-        /// The rectangle completely containing the block.
-        /// </summary>
-        public required PdfRectangle BoundingBox { get; init; }
+    /// <summary>
+    /// The rectangle completely containing the block.
+    /// </summary>
+    public required PdfRectangle BoundingBox { get; init; }
 
-        public PdfAction? Action { get; init; }
+    public PdfAction? Action { get; init; }
 
-        public bool IsInteractive { get; init; }
+    public bool IsInteractive { get; init; }
 
-        public string? Content { get; init; }
+    public string? Content { get; init; }
 
-        public string? Date { get; init; }
-    }
+    public string? Date { get; init; }
 }

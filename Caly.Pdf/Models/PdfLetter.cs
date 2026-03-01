@@ -22,113 +22,112 @@ using CommunityToolkit.HighPerformance.Buffers;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 
-namespace Caly.Pdf.Models
+namespace Caly.Pdf.Models;
+
+public sealed class PdfLetter : IPdfTextElement
 {
-    public sealed class PdfLetter : IPdfTextElement
+    public string Value { get; }
+
+    public TextOrientation TextOrientation { get; }
+
+    /// <summary>
+    /// The rectangle completely containing the block.
+    /// </summary>
+    public PdfRectangle BoundingBox { get; }
+
+    /// <summary>
+    /// The placement position of the character in PDF space (the start point of the baseline).
+    /// </summary>
+    public PdfPoint StartBaseLine => BoundingBox.BottomLeft;
+
+    /// <summary>
+    /// The end point of the baseline.
+    /// </summary>
+    public PdfPoint EndBaseLine => BoundingBox.BottomRight;
+
+    /// <summary>
+    /// The size of the font in points.
+    /// </summary>
+    public float PointSize { get; }
+
+    /// <summary>
+    /// Sequence number of the ShowText operation that printed this letter.
+    /// </summary>
+    public int TextSequence { get; }
+
+    public PdfLetter(string value, PdfRectangle boundingBox, float pointSize, int textSequence)
     {
-        public string Value { get; }
+        Value = StringPool.Shared.GetOrAdd(value);
+        BoundingBox = boundingBox;
+        PointSize = pointSize;
+        TextSequence = textSequence;
 
-        public TextOrientation TextOrientation { get; }
+        TextOrientation = GetTextOrientation();
+    }
 
-        /// <summary>
-        /// The rectangle completely containing the block.
-        /// </summary>
-        public PdfRectangle BoundingBox { get; }
-
-        /// <summary>
-        /// The placement position of the character in PDF space (the start point of the baseline).
-        /// </summary>
-        public PdfPoint StartBaseLine => BoundingBox.BottomLeft;
-
-        /// <summary>
-        /// The end point of the baseline.
-        /// </summary>
-        public PdfPoint EndBaseLine => BoundingBox.BottomRight;
-
-        /// <summary>
-        /// The size of the font in points.
-        /// </summary>
-        public float PointSize { get; }
-
-        /// <summary>
-        /// Sequence number of the ShowText operation that printed this letter.
-        /// </summary>
-        public int TextSequence { get; }
-
-        public PdfLetter(string value, PdfRectangle boundingBox, float pointSize, int textSequence)
+    private TextOrientation GetTextOrientation()
+    {
+        if (Math.Abs(StartBaseLine.Y - EndBaseLine.Y) < 10e-5)
         {
-            Value = StringPool.Shared.GetOrAdd(value);
-            BoundingBox = boundingBox;
-            PointSize = pointSize;
-            TextSequence = textSequence;
+            if (Math.Abs(StartBaseLine.X - EndBaseLine.X) < 10e-5)
+            {
+                // Start and End point are the same
+                return GetTextOrientationRot();
+            }
 
-            TextOrientation = GetTextOrientation();
+            if (StartBaseLine.X > EndBaseLine.X)
+            {
+                return TextOrientation.Rotate180;
+            }
+
+            return TextOrientation.Horizontal;
         }
 
-        private TextOrientation GetTextOrientation()
+        if (Math.Abs(StartBaseLine.X - EndBaseLine.X) < 10e-5)
         {
             if (Math.Abs(StartBaseLine.Y - EndBaseLine.Y) < 10e-5)
             {
-                if (Math.Abs(StartBaseLine.X - EndBaseLine.X) < 10e-5)
-                {
-                    // Start and End point are the same
-                    return GetTextOrientationRot();
-                }
-
-                if (StartBaseLine.X > EndBaseLine.X)
-                {
-                    return TextOrientation.Rotate180;
-                }
-
-                return TextOrientation.Horizontal;
+                // Start and End point are the same
+                return GetTextOrientationRot();
             }
 
-            if (Math.Abs(StartBaseLine.X - EndBaseLine.X) < 10e-5)
+            if (StartBaseLine.Y > EndBaseLine.Y)
             {
-                if (Math.Abs(StartBaseLine.Y - EndBaseLine.Y) < 10e-5)
-                {
-                    // Start and End point are the same
-                    return GetTextOrientationRot();
-                }
-
-                if (StartBaseLine.Y > EndBaseLine.Y)
-                {
-                    return TextOrientation.Rotate90;
-                }
-
-                return TextOrientation.Rotate270;
+                return TextOrientation.Rotate90;
             }
 
+            return TextOrientation.Rotate270;
+        }
+
+        return TextOrientation.Other;
+    }
+
+    private TextOrientation GetTextOrientationRot()
+    {
+        double rotation = BoundingBox.Rotation;
+
+        if (Math.Abs(rotation % 90) >= 10e-5)
+        {
             return TextOrientation.Other;
         }
 
-        private TextOrientation GetTextOrientationRot()
+        int rotationInt = (int)Math.Round(rotation, MidpointRounding.AwayFromZero);
+        switch (rotationInt)
         {
-            double rotation = BoundingBox.Rotation;
+            case 0:
+                return TextOrientation.Horizontal;
 
-            if (Math.Abs(rotation % 90) >= 10e-5)
-            {
-                return TextOrientation.Other;
-            }
+            case -90:
+                return TextOrientation.Rotate90;
 
-            int rotationInt = (int)Math.Round(rotation, MidpointRounding.AwayFromZero);
-            switch (rotationInt)
-            {
-                case 0:
-                    return TextOrientation.Horizontal;
+            case 180:
+            case -180:
+                return TextOrientation.Rotate180;
 
-                case -90:
-                    return TextOrientation.Rotate90;
-
-                case 180:
-                case -180:
-                    return TextOrientation.Rotate180;
-
-                case 90:
-                    return TextOrientation.Rotate270;
-            }
-
-            throw new Exception($"Could not find TextOrientation for rotation '{rotation}'.");
+            case 90:
+                return TextOrientation.Rotate270;
         }
+
+        throw new Exception($"Could not find TextOrientation for rotation '{rotation}'.");
     }
 }

@@ -19,14 +19,10 @@
 // SOFTWARE.
 
 using UglyToad.PdfPig.Content;
-using UglyToad.PdfPig.Core;
 
-namespace Caly.Pdf.Models
+namespace Caly.Pdf.Models;
+
+public interface IPdfTextElement : IBoundingBox
 {
-    public interface IPdfTextElement
-    {
-        public PdfRectangle BoundingBox { get; }
-
-        public TextOrientation TextOrientation { get; }
-    }
+    public TextOrientation TextOrientation { get; }
 }
