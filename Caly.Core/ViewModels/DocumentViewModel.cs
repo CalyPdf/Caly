@@ -260,8 +260,13 @@ public sealed partial class DocumentViewModel : ViewModelBase
                                                 { ItemType: SearchResultItemType.Word, WordIndex: not null })
                                             .Select(x => new Range(new Index(x.WordIndex!.Value),
                                                 new Index(x.WordIndex.Value + x.WordCount!.Value - 1))).ToArray();
+                                        
+                                        var page = GetPage(result.PageNumber);
+                                        if (page is null)
+                                        {
+                                            continue; // Pages might still be loading
+                                        }
 
-                                        var page = Pages[result.PageNumber - 1];
                                         page.UpdateSearchResultsRanges(searchRange);
                                     }
                                 }
@@ -389,9 +394,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         double defaultWidth = firstPage.Width * _pdfService.PpiScale;
         double defaultHeight = firstPage.Height * _pdfService.PpiScale;
 
-        // Build all page view models on the thread pool
-        var allPages = new PageViewModel[PageCount];
-        allPages[0] = firstPage;
+        Dispatcher.UIThread.Invoke(() => Pages.Add(firstPage));
 
         for (int p = 2; p <= PageCount; ++p)
         {
@@ -402,17 +405,34 @@ public sealed partial class DocumentViewModel : ViewModelBase
                 Width = defaultWidth
             };
             _pdfPageService.RequestPageSize(newPage);
-            allPages[p - 1] = newPage;
+            Dispatcher.UIThread.Invoke(() => Pages.Add(newPage)); // Could do in batches
+        }
+    }
+
+    /// <summary>
+    /// Retrieves the view model for the specified page number in the document, if available.
+    /// </summary>
+    /// <param name="pageNumber">The one-based page number to retrieve. Must be greater than zero and less than or equal to the total number of
+    /// pages in the document.</param>
+    /// <returns>The <see cref="PageViewModel"/> for the specified page number, or <see langword="null"/> if the page has not
+    /// been loaded.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="pageNumber"/> is less than or equal to zero, or greater than the total number of pages
+    /// in the document.</exception>
+    public PageViewModel? GetPage(int pageNumber)
+    {
+        if (pageNumber <= 0 || pageNumber > PageCount)
+        {
+            throw new ArgumentException("Page number should exist in the document.", nameof(pageNumber));
         }
 
-        // Add all pages to the UI-bound collection in a single UI-thread dispatch
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        int pageIndex = pageNumber - 1;
+        if (pageIndex > Pages.Count - 1)
         {
-            foreach (var page in allPages)
-            {
-                Pages.Add(page);
-            }
-        });
+            System.Diagnostics.Debug.WriteLine($"Page {pageNumber} is not loaded yet.");
+            return null;
+        }
+
+        return Pages[pageIndex];
     }
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]
