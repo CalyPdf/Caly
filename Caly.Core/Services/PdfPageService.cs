@@ -481,7 +481,11 @@ namespace Caly.Core.Services
 
                     for (int p = 1; p <= NumberOfPages; ++p)
                     {
-                        var page = document.Pages[p - 1];
+                        var page = document.GetPage(p);
+                        if (page is null)
+                        {
+                            continue; // Pages might still be loading
+                        }
 
                         if (page.Thumbnail is not null)
                         {
@@ -517,7 +521,12 @@ namespace Caly.Core.Services
 
                 for (int p = start; p < end; ++p)
                 {
-                    var page = document.Pages[p - 1];
+                    var page = document.GetPage(p);
+                    if (page is null)
+                    {
+                        continue; // Pages might still be loading
+                    }
+
                     if (page.Thumbnail is null)
                     {
                         var request = new RenderRequest(page, RenderRequestTypes.Thumbnail, token); // No caching for the moment
@@ -542,7 +551,11 @@ namespace Caly.Core.Services
                     }
 
                     // Thumbnail is not realised anymore
-                    var page = document.Pages[p - 1];
+                    var page = document.GetPage(p);
+                    if (page is null)
+                    {
+                        continue; // Pages might still be loading
+                    }
 
                     if (page.Thumbnail is not null)
                     {
@@ -668,7 +681,11 @@ namespace Caly.Core.Services
                         continue;
                     }
 
-                    var page = document.Pages[p - 1];
+                    var page = document.GetPage(p);
+                    if (page is null)
+                    {
+                        continue; // Pages might still be loading
+                    }
 
                     if (page.PdfPicture is not null)
                     {
@@ -726,7 +743,11 @@ namespace Caly.Core.Services
 
                 for (int p = visibleStart; p < visibleEnd; ++p)
                 {
-                    var page = document.Pages[p - 1];
+                    var page = document.GetPage(p);
+                    if (page is null)
+                    {
+                        continue; // Pages might still be loading
+                    }
 
                     // Picture
                     if (page.PdfPicture is null)
