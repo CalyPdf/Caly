@@ -479,7 +479,7 @@ namespace Caly.Core.Services
                     // clear all pages - batch the UI update
                     List<(PageViewModel Page, Bitmap? Thumbnail)>? allThumbnailsToClear = null;
 
-                    for (int p = 1; p <= NumberOfPages; ++p)
+                    for (int p = 1; p <= document.Pages.Count; ++p)
                     {
                         var page = document.GetPage(p);
                         if (page is null)
@@ -543,7 +543,7 @@ namespace Caly.Core.Services
 
                 List<(PageViewModel Page, Bitmap? Thumbnail)>? thumbnailsToClear = null;
 
-                for (int p = 1; p <= NumberOfPages; ++p)
+                for (int p = 1; p <= document.Pages.Count; ++p)
                 {
                     if (p >= realisedStart && p < realisedEnd)
                     {
@@ -674,7 +674,7 @@ namespace Caly.Core.Services
                 List<(PageViewModel Page, IRef<SKPicture>? Picture)>? picturesToClear = null;
                 List<PageViewModel>? textLayersToClear = null;
 
-                for (int p = 1; p <= NumberOfPages; ++p)
+                for (int p = 1; p <= document.Pages.Count; ++p)
                 {
                     if (p >= realisedStart && p < realisedEnd)
                     {

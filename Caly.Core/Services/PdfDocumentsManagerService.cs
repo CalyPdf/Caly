@@ -77,6 +77,8 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
                 }
             });
         }
+        catch (OperationCanceledException)
+        { }
         catch (Exception e)
         {
             // Critical error - can't open document anymore

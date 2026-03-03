@@ -301,8 +301,27 @@ public sealed class ThumbnailItemsControl : ListBox
                 RefreshThumbnails?.Execute(null);
             }
         }
-    }
+        else if (change.Property == ItemCountProperty)
+        {
+            if (!RealisedThumbnails.HasValue)
+            {
+                return;
+            }
 
+            int lastRealisedIndex = GetMaxPageIndex();
+            if (lastRealisedIndex == -1)
+            {
+                return;
+            }
+
+            var realised = RealisedThumbnails.Value;
+            if (realised.End.Value != lastRealisedIndex + 1)
+            {
+                PostUpdateThumbnailsVisibility();
+            }
+        }
+    }
+    
     private void EnsureValidContainersVisibility()
     {
         // This is a hack to ensure only valid containers (realised) are visible

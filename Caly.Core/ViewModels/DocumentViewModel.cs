@@ -260,7 +260,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
                                                 { ItemType: SearchResultItemType.Word, WordIndex: not null })
                                             .Select(x => new Range(new Index(x.WordIndex!.Value),
                                                 new Index(x.WordIndex.Value + x.WordCount!.Value - 1))).ToArray();
-                                        
+
                                         var page = GetPage(result.PageNumber);
                                         if (page is null)
                                         {
@@ -394,7 +394,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         double defaultWidth = firstPage.Width * _pdfService.PpiScale;
         double defaultHeight = firstPage.Height * _pdfService.PpiScale;
 
-        Dispatcher.UIThread.Invoke(() => Pages.Add(firstPage));
+        await Dispatcher.UIThread.InvokeAsync(() => Pages.Add(firstPage), DispatcherPriority.Send);
 
         for (int p = 2; p <= PageCount; ++p)
         {
@@ -405,7 +405,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
                 Width = defaultWidth
             };
             _pdfPageService.RequestPageSize(newPage);
-            Dispatcher.UIThread.Invoke(() => Pages.Add(newPage)); // Could do in batches
+            await Dispatcher.UIThread.InvokeAsync(() => Pages.Add(newPage), DispatcherPriority.Send); // Could do in batches
         }
     }
 

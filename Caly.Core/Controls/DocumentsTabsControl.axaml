@@ -220,6 +220,8 @@
 											<Grid>
                                                 <controls:ThumbnailItemsControl
                                                     IsVisible="{Binding IsDocumentPaneOpen}"
+                                                    ItemsSource="{Binding Pages}"
+                                                    SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}"
                                                     RefreshThumbnails="{Binding RefreshThumbnailsCommand}"
 													RealisedThumbnails="{Binding RealisedThumbnails}"
 													VisibleThumbnails="{Binding VisibleThumbnails}"
@@ -227,9 +229,7 @@
                                                     SelectionMode="Single,AlwaysSelected"
                                                     HorizontalAlignment="Stretch"
                                                     VerticalAlignment="Stretch"
-                                                    BorderThickness="0"
-                                                    ItemsSource="{Binding Pages}"
-                                                    SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}"/>
+                                                    BorderThickness="0"/>
                                             </Grid>
 										</TabItem>
 
