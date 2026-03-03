@@ -78,7 +78,6 @@ public sealed class PageItemsControl : ItemsControl
     private bool _isZooming;
     private bool _isTabDragging;
     private bool _pendingScrollToPage;
-    private bool _isUpdatePagesVisibilityScheduled;
 
     private TabsControl? _tabsControl;
 
@@ -385,27 +384,6 @@ public sealed class PageItemsControl : ItemsControl
         pageItem.Unloaded += PageItem_Unloaded;
 
         pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
-
-        if (_pendingScrollToPage)
-        {
-            // After a DataContext change (tab/document switch), containers are now being realized.
-            // Scroll to the correct page before running auto-selection to prevent
-            // UpdatePagesVisibility from selecting the wrong page based on a stale viewport.
-            _pendingScrollToPage = false;
-            if (SelectedPageNumber.HasValue && SelectedPageNumber.Value > 0 && SelectedPageNumber.Value <= PageCount)
-            {
-                ScrollIntoView(SelectedPageNumber.Value - 1);
-                ApplyYOffset(SelectedPageNumber.Value, 0, false);
-                // PostUpdatePagesVisibility is called below; it posts at Loaded priority,
-                // which runs after the layout pass triggered by the scroll above.
-            }
-        }
-
-        // Called by the virtualizer exactly when a container is prepared for display.
-        // This fires only for containers entering the viewport, so UpdatePagesVisibility
-        // is not called per page addition. The deduplication flag ensures a single
-        // update runs per batch of realizations.
-        PostUpdatePagesVisibility();
     }
 
     private void PageItem_Unloaded(object? sender, RoutedEventArgs e)
@@ -1198,6 +1176,52 @@ public sealed class PageItemsControl : ItemsControl
         PostUpdatePagesVisibility();
     }
 
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        ItemsPanelRoot!.DataContextChanged += ItemsPanelRoot_DataContextChanged;
+        ItemsPanelRoot.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        ItemsPanelRoot!.DataContextChanged -= ItemsPanelRoot_DataContextChanged;
+        ItemsPanelRoot.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+    }
+
+    private void ItemsPanelRoot_LayoutUpdated(object? sender, EventArgs e)
+    {
+        // When ItemsPanelRoot is first loaded, there is a chance that a container
+        // (i.e. the second page) is realised after the last SetPagesVisibility()
+        // call. When this happens the page will not be rendered because it
+        // is seen as 'not visible'.
+        // To prevent that we listen to the first layout updates and check visibility.
+
+        if (GetMaxPageIndex() > 0)
+        {
+            if (_pendingScrollToPage)
+            {
+                // After a DataContext change (tab/document switch), items are now realized.
+                // Scroll to the correct page before running auto-selection to prevent
+                // UpdatePagesVisibility from selecting the wrong page based on a stale viewport.
+                _pendingScrollToPage = false;
+                if (SelectedPageNumber.HasValue && SelectedPageNumber.Value > 0 && SelectedPageNumber.Value <= PageCount)
+                {
+                    ScrollIntoView(SelectedPageNumber.Value - 1);
+                    ApplyYOffset(SelectedPageNumber.Value, 0, false);
+                    return; // Wait for the scroll to trigger another layout update.
+                }
+            }
+
+            if (UpdatePagesVisibility())
+            {
+                // We have enough containers realised, we can stop listening to layout updates.
+                ItemsPanelRoot!.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+            }
+        }
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -1208,6 +1232,8 @@ public sealed class PageItemsControl : ItemsControl
             _pendingScrollToPage = true;
             Scroll?.Focus();
             EnsureValidContainersVisibility();
+            ItemsPanelRoot?.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
+            ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
         }
     }
 
@@ -1230,6 +1256,21 @@ public sealed class PageItemsControl : ItemsControl
         }
     }
 
+    private void ItemsPanelRoot_DataContextChanged(object? sender, EventArgs e)
+    {
+        LayoutUpdated += OnLayoutUpdatedOnce;
+    }
+
+    private void OnLayoutUpdatedOnce(object? sender, EventArgs e)
+    {
+        LayoutUpdated -= OnLayoutUpdatedOnce;
+
+        // Ensure the pages visibility is set when OnApplyTemplate()
+        // is not called, i.e. when a new document is opened but the
+        // page has exactly the same dimension of the visible page
+        PostUpdatePagesVisibility();
+    }
+
     private bool HasRealisedItems()
     {
         if (ItemsPanelRoot is VirtualizingStackPanel vsp)
@@ -1242,18 +1283,7 @@ public sealed class PageItemsControl : ItemsControl
 
     private void PostUpdatePagesVisibility()
     {
-        if (_isUpdatePagesVisibilityScheduled)
-        {
-            System.Diagnostics.Debug.WriteLine("# Update pages visibility already scheduled, skipping.");
-            return;
-        }
-
-        _isUpdatePagesVisibilityScheduled = true;
-        Dispatcher.UIThread.Post(() =>
-        {
-            _isUpdatePagesVisibilityScheduled = false;
-            UpdatePagesVisibility();
-        }, DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() => UpdatePagesVisibility(), DispatcherPriority.Loaded);
     }
 
     private bool UpdatePagesVisibility()
@@ -1764,6 +1794,5 @@ public sealed class PageItemsControl : ItemsControl
         _isTabDragging = false;
         _pendingScrollToPage = false;
         _isPinching = false;
-        _isUpdatePagesVisibilityScheduled = false;
     }
 }
