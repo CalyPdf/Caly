@@ -35,6 +35,7 @@ namespace Caly.Core.Controls;
 public sealed class ThumbnailItemsControl : ListBox
 {
     private bool _isScrollingToPage;
+    private bool _isUpdateThumbnailsVisibilityScheduled;
 
     private ScrollViewer? _scrollViewer;
 
@@ -145,11 +146,23 @@ public sealed class ThumbnailItemsControl : ListBox
 
     private void PostUpdateThumbnailsVisibility()
     {
-        Dispatcher.UIThread.Post(() => UpdateThumbnailsVisibility(), DispatcherPriority.Loaded);
+        if (_isUpdateThumbnailsVisibilityScheduled)
+        {
+            System.Diagnostics.Debug.WriteLine("Update thumbnails visibility already scheduled, skipping.");
+            return;
+        }
+
+        _isUpdateThumbnailsVisibilityScheduled = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isUpdateThumbnailsVisibilityScheduled = false;
+            UpdateThumbnailsVisibility();
+        }, DispatcherPriority.Loaded);
     }
 
     private bool UpdateThumbnailsVisibility()
     {
+        System.Diagnostics.Debug.WriteLine("Updating thumbnails visibility...");
         if (_scrollViewer is null)
         {
             return false;
@@ -301,6 +314,10 @@ public sealed class ThumbnailItemsControl : ListBox
                 RefreshThumbnails?.Execute(null);
             }
         }
+        else if (change.Property == ItemCountProperty)
+        {
+            PostUpdateThumbnailsVisibility();
+        }
     }
 
     private void EnsureValidContainersVisibility()
@@ -327,5 +344,6 @@ public sealed class ThumbnailItemsControl : ListBox
         SetCurrentValue(RealisedThumbnailsProperty, null);
         SetCurrentValue(VisibleThumbnailsProperty, null);
         _isScrollingToPage = false;
+        _isUpdateThumbnailsVisibilityScheduled = false;
     }
 }
