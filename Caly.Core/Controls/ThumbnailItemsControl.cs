@@ -117,33 +117,6 @@ public sealed class ThumbnailItemsControl : ListBox
         }
     }
 
-    protected override void OnLoaded(RoutedEventArgs e)
-    {
-        base.OnLoaded(e);
-        ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
-    }
-
-    protected override void OnUnloaded(RoutedEventArgs e)
-    {
-        base.OnUnloaded(e);
-        ItemsPanelRoot?.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
-    }
-
-    private void ItemsPanelRoot_LayoutUpdated(object? sender, EventArgs e)
-    {
-        // When ItemsPanelRoot is first loaded, there is a chance that a container
-        // (i.e. the second page) is realised after the last SetPagesVisibility()
-        // call. When this happens the page will not be rendered because it
-        // is seen as 'not visible'.
-        // To prevent that we listen to the first layout updates and check visibility.
-
-        if (GetMaxPageIndex() > 0 && UpdateThumbnailsVisibility())
-        {
-            // We have enough containers realised, we can stop listening to layout updates.
-            ItemsPanelRoot!.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
-        }
-    }
-
     private void PostUpdateThumbnailsVisibility()
     {
         if (_isUpdateThumbnailsVisibilityScheduled)
@@ -278,6 +251,18 @@ public sealed class ThumbnailItemsControl : ListBox
         return new ThumbnailItem();
     }
 
+    protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
+    {
+        base.PrepareContainerForItemOverride(container, item, index);
+
+        if (container is not ThumbnailItem)
+        {
+            return;
+        }
+
+        PostUpdateThumbnailsVisibility();
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -286,8 +271,6 @@ public sealed class ThumbnailItemsControl : ListBox
         {
             ResetState();
             EnsureValidContainersVisibility();
-            ItemsPanelRoot?.LayoutUpdated -= ItemsPanelRoot_LayoutUpdated;
-            ItemsPanelRoot?.LayoutUpdated += ItemsPanelRoot_LayoutUpdated;
         }
         else if (change.Property == IsVisibleProperty)
         {
@@ -313,10 +296,6 @@ public sealed class ThumbnailItemsControl : ListBox
                 SetCurrentValue(VisibleThumbnailsProperty, null);
                 RefreshThumbnails?.Execute(null);
             }
-        }
-        else if (change.Property == ItemCountProperty)
-        {
-            PostUpdateThumbnailsVisibility();
         }
     }
 
