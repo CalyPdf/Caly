@@ -54,26 +54,14 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsPageRendering))]
     private IRef<SKPicture>? _pdfPicture;
 
-    [ObservableProperty]
-    private double _ppiScale;
-    
     /// <summary>
-    /// Page Width, scale by <see cref="PpiScale"/>.
+    /// Page size, scaled by <see cref="PpiScale"/>.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ThumbnailWidth))]
+    [NotifyPropertyChangedFor(nameof(ThumbnailSize))]
     [NotifyPropertyChangedFor(nameof(DisplayWidth))]
     [NotifyPropertyChangedFor(nameof(DisplayHeight))]
-    private double _width;
-
-    /// <summary>
-    /// Page Height, scale by <see cref="PpiScale"/>.
-    /// </summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ThumbnailWidth))]
-    [NotifyPropertyChangedFor(nameof(DisplayWidth))]
-    [NotifyPropertyChangedFor(nameof(DisplayHeight))]
-    private double _height;
+    private Size _size;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsThumbnailRendering))]
     private Bitmap? _thumbnail;
@@ -100,15 +88,16 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
 
     public TextSelection TextSelection { get; }
 
+    public double PpiScale { get; }
+
     public bool IsPageVisible => VisibleArea.HasValue;
 
-    public int ThumbnailWidth => Math.Max(1, (int)(Width / Height * ThumbnailHeight));
+    private const int ThumbnailHeight = 135;
+    public PixelSize ThumbnailSize => new PixelSize(Math.Max(1, (int)(Size.AspectRatio * ThumbnailHeight)), ThumbnailHeight);
+    
+    public double DisplayWidth => IsPortrait ? Size.Width : Size.Height;
 
-    public int ThumbnailHeight => 135;
-
-    public double DisplayWidth => IsPortrait ? Width : Height;
-
-    public double DisplayHeight => IsPortrait ? Height : Width;
+    public double DisplayHeight => IsPortrait ? Size.Height : Size.Width;
     
     public bool IsThumbnailRendering => Thumbnail is null;
 
@@ -138,16 +127,14 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
         RefreshSearchResults();
     }
 
-    public void SetSize(double width, double height, double ppiScale)
+    public void SetSize(Size size)
     {
         if (Interlocked.Exchange(ref _isSizeSet, 1) == 1)
         {
             return;
         }
-        
-        Width = width * ppiScale;
-        Height = height * ppiScale;
-        PpiScale = ppiScale;
+
+        Size = size;
     }
 
     public bool IsSizeSet()
@@ -183,10 +170,11 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
     }
 #endif
     
-    public PageViewModel(int pageNumber, TextSelection textSelection)
+    public PageViewModel(int pageNumber, TextSelection textSelection, double ppiScale)
     {
         ArgumentNullException.ThrowIfNull(textSelection, nameof(textSelection));
         PageNumber = pageNumber;
+        PpiScale = ppiScale;
         TextSelection = textSelection;
 
         TextSelection.TextSelectionExtended += _onTextSelectionExtended;

@@ -51,28 +51,16 @@ public sealed class ThumbnailControl : TemplatedControl
         AvaloniaProperty.Register<ThumbnailControl, Rect?>(nameof(VisibleArea));
 
     /// <summary>
-    /// Defines the <see cref="ThumbnailWidth"/> property.
+    /// Defines the <see cref="ThumbnailSize"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> ThumbnailWidthProperty =
-        AvaloniaProperty.Register<ThumbnailControl, double>(nameof(ThumbnailWidth));
+    public static readonly StyledProperty<PixelSize> ThumbnailSizeProperty =
+        AvaloniaProperty.Register<ThumbnailControl, PixelSize>(nameof(ThumbnailSize));
 
     /// <summary>
-    /// Defines the <see cref="ThumbnailHeight"/> property.
+    /// Defines the <see cref="PageSize"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> ThumbnailHeightProperty =
-        AvaloniaProperty.Register<ThumbnailControl, double>(nameof(ThumbnailHeight));
-
-    /// <summary>
-    /// Defines the <see cref="PageWidth"/> property.
-    /// </summary>
-    public static readonly StyledProperty<double> PageWidthProperty =
-        AvaloniaProperty.Register<ThumbnailControl, double>(nameof(PageWidth));
-
-    /// <summary>
-    /// Defines the <see cref="PageHeight"/> property.
-    /// </summary>
-    public static readonly StyledProperty<double> PageHeightProperty =
-        AvaloniaProperty.Register<ThumbnailControl, double>(nameof(PageHeight));
+    public static readonly StyledProperty<Size> PageSizeProperty =
+        AvaloniaProperty.Register<ThumbnailControl, Size>(nameof(PageSize));
 
     /// <summary>
     /// Defines the <see cref="Thumbnail"/> property.
@@ -83,8 +71,8 @@ public sealed class ThumbnailControl : TemplatedControl
     static ThumbnailControl()
     {
         AffectsRender<ThumbnailControl>(ThumbnailProperty, VisibleAreaProperty,
-            ThumbnailHeightProperty, PageHeightProperty);
-        AffectsMeasure<ThumbnailControl>(ThumbnailHeightProperty, PageHeightProperty);
+            ThumbnailSizeProperty, PageSizeProperty);
+        AffectsMeasure<ThumbnailControl>(ThumbnailSizeProperty, PageSizeProperty);
     }
 
     public Rect? VisibleArea
@@ -93,30 +81,18 @@ public sealed class ThumbnailControl : TemplatedControl
         set => SetValue(VisibleAreaProperty, value);
     }
 
-    public double ThumbnailWidth
+    public PixelSize ThumbnailSize
     {
-        get => GetValue(ThumbnailWidthProperty);
-        set => SetValue(ThumbnailWidthProperty, value);
+        get => GetValue(ThumbnailSizeProperty);
+        set => SetValue(ThumbnailSizeProperty, value);
     }
 
-    public double ThumbnailHeight
+    public Size PageSize
     {
-        get => GetValue(ThumbnailHeightProperty);
-        set => SetValue(ThumbnailHeightProperty, value);
+        get => GetValue(PageSizeProperty);
+        set => SetValue(PageSizeProperty, value);
     }
-
-    public double PageWidth
-    {
-        get => GetValue(PageWidthProperty);
-        set => SetValue(PageWidthProperty, value);
-    }
-
-    public double PageHeight
-    {
-        get => GetValue(PageHeightProperty);
-        set => SetValue(PageHeightProperty, value);
-    }
-
+    
     public IImage? Thumbnail
     {
         get => GetValue(ThumbnailProperty);
@@ -127,10 +103,8 @@ public sealed class ThumbnailControl : TemplatedControl
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == ThumbnailWidthProperty ||
-            change.Property == ThumbnailHeightProperty ||
-            change.Property == PageWidthProperty ||
-            change.Property == PageHeightProperty)
+        if (change.Property == ThumbnailSizeProperty ||
+            change.Property == PageSizeProperty)
         {
             UpdateScaleMatrix();
         }
@@ -191,17 +165,20 @@ public sealed class ThumbnailControl : TemplatedControl
     
     private void UpdateScaleMatrix()
     {
-        if (IsNotValid(PageHeight) || IsNotValid(ThumbnailHeight))
+        if (IsNotValid(PageSize))
         {
             return;
         }
 
-        double ratio = Math.Round(ThumbnailHeight / PageHeight, 7);
+        double ratio = Math.Round(ThumbnailSize.Height / PageSize.Height, 7);
         _scale = Matrix.CreateScale(ratio, ratio);
     }
 
-    private static bool IsNotValid(double v)
+    private static bool IsNotValid(Size v)
     {
-        return v <= 0 || double.IsInfinity(v) || double.IsNaN(v);
+        return v.Height <= 0 ||
+               v.Width <= 0 ||
+               double.IsInfinity(v.Height) || double.IsNaN(v.Height) ||
+               double.IsInfinity(v.Width) || double.IsNaN(v.Width);
     }
 }
