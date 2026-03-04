@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels;
@@ -29,22 +30,21 @@ public partial class DocumentViewModel : IAsyncDisposable
     {
         Debug.ThrowOnUiThread();
 
+        await _mainCts.CancelAsync();
+
         System.Diagnostics.Debug.Assert(_mainCts.IsCancellationRequested);
 
-        await Parallel.ForEachAsync(Pages, (p, _) => p.DisposeAsync());
+        await Parallel.ForEachAsync(Pages, CancellationToken.None, (p, _) => p.DisposeAsync());
 
         Pages.Clear();
         
-        _mainCts.Dispose();
-        _pendingSearchTaskCts?.Dispose();
-
         _searchResultsDisposable.Dispose();
 
         if (SearchResultsSource?.RowSelection is not null)
         {
             SearchResultsSource.RowSelection.SelectionChanged -= TextSearchSelectionChanged;
         }
-        
+
         try
         {
             var bookmarks = await BookmarksSource;
@@ -53,11 +53,16 @@ public partial class DocumentViewModel : IAsyncDisposable
                 bookmarks.RowSelection.SelectionChanged -= BookmarksSelectionChanged;
             }
         }
-        catch
+        catch (OperationCanceledException)
+        { /* No op */ }
+        catch (Exception e)
         {
-            /* Ignore */
+            Debug.WriteExceptionToFile(e);
         }
 
         SearchResults.Clear();
+
+        _mainCts.Dispose();
+        _pendingSearchTaskCts?.Dispose();
     }
 }

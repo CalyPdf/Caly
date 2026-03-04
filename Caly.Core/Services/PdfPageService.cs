@@ -106,6 +106,7 @@ namespace Caly.Core.Services
         private readonly ChannelWriter<RenderRequest> _requestsWriter;
         private readonly ChannelReader<RenderRequest> _requestsReader;
         private readonly CancellationTokenSource _mainCts = new();
+        private readonly CancellationToken _mainToken;
 
         private async Task ProcessingLoop()
         {
@@ -117,12 +118,12 @@ namespace Caly.Core.Services
                 // The main reason to allow parallel processing of request is for the creation of the text layer
                 // via `PdfTextLayerHelper.GetTextLayer()` (which is independent of PdfPig) to not block requests relying on PdfPig.
                 MaxDegreeOfParallelism = 4,
-                CancellationToken = _mainCts.Token
+                CancellationToken = _mainToken
             };
             
             try
             {
-                await Parallel.ForEachAsync(_requestsReader.ReadAllAsync(_mainCts.Token), options, async (r, _) =>
+                await Parallel.ForEachAsync(_requestsReader.ReadAllAsync(_mainToken), options, async (r, _) =>
                 {
                     try
                     {
@@ -181,8 +182,9 @@ namespace Caly.Core.Services
 
             _requestsWriter = channel.Writer;
             _requestsReader = channel.Reader;
-            
-            _processingLoopTask = Task.Run(ProcessingLoop, _mainCts.Token);
+
+            _mainToken = _mainCts.Token;
+            _processingLoopTask = Task.Run(ProcessingLoop, _mainToken);
         }
 
         public void Initialise()
@@ -455,7 +457,7 @@ namespace Caly.Core.Services
 
         public void RequestPageSize(PageViewModel page)
         {
-            var request = new RenderRequest(page, RenderRequestTypes.PageSize, _mainCts.Token);
+            var request = new RenderRequest(page, RenderRequestTypes.PageSize, _mainToken);
             if (!_requestsWriter.TryWrite(request))
             {
                 throw new Exception("Could not write request to channel."); // Should never happen as unbounded channel
@@ -468,9 +470,9 @@ namespace Caly.Core.Services
         {
             System.Diagnostics.Debug.WriteLine($"[{_pdfDocumentService.FileName}] RefreshThumbnails: '{m.VisibleThumbnails}' ('{m.RealisedThumbnails}')");
 
-            _mainCts.Token.ThrowIfCancellationRequested();
+            _mainToken.ThrowIfCancellationRequested();
 
-            var currentCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token);
+            var currentCts = CancellationTokenSource.CreateLinkedTokenSource(_mainToken);
             var token = currentCts.Token;
             var oldCts = Interlocked.Exchange(ref _thumbnailsCts, currentCts);
 
@@ -652,9 +654,9 @@ namespace Caly.Core.Services
         {
             System.Diagnostics.Debug.WriteLine($"[{_pdfDocumentService.FileName}] RefreshPages: '{m.VisiblePages}' ('{m.RealisedPages}')");
 
-            _mainCts.Token.ThrowIfCancellationRequested();
+            _mainToken.ThrowIfCancellationRequested();
 
-            var currentCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token);
+            var currentCts = CancellationTokenSource.CreateLinkedTokenSource(_mainToken);
             var token = currentCts.Token;
             var oldCts = Interlocked.Exchange(ref _pagesCts, currentCts);
 

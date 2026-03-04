@@ -33,6 +33,12 @@ internal partial class PdfPigDocumentService
     // NB: Initial count set to 0 to make sure the document is opened before anything else starts.
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
     private readonly CancellationTokenSource _mainCts = new();
+    private readonly CancellationToken _mainToken;
+
+    public PdfPigDocumentService()
+    {
+        _mainToken = _mainCts.Token;
+    }
 
     private async Task<T?> ExecuteWithLockAsync<T>(Func<CancellationToken, T> action, CancellationToken token)
     {
@@ -75,7 +81,7 @@ internal partial class PdfPigDocumentService
                 return;
             }
 
-            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainToken))
             {
                 linkedCts.Token.ThrowIfCancellationRequested();
                 await action(linkedCts.Token).ConfigureAwait(false);
@@ -99,7 +105,7 @@ internal partial class PdfPigDocumentService
                 return default;
             }
 
-            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainCts.Token))
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _mainToken))
             {
                 linkedCts.Token.ThrowIfCancellationRequested();
                 return await action(linkedCts.Token).ConfigureAwait(false);

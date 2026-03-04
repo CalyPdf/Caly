@@ -58,6 +58,7 @@ public partial class App : Application
 
     private readonly FilePipeStream _pipeServer = new();
     private readonly CancellationTokenSource _listeningToFilesCts = new();
+    private readonly CancellationToken _listeningToFilesToken;
     private Task? _listeningToFiles;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -70,6 +71,11 @@ public partial class App : Application
     /// Gets the <see cref="IServiceProvider"/> instance to resolve application services.
     /// </summary>
     public IServiceProvider? Services { get; private set; }
+
+    public App() : base()
+    {
+        _listeningToFilesToken = _listeningToFilesCts.Token;
+    }
 
     public override void Initialize()
     {
@@ -241,8 +247,8 @@ public partial class App : Application
 
         try
         {
-            await Parallel.ForEachAsync(_pipeServer.ReceivePathAsync(_listeningToFilesCts.Token),
-                _listeningToFilesCts.Token, async (path, ct) =>
+            await Parallel.ForEachAsync(_pipeServer.ReceivePathAsync(_listeningToFilesToken),
+                _listeningToFilesToken, async (path, ct) =>
                 {
                     if (string.IsNullOrEmpty(path))
                     {

@@ -60,6 +60,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
     private readonly ISettingsService _settingsService;
 
     private readonly CancellationTokenSource _mainCts = new();
+    private readonly CancellationToken _mainToken;
+
     internal string? LocalPath { get; private set; }
 
     public bool IsActive => _pdfService.IsActive;
@@ -173,6 +175,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
             throw new InvalidOperationException("Should only be called in Design mode.");
         }
 
+        _mainToken = _mainCts.Token;
         _loadPagesTask = null!;
         _searchResultsDisposable = null!;
         _propertiesTask = null!;
@@ -199,6 +202,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         System.Diagnostics.Debug.Assert(pdfService.NumberOfPages == 0);
 
+        _mainToken = _mainCts.Token;
         _pdfService = pdfService;
         _pdfPageService = pdfPageService;
         _settingsService = settingsService;
@@ -304,7 +308,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
         {
             SearchResultsSource.RowSelection!.SingleSelect = true;
             SearchResultsSource.RowSelection.SelectionChanged += TextSearchSelectionChanged;
-        }, DispatcherPriority.Send, _mainCts.Token);
+        }, DispatcherPriority.Send, _mainToken);
     }
 
     public void SetActive()
@@ -332,7 +336,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     private async Task<int> OpenDocumentCore(IStorageFile? storageFile, string? password, CancellationToken token)
     {
-        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_mainCts.Token, token);
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_mainToken, token);
 
         int pageCount = await _pdfService.OpenDocument(storageFile, password, combinedCts.Token).ConfigureAwait(false);
 
@@ -361,12 +365,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         return pageCount;
     }
-
-    internal async ValueTask CancelAsync()
-    {
-        await _mainCts.CancelAsync();
-    }
-
+    
     private async Task LoadPages()
     {
         Debug.ThrowOnUiThread();
@@ -384,7 +383,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         // Use 1st page size as default page size
         var firstPage = new PageViewModel(1, TextSelection, _pdfService.PpiScale);
-        var pageSize = await _pdfPageService.GetPageSize(1, _mainCts.Token).ConfigureAwait(false);
+        var pageSize = await _pdfPageService.GetPageSize(1, _mainToken).ConfigureAwait(false);
         if (pageSize.HasValue)
         {
             // Page is not yet in the collection — no UI observer yet, safe to call from thread pool
@@ -397,7 +396,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         for (int p = 2; p <= PageCount; ++p)
         {
-            _mainCts.Token.ThrowIfCancellationRequested();
+            _mainToken.ThrowIfCancellationRequested();
             var newPage = new PageViewModel(p, TextSelection, _pdfService.PpiScale)
             {
                 Size = defaultSize
