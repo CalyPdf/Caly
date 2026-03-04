@@ -34,14 +34,14 @@ public partial class DocumentViewModel
 
     private async Task<DocumentPropertiesViewModel?> GetProperties()
     {
-        _mainCts.Token.ThrowIfCancellationRequested();
-        return await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainCts.Token), _mainCts.Token);
+        _mainToken.ThrowIfCancellationRequested();
+        return await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainToken), _mainToken);
     }
 
     private async Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> GetEmbeddedFiles()
     {
-        _mainCts.Token.ThrowIfCancellationRequested();
-        var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainCts.Token));
+        _mainToken.ThrowIfCancellationRequested();
+        var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainToken), _mainToken);
         if (items is null || items.Count == 0)
         {
             return ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>.Empty;

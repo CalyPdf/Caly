@@ -77,6 +77,8 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
                 }
             });
         }
+        catch (OperationCanceledException)
+        { /* No op */ }
         catch (Exception e)
         {
             // Critical error - can't open document anymore
@@ -180,8 +182,6 @@ internal sealed partial class PdfDocumentsManagerService : IPdfDocumentsManagerS
         {
             throw new Exception($"Invalid {nameof(document.LocalPath)} value for view model.");
         }
-
-        await document.CancelAsync();
 
         _mainViewModel.PdfDocuments.RemoveSafely(document);
 

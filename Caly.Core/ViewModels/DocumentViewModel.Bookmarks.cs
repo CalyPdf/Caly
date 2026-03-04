@@ -37,8 +37,8 @@ public partial class DocumentViewModel
 
     private async Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?> GetBookmarks()
     {
-        _mainCts.Token.ThrowIfCancellationRequested();
-        var bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainCts.Token)) ?? [];
+        _mainToken.ThrowIfCancellationRequested();
+        var bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainToken), _mainToken) ?? [];
         if (bookmarks.Count > 0)
         {
             var bookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(bookmarks)
