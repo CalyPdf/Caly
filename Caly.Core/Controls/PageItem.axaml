@@ -73,8 +73,8 @@
 							</LayoutTransformControl.LayoutTransform>
 
 							<Grid Background="White"
-								  Width="{Binding Width}"
-								  Height="{Binding Height}">
+								  Width="{Binding Size.Width}"
+								  Height="{Binding Size.Height}">
 
 								<progRing:ProgressRing Width="50"
 													   Height="50"

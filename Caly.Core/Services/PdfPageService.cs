@@ -34,7 +34,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using UglyToad.PdfPig.Rendering.Skia;
 
 namespace Caly.Core.Services
 {
@@ -213,23 +212,34 @@ namespace Caly.Core.Services
                 return;
             }
 
-            var pageInfo = await GetPageSize(renderRequest.Page.PageNumber, renderRequest.Token)
+            var pageSize = await GetPageSize(renderRequest.Page.PageNumber, renderRequest.Token)
                 .ConfigureAwait(false);
 
-            if (pageInfo.HasValue)
+            if (pageSize.HasValue)
             {
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    renderRequest.Page.SetSize(pageInfo.Value.Width, pageInfo.Value.Height,
-                        _pdfDocumentService.PpiScale);
+                    renderRequest.Page.SetSize(pageSize.Value);
                 });
             }
         }
 
-        public Task<PdfPageSize?> GetPageSize(int pageNumber, CancellationToken token)
+        /// <summary>
+        /// Get the page size, scaled by <see cref="IPdfDocumentService.PpiScale"/>.
+        /// </summary>
+        public async Task<Size?> GetPageSize(int pageNumber, CancellationToken token)
         {
             // No caching
-            return _pdfDocumentService.GetPageSizeAsync(pageNumber, token);
+            var pdfSize = await _pdfDocumentService.GetPageSizeAsync(pageNumber, token)
+                .ConfigureAwait(false);
+
+            if (!pdfSize.HasValue)
+            {
+                return null;
+            }
+
+            double ppiScale = _pdfDocumentService.PpiScale;
+            return new Size(pdfSize.Value.Width * ppiScale, pdfSize.Value.Height * ppiScale);
         }
 
         public async Task<IRef<SKPicture>?> GetPicture(int pageNumber, CancellationToken token)
@@ -318,23 +328,22 @@ namespace Caly.Core.Services
                 var picture = await GetPicture(renderRequest.Page.PageNumber, renderRequest.Token)
                     .ConfigureAwait(false);
 
-                PdfPageSize? size = null;
+                Size? pageSize = null;
                 if (!renderRequest.Page.IsSizeSet())
                 {
-                    size = await GetPageSize(renderRequest.Page.PageNumber, renderRequest.Token)
+                    pageSize = await GetPageSize(renderRequest.Page.PageNumber, renderRequest.Token)
                         .ConfigureAwait(false);
                 }
-
+                
                 if (picture is not null)
                 {
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         renderRequest.Page.PdfPicture = picture;
 
-                        if (size.HasValue)
+                        if (pageSize.HasValue)
                         {
-                            renderRequest.Page.SetSize(size.Value.Width, size.Value.Height,
-                                _pdfDocumentService.PpiScale);
+                            renderRequest.Page.SetSize(pageSize.Value);
                         }
                     });
                 }
@@ -358,15 +367,14 @@ namespace Caly.Core.Services
             if (!renderRequest.Page.IsSizeSet())
             {
                 // This is the first we load the page, width and height are not set yet
-                var size = await GetPageSize(renderRequest.Page.PageNumber, renderRequest.Token)
+                var pageSize = await GetPageSize(renderRequest.Page.PageNumber, renderRequest.Token)
                     .ConfigureAwait(false);
 
-                if (size.HasValue)
+                if (pageSize.HasValue)
                 {
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        renderRequest.Page.SetSize(size.Value.Width, size.Value.Height,
-                            _pdfDocumentService.PpiScale);
+                        renderRequest.Page.SetSize(pageSize.Value);
                     });
                 }
             }
@@ -386,14 +394,13 @@ namespace Caly.Core.Services
             Debug.ThrowOnUiThread();
 
             token.ThrowIfCancellationRequested();
-
-            int tWidth = vm.ThumbnailWidth;
-            int tHeight = vm.ThumbnailHeight;
+            int tWidth = vm.ThumbnailSize.Width;
+            int tHeight = vm.ThumbnailSize.Height;
 
             var skImageInfo = new SKImageInfo(tWidth, tHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-            SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)vm.Width * (float)_pdfDocumentService.PpiScale,
-                tHeight / (float)vm.Height * (float)_pdfDocumentService.PpiScale);
+            SKMatrix scale = SKMatrix.CreateScale(tWidth / (float)(vm.Size.Width / vm.PpiScale),
+                tHeight / (float)(vm.Size.Height / vm.PpiScale));
 
             token.ThrowIfCancellationRequested();
 

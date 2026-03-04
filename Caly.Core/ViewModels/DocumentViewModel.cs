@@ -383,26 +383,24 @@ public sealed partial class DocumentViewModel : ViewModelBase
         }
 
         // Use 1st page size as default page size
-        var firstPage = new PageViewModel(1, TextSelection);
-        var pageInfo = await _pdfPageService.GetPageSize(1, _mainCts.Token).ConfigureAwait(false);
-        if (pageInfo.HasValue)
+        var firstPage = new PageViewModel(1, TextSelection, _pdfService.PpiScale);
+        var pageSize = await _pdfPageService.GetPageSize(1, _mainCts.Token).ConfigureAwait(false);
+        if (pageSize.HasValue)
         {
             // Page is not yet in the collection — no UI observer yet, safe to call from thread pool
-            firstPage.SetSize(pageInfo.Value.Width, pageInfo.Value.Height, _pdfService.PpiScale);
+            firstPage.SetSize(pageSize.Value);
         }
 
-        double defaultWidth = firstPage.Width * _pdfService.PpiScale;
-        double defaultHeight = firstPage.Height * _pdfService.PpiScale;
+        var defaultSize = firstPage.Size;
 
         Dispatcher.UIThread.Invoke(() => Pages.Add(firstPage));
 
         for (int p = 2; p <= PageCount; ++p)
         {
             _mainCts.Token.ThrowIfCancellationRequested();
-            var newPage = new PageViewModel(p, TextSelection)
+            var newPage = new PageViewModel(p, TextSelection, _pdfService.PpiScale)
             {
-                Height = defaultHeight,
-                Width = defaultWidth
+                Size = defaultSize
             };
             _pdfPageService.RequestPageSize(newPage);
             Dispatcher.UIThread.Invoke(() => Pages.Add(newPage)); // Could do in batches
