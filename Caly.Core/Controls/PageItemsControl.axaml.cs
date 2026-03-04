@@ -78,6 +78,7 @@ public sealed class PageItemsControl : ItemsControl
     private bool _isZooming;
     private bool _isTabDragging;
     private bool _pendingScrollToPage;
+    private bool _isUpdatePagesVisibilityScheduled;
 
     private TabsControl? _tabsControl;
 
@@ -1283,7 +1284,18 @@ public sealed class PageItemsControl : ItemsControl
 
     private void PostUpdatePagesVisibility()
     {
-        Dispatcher.UIThread.Post(() => UpdatePagesVisibility(), DispatcherPriority.Loaded);
+        if (_isUpdatePagesVisibilityScheduled)
+        {
+            System.Diagnostics.Debug.WriteLine("# Update pages visibility already scheduled, skipping.");
+            return;
+        }
+
+        _isUpdatePagesVisibilityScheduled = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isUpdatePagesVisibilityScheduled = false;
+            UpdatePagesVisibility();
+        }, DispatcherPriority.Loaded);
     }
 
     private bool UpdatePagesVisibility()
@@ -1794,5 +1806,6 @@ public sealed class PageItemsControl : ItemsControl
         _isTabDragging = false;
         _pendingScrollToPage = false;
         _isPinching = false;
+        _isUpdatePagesVisibilityScheduled = false;
     }
 }
