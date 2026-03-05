@@ -34,19 +34,31 @@ public partial class DocumentViewModel
 
     private async Task<DocumentPropertiesViewModel?> GetProperties()
     {
-        _mainToken.ThrowIfCancellationRequested();
-        return await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainToken), _mainToken);
+        try
+        {
+            _mainToken.ThrowIfCancellationRequested();
+            return await Task.Run(() => _pdfService.GetDocumentPropertiesAsync(_mainToken), _mainToken);
+        }
+        catch (OperationCanceledException)
+        { /* No op */ }
+
+        return null;
     }
 
     private async Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> GetEmbeddedFiles()
     {
-        _mainToken.ThrowIfCancellationRequested();
-        var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainToken), _mainToken);
-        if (items is null || items.Count == 0)
+        try
         {
-            return ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>.Empty;
+            _mainToken.ThrowIfCancellationRequested();
+            var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainToken), _mainToken);
+            if (items is not null && items.Count > 0)
+            {
+                return new ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>(items);
+            }
         }
+        catch (OperationCanceledException)
+        { /* No op */ }
 
-        return new ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>(items);
+        return ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>.Empty;
     }
 }
