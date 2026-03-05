@@ -37,31 +37,37 @@ public partial class DocumentViewModel
 
     private async Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?> GetBookmarks()
     {
-        _mainToken.ThrowIfCancellationRequested();
-        var bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainToken), _mainToken) ?? [];
-        if (bookmarks.Count > 0)
+        try
         {
-            var bookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(bookmarks)
+            _mainToken.ThrowIfCancellationRequested();
+
+            var bookmarks = await Task.Run(() => _pdfService.GetPdfBookmark(_mainToken), _mainToken) ?? [];
+            if (bookmarks.Count > 0)
             {
-                Columns =
+                var bookmarksSource = new HierarchicalTreeDataGridSource<PdfBookmarkNode>(bookmarks)
                 {
-                    new HierarchicalExpanderColumn<PdfBookmarkNode>(
-                        new TextColumn<PdfBookmarkNode, string>(null,
-                            x => x.Title, options: new TextColumnOptions<PdfBookmarkNode>()
-                            {
-                                CanUserSortColumn = false,
-                                IsTextSearchEnabled = false,
-                                TextWrapping = TextWrapping.WrapWithOverflow,
-                                TextAlignment = TextAlignment.Left,
-                                MaxWidth = new GridLength(400)
-                            }), x => x.Nodes)
-                }
-            };
-            bookmarksSource.RowSelection!.SingleSelect = true;
-            bookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;
-            bookmarksSource.ExpandAll();
-            return bookmarksSource;
+                    Columns =
+                    {
+                        new HierarchicalExpanderColumn<PdfBookmarkNode>(
+                            new TextColumn<PdfBookmarkNode, string>(null,
+                                x => x.Title, options: new TextColumnOptions<PdfBookmarkNode>()
+                                {
+                                    CanUserSortColumn = false,
+                                    IsTextSearchEnabled = false,
+                                    TextWrapping = TextWrapping.WrapWithOverflow,
+                                    TextAlignment = TextAlignment.Left,
+                                    MaxWidth = new GridLength(400)
+                                }), x => x.Nodes)
+                    }
+                };
+                bookmarksSource.RowSelection!.SingleSelect = true;
+                bookmarksSource.RowSelection.SelectionChanged += BookmarksSelectionChanged;
+                bookmarksSource.ExpandAll();
+                return bookmarksSource;
+            }
         }
+        catch (OperationCanceledException)
+        { /* No op */ }
 
         return null;
     }

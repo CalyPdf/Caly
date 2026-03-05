@@ -60,6 +60,12 @@ public partial class DocumentViewModel : IAsyncDisposable
             Debug.WriteExceptionToFile(e);
         }
 
+        /*
+         Do we want to await the following?
+         - await EmbeddedFiles;
+         - Properties
+        */
+
         SearchResults.Clear();
 
         _mainCts.Dispose();
