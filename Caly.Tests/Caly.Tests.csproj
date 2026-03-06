@@ -19,7 +19,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.3.12" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\Caly.Core\Caly.Core.csproj" />
+		<ProjectReference Include="..\Caly.Pdf\Caly.Pdf.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
