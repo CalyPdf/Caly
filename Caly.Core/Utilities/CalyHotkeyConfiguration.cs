@@ -40,24 +40,37 @@ internal static class CalyHotkeyConfiguration
     }
 
     /// <summary>
-    /// Gets a platform-specific <see cref="KeyGesture"/> for the Copy action
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Copy' action.
     /// </summary>
     public static KeyGesture? CopyGesture => Application.Current?.PlatformSettings?.HotkeyConfiguration.Copy.FirstOrDefault();
 
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Open File' action.
+    /// </summary>
     public static KeyGesture OpenFileGesture => new KeyGesture(Key.O, CommandModifiers);
 
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Go to Specific Page' action.
+    /// </summary>
+    public static KeyGesture DocumentGoToGesture => new KeyGesture(Key.G, CommandModifiers);
+
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Search in Document' action.
+    /// </summary>
     public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, CommandModifiers);
 
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Close Document' action.
+    /// </summary>
     public static KeyGesture DocumentCloseGesture => new KeyGesture(Key.F4, CommandModifiers);
 
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Go To Next Page' action.
+    /// </summary>
     public static KeyGesture DocumentNextGesture => new KeyGesture(Key.PageDown, CommandModifiers);
 
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Go To Previous Page' action.
+    /// </summary>
     public static KeyGesture DocumentPreviousGesture => new KeyGesture(Key.PageUp, CommandModifiers);
-
-    // TODO
-
-    // See:
-    // - MainView.axaml
-    // - PageItem.axaml
-    // - PageItemsControl.axaml
 }

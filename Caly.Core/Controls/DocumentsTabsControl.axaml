@@ -83,7 +83,8 @@
                             </PathIcon>
                         </Button>
 
-						<TextBox MinWidth="50"
+						<TextBox Name="PART_TextBoxPageNumber"
+                                 MinWidth="50"
                                  MaxWidth="50"
                                  TextAlignment="Center"
                                  HorizontalContentAlignment="Center"
@@ -91,7 +92,7 @@
                                  VerticalAlignment="Center"
 								 KeyDown="PageNumberTextBox_OnKeyDown"
                                  Text="{Binding SelectedPageNumber, UpdateSourceTrigger=Explicit}"
-                                  AcceptsReturn="False">
+                                 AcceptsReturn="False">
 							<TextBox.Styles>
                                 <Style Selector="DataValidationErrors">
                                     <Setter Property="Template">

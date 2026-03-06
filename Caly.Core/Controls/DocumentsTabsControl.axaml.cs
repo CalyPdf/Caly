@@ -20,11 +20,14 @@
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using System;
+using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
+using CommunityToolkit.Mvvm.Input;
+using System;
 
 namespace Caly.Core.Controls;
 
@@ -32,6 +35,8 @@ namespace Caly.Core.Controls;
 /// Control that represents all open PDF documents, together with the top and left navigation panels.
 /// Each PDF document is displayed in a tab.
 /// </summary>
+[TemplatePart("PART_TextBoxPageNumber", typeof(TextBox))]
+[TemplatePart("PART_SplitView", typeof(SplitView))]
 public sealed partial class DocumentsTabsControl : UserControl
 {
     private const int MaxPaneLength = 500;
@@ -41,10 +46,35 @@ public sealed partial class DocumentsTabsControl : UserControl
     private double _originalPaneLength;
 
     private SplitView? _splitView;
+    private TextBox? _textBoxPageNumber;
 
     public DocumentsTabsControl()
     {
         InitializeComponent();
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = CalyHotkeyConfiguration.DocumentGoToGesture,
+            Command = new RelayCommand(() =>
+            {
+                var textBox = GetTextBoxPageNumber();
+                if (textBox is null)
+                {
+                    return;
+                }
+
+                textBox.Focus();
+                textBox.SelectAll();
+            })
+        });
+    }
+
+    private TextBox? GetTextBoxPageNumber()
+    {
+        if (_textBoxPageNumber is null)
+        {
+            _textBoxPageNumber = this.FindDescendantOfType<TextBox>(false, tb => tb.Name == "PART_TextBoxPageNumber");
+        }
+        return _textBoxPageNumber;
     }
 
     private SplitView? GetSplitView()
