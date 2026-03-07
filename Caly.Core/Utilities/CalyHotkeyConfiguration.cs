@@ -55,6 +55,16 @@ internal static class CalyHotkeyConfiguration
     public static KeyGesture DocumentGoToGesture => new KeyGesture(Key.G, CommandModifiers);
 
     /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Zoom In' action.
+    /// </summary>
+    public static KeyGesture DocumentZoomInGesture => new KeyGesture(Key.OemPlus, CommandModifiers);
+
+    /// <summary>
+    /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Zoom Out' action.
+    /// </summary>
+    public static KeyGesture DocumentZoomOutGesture => new KeyGesture(Key.OemMinus, CommandModifiers);
+
+    /// <summary>
     /// Gets a platform-specific <see cref="KeyGesture"/> for the 'Search in Document' action.
     /// </summary>
     public static KeyGesture DocumentSearchGesture => new KeyGesture(Key.F, CommandModifiers);
