@@ -784,6 +784,171 @@ namespace Caly.Tests
             Assert.Contains(callLog, c => c.StartsWith("partial:WORLD"));
         }
 
+        // -----------------------------------------------------------------------
+        // GetSelectedWords
+        // -----------------------------------------------------------------------
+
+        // Helpers to set internal index properties via reflection.
+
+        private static void SetTextLineIndex(PdfWord word, ushort lineIndex)
+        {
+            typeof(PdfWord).GetProperty(nameof(PdfWord.TextLineIndex))!
+                .SetValue(word, lineIndex);
+        }
+
+        private static void SetTextBlockIndex(PdfWord word, ushort blockIndex)
+        {
+            typeof(PdfWord).GetProperty(nameof(PdfWord.TextBlockIndex))!
+                .SetValue(word, blockIndex);
+        }
+
+        private static void SetLineIndexInPage(PdfTextLine line, ushort index)
+        {
+            typeof(PdfTextLine).GetProperty(nameof(PdfTextLine.IndexInPage))!
+                .SetValue(line, index);
+        }
+
+        private static void SetLineWordStartIndex(PdfTextLine line, ushort wordStartIndex)
+        {
+            typeof(PdfTextLine).GetProperty("WordStartIndex",
+                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!
+                .SetValue(line, wordStartIndex);
+        }
+
+        /// <summary>
+        /// Builds a <see cref="PdfTextLayer"/> where each block contains exactly one line
+        /// whose words are those supplied in the corresponding inner array.
+        /// All internal indices (IndexInPage, TextLineIndex, TextBlockIndex, WordStartIndex)
+        /// are set via reflection, mirroring what PdfTextLayerHelper.GetTextLayer() would do.
+        /// </summary>
+        private static PdfTextLayer MakeTextLayer(PdfWord[][] wordsPerBlock)
+        {
+            ushort wordIndex = 0;
+            ushort lineIndex = 0;
+            var blocks = new List<PdfTextBlock>();
+
+            for (ushort b = 0; b < wordsPerBlock.Length; b++)
+            {
+                var blockWords = wordsPerBlock[b];
+                ushort lineWordStart = wordIndex;
+
+                for (ushort i = 0; i < blockWords.Length; i++)
+                {
+                    SetIndexInPage(blockWords[i], wordIndex);
+                    SetTextLineIndex(blockWords[i], lineIndex);
+                    SetTextBlockIndex(blockWords[i], b);
+                    wordIndex++;
+                }
+
+                var line = new PdfTextLine(blockWords);
+                SetLineIndexInPage(line, lineIndex);
+                SetLineWordStartIndex(line, lineWordStart);
+                lineIndex++;
+
+                blocks.Add(new PdfTextBlock([line]));
+            }
+
+            return new PdfTextLayer(blocks, []);
+        }
+
+        [Fact]
+        public void GetSelectedWords_PageNotInSelection_YieldsNothing()
+        {
+            var sel = new TextSelection(5);
+            var a = MakeWord("A"); SetIndexInPage(a, 0);
+            var f = MakeWord("B"); SetIndexInPage(f, 0);
+            sel.Start(2, a);
+            sel.Extend(3, f);
+
+            var layer = MakeTextLayer([[MakeWord("X"), MakeWord("Y")]]);
+
+            // Page 1 is outside [2, 3]
+            Assert.Empty(sel.GetSelectedWords(1, layer));
+        }
+
+        [Fact]
+        public void GetSelectedWords_SingleWordSamePage_YieldsThatWord()
+        {
+            var sel = new TextSelection(5);
+            var word = MakeWord("A");
+            // Same word as anchor and focus — GetWords(start, start) path
+            sel.Start(1, word);
+            sel.Extend(1, word);
+
+            var layer = MakeTextLayer([[word]]);
+
+            var result = sel.GetSelectedWords(1, layer).ToList();
+
+            Assert.Single(result);
+            Assert.Same(word, result[0]);
+        }
+
+        [Fact]
+        public void GetSelectedWords_MultipleWordsForwardSamePage_YieldsAllWords()
+        {
+            var w0 = MakeWord("ONE");
+            var w1 = MakeWord("TWO");
+            var w2 = MakeWord("THREE");
+
+            var layer = MakeTextLayer([[w0, w1, w2]]);
+
+            var sel = new TextSelection(5);
+            sel.Start(1, w0);  // anchor = w0 (index 0)
+            sel.Extend(1, w2); // focus  = w2 (index 2)
+
+            var result = sel.GetSelectedWords(1, layer).ToList();
+
+            Assert.Equal(3, result.Count);
+            Assert.Same(w0, result[0]);
+            Assert.Same(w1, result[1]);
+            Assert.Same(w2, result[2]);
+        }
+
+        [Fact]
+        public void GetSelectedWords_MultipleWordsForward_MiddleSubset()
+        {
+            var w0 = MakeWord("A");
+            var w1 = MakeWord("B");
+            var w2 = MakeWord("C");
+            var w3 = MakeWord("D");
+
+            var layer = MakeTextLayer([[w0, w1, w2, w3]]);
+
+            var sel = new TextSelection(5);
+            sel.Start(1, w1);  // anchor at index 1
+            sel.Extend(1, w2); // focus  at index 2
+
+            var result = sel.GetSelectedWords(1, layer).ToList();
+
+            Assert.Equal(2, result.Count);
+            Assert.Same(w1, result[0]);
+            Assert.Same(w2, result[1]);
+        }
+
+        [Fact]
+        public void GetSelectedWords_BackwardSamePage_YieldsFromFocusToAnchor()
+        {
+            var w0 = MakeWord("A");
+            var w1 = MakeWord("B");
+            var w2 = MakeWord("C");
+
+            var layer = MakeTextLayer([[w0, w1, w2]]);
+
+            var sel = new TextSelection(5);
+            sel.Start(1, w2);  // anchor at index 2 (later)
+            sel.Extend(1, w0); // focus  at index 0 (earlier) → backward
+
+            Assert.True(sel.IsBackward);
+
+            var result = sel.GetSelectedWords(1, layer).ToList();
+
+            // start=focus(w0), end=anchor(w2) → all three words
+            Assert.Equal(3, result.Count);
+            Assert.Same(w0, result[0]);
+            Assert.Same(w1, result[1]);
+            Assert.Same(w2, result[2]);
+        }
+
         [Fact]
         public void GetPageSelectionAs_Backward_OffsetsAreSwapped()
         {

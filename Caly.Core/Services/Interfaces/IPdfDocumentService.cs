@@ -37,7 +37,7 @@ public interface IPdfDocumentService : IAsyncDisposable
 {
     double PpiScale { get; }
 
-    bool IsActive { get; internal set; }
+    bool IsActive { get; set; }
 
     int NumberOfPages { get; }
 
