@@ -38,6 +38,8 @@
 				<Grid>
 					<Grid.KeyBindings>
                         <KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.DocumentCloseGesture}" Command="{Binding CloseDocumentCommand}" />
+                        <KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.DocumentZoomInGesture}" Command="{Binding ZoomInCommand}" />
+                        <KeyBinding Gesture="{x:Static utilities:CalyHotkeyConfiguration.DocumentZoomOutGesture}" Command="{Binding ZoomOutCommand}" />
                     </Grid.KeyBindings>
 
                     <!-- The pages control -->
