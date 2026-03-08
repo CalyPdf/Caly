@@ -501,6 +501,12 @@ public sealed class PageItemsControl : ItemsControl
                 clearSelection = true;
             }
         }
+        else if (pointerPoint.Properties.IsRightButtonPressed)
+        {
+            // Always hide annotation on right-click to not conflict with context flyout. This works
+            // on Windows but would need to be tested on other platforms
+            control.HideAnnotation();
+        }
 
         if (clearSelection)
         {
@@ -721,7 +727,7 @@ public sealed class PageItemsControl : ItemsControl
         }
         else
         {
-            HandleMouseMoveOver(control, loc);
+            HandleMouseMoveOver(control, pointerPoint.Properties, loc);
         }
     }
 
@@ -794,14 +800,17 @@ public sealed class PageItemsControl : ItemsControl
     /// <summary>
     /// Handle mouse hover over words, links or others
     /// </summary>
-    private static void HandleMouseMoveOver(PageInteractiveLayerControl control, Point loc)
+    private static void HandleMouseMoveOver(PageInteractiveLayerControl control, PointerPointProperties properties, Point loc)
     {
         PdfAnnotation? annotation = control.PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
 
         if (annotation is not null)
         {
-            if (!string.IsNullOrEmpty(annotation.Content))
+            if (!string.IsNullOrEmpty(annotation.Content) && !properties.IsRightButtonPressed)
             {
+                // We do not show annotation when right-clicking
+                // to not conflict with context flyout. This works
+                // on Windows but would need to be tested on other platforms
                 control.ShowAnnotation(annotation);
             }
 
