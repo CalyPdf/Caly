@@ -22,6 +22,7 @@ using System;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Avalonia;
@@ -37,6 +38,8 @@ namespace Caly.Core.Utilities;
 internal static class CalyExtensions
 {
     public static readonly string CalyVersion;
+
+    private static ReadOnlySpan<char> PdfExtension => ['.', 'p', 'd', 'f'];
 
     static CalyExtensions()
     {
@@ -163,20 +166,136 @@ internal static class CalyExtensions
         }
     }
 
-    /// <summary>
-    /// Open a link (local path, url, etc.).
-    /// </summary>
-    internal static void OpenLink(ReadOnlySpan<char> url)
+    internal static void OpenFile(string? path)
     {
-        OpenLink(new string(url));
+        if (string.IsNullOrEmpty(path) || !IsValidFilePath(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        if (path.IsPdf())
+        {
+            OpenPdfDocument(path);
+            return;
+        }
+
+        // We don't want to directly open any other file extension
+        // as this could be harmful. We just open the directory.
+        var directory = Path.GetDirectoryName(path);
+        OpenDirectory(directory);
+    }
+
+    private static bool IsValidFilePath(ReadOnlySpan<char> path)
+    {
+        var fileName = Path.GetFileName(path);
+        if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+        {
+            return false;
+        }
+
+        var dir = Path.GetDirectoryName(path);
+        if (!IsValidPath(dir))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsValidPath(ReadOnlySpan<char> path)
+    {
+        if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Open a pdf document with Caly.
+    /// </summary>
+    internal static void OpenPdfDocument(string? path)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                return;
+            }
+
+            if (!path.IsPdf())
+            {
+                return;
+            }
+
+            if (FilePipeStream.SendPath(path))
+            {
+                FilePipeStream.SendBringToFront();
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+        }
+    }
+
+    internal static void OpenDirectory(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || !IsValidPath(path) || !Directory.Exists(path))
+        {
+            return;
+        }
+
+        ProcessStart(path);
+    }
+
+    /// <summary>
+    /// Open a url.
+    /// </summary>
+    internal static void OpenUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
+
+        try
+        {
+            if (!url.StartsWith("http"))
+            {
+                // https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
+                // We only want to open http / https uris in this method.
+                // We force 'http'.
+                url = $"http://{url}";
+            }
+
+            var uri = new Uri(url);
+            ProcessStart(uri.AbsoluteUri);
+        }
+        catch (Exception e)
+        {
+            Debug.WriteExceptionToFile(e);
+        }
+    }
+
+    /// <summary>
+    /// Open a url.
+    /// </summary>
+    internal static void OpenUrl(ReadOnlySpan<char> url)
+    {
+        OpenUrl(new string(url));
     }
 
     /// <summary>
     /// Open a link (local path, url, etc.).
+    /// <para>Warning - sanitise the input as this will execute anything passed.</para>
     /// </summary>
-    internal static void OpenLink(string url)
+    private static void ProcessStart(string url)
     {
         // https://brockallen.com/2016/09/24/process-start-for-urls-on-net-core/
+
+        // See https://docs.avaloniaui.net/docs/concepts/services/launcher to use avalonia to do so
 
         try
         {
@@ -184,11 +303,14 @@ internal static class CalyExtensions
         }
         catch (Exception ex)
         {
-            OpenLinkFallback(url);
+            ProcessStartFallback(url);
         }
     }
     
-    private static void OpenLinkFallback(string url)
+    /// <summary>
+    /// Warning - sanitise the input as this will execute anything passed.
+    /// </summary>
+    private static void ProcessStartFallback(string url)
     {
         try
         {
@@ -214,6 +336,16 @@ internal static class CalyExtensions
                 $"Failed to open '{url}'.",
                 ex.Message));
         }
+    }
+
+    internal static bool IsPdf(this ReadOnlySpan<char> path)
+    {
+        var extension = Path.GetExtension(path);
+        if (extension.Length == 4)
+        {
+            return extension.Equals(PdfExtension, StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
     }
 
     /// <summary>
