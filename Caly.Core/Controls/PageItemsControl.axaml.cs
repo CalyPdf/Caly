@@ -600,7 +600,7 @@ public sealed class PageItemsControl : ItemsControl
                         string? uri = ((UriAction)annotation.Action)?.Uri;
                         if (!string.IsNullOrEmpty(uri))
                         {
-                            CalyExtensions.OpenLink(uri);
+                            CalyExtensions.OpenUrl(uri);
                             return;
                         }
                         break;
@@ -647,7 +647,7 @@ public sealed class PageItemsControl : ItemsControl
                 var match = PdfTextLayerHelper.GetInteractiveMatch(line);
                 if (!match.IsEmpty)
                 {
-                    CalyExtensions.OpenLink(match);
+                    CalyExtensions.OpenUrl(match);
                 }
             }
         }

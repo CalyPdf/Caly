@@ -50,7 +50,6 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
 {
     private const string PdfVersionFormat = "0.0";
     private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
-    private const string PdfExtension = ".pdf";
 
     private IStorageFile? _storageFile;
     private Stream? _fileStream;
@@ -98,7 +97,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                     return 0; // no pdf loaded
                 }
 
-                if (!PdfExtension.Equals(Path.GetExtension(storageFile.Path.LocalPath), StringComparison.OrdinalIgnoreCase) && !CalyExtensions.IsMobilePlatform())
+                if (!storageFile.Path.LocalPath.IsPdf() && !CalyExtensions.IsMobilePlatform())
                 {
                     // TODO - Need to handle Mobile
                     throw new ArgumentOutOfRangeException($"The loaded file '{Path.GetFileName(storageFile.Path.LocalPath)}' is not a pdf document.");
