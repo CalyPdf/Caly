@@ -216,7 +216,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         _bookmarksTask = new Lazy<Task<HierarchicalTreeDataGridSource<PdfBookmarkNode>?>>(GetBookmarks);
         _propertiesTask = new Lazy<Task<DocumentPropertiesViewModel?>>(GetProperties);
-        _embeddedFilesTask = new Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>>(GetEmbeddedFiles);
+        _embeddedFilesTask = new Lazy<Task<IReadOnlyList<PdfEmbeddedFileViewModel>>>(GetEmbeddedFiles);
 
         _searchResultsDisposable = SearchResults
             .GetWeakCollectionChangedObservable()

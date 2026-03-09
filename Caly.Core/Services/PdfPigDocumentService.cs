@@ -30,7 +30,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -230,7 +229,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
         }, token);
     }
 
-    public async Task<ObservableCollection<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token)
+    public async Task<IReadOnlyList<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token)
     {
         Debug.ThrowOnUiThread();
 
@@ -246,14 +245,13 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
             }
 
             var result = new PdfEmbeddedFileViewModel[files.Count];
-
             for (var i = 0; i < files.Count; i++)
             {
                 var f = files[i];
                 result[i] = new PdfEmbeddedFileViewModel(f.Name, f.Memory);
             }
 
-            return new ObservableCollection<PdfEmbeddedFileViewModel>(result);
+            return result;
         }, token);
     }
 
@@ -350,7 +348,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
         return rawDate;
     }
 
-    public async Task<ObservableCollection<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token)
+    public async Task<IReadOnlyList<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token)
     {
         Debug.ThrowOnUiThread();
         return await GuardDispose(async ct =>
@@ -370,7 +368,7 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
                 return null;
             }
 
-            var bookmarksItems = new ObservableCollection<PdfBookmarkNode>();
+            var bookmarksItems = new List<PdfBookmarkNode>();
             foreach (BookmarkNode node in bookmarks.Roots)
             {
                 var n = BuildPdfBookmarkNode(node, ct);
