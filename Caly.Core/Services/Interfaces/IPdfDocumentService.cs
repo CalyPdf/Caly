@@ -26,7 +26,6 @@ using Caly.Pdf.Models;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using UglyToad.PdfPig.Rendering.Skia;
@@ -57,9 +56,9 @@ public interface IPdfDocumentService : IAsyncDisposable
 
     Task<DocumentPropertiesViewModel?> GetDocumentPropertiesAsync(CancellationToken token);
 
-    Task<ObservableCollection<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token);
+    Task<IReadOnlyList<PdfBookmarkNode>?> GetPdfBookmark(CancellationToken token);
 
-    Task<ObservableCollection<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token);
+    Task<IReadOnlyList<PdfEmbeddedFileViewModel>?> GetEmbeddedFileAsync(CancellationToken token);
 
     Task<PdfPageSize?> GetPageSizeAsync(int pageNumber, CancellationToken token);
 

@@ -19,7 +19,7 @@
 // SOFTWARE.
 
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels;
@@ -29,8 +29,8 @@ public partial class DocumentViewModel
     private readonly Lazy<Task<DocumentPropertiesViewModel?>> _propertiesTask;
     public Task<DocumentPropertiesViewModel?> Properties => _propertiesTask.Value;
 
-    private readonly Lazy<Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>>> _embeddedFilesTask;
-    public Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> EmbeddedFiles => _embeddedFilesTask.Value;
+    private readonly Lazy<Task<IReadOnlyList<PdfEmbeddedFileViewModel>>> _embeddedFilesTask;
+    public Task<IReadOnlyList<PdfEmbeddedFileViewModel>> EmbeddedFiles => _embeddedFilesTask.Value;
 
     private async Task<DocumentPropertiesViewModel?> GetProperties()
     {
@@ -45,7 +45,7 @@ public partial class DocumentViewModel
         return null;
     }
 
-    private async Task<ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>> GetEmbeddedFiles()
+    private async Task<IReadOnlyList<PdfEmbeddedFileViewModel>> GetEmbeddedFiles()
     {
         try
         {
@@ -53,12 +53,12 @@ public partial class DocumentViewModel
             var items = await Task.Run(() => _pdfService.GetEmbeddedFileAsync(_mainToken), _mainToken);
             if (items is not null && items.Count > 0)
             {
-                return new ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>(items);
+                return items;
             }
         }
         catch (OperationCanceledException)
         { /* No op */ }
 
-        return ReadOnlyObservableCollection<PdfEmbeddedFileViewModel>.Empty;
+        return [];
     }
 }

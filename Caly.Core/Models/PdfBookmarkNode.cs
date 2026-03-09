@@ -19,13 +19,12 @@
 // SOFTWARE.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace Caly.Core.Models;
 
 public sealed record PdfBookmarkNode
 {
-    public ObservableCollection<PdfBookmarkNode>? Nodes { get; }
+    public IReadOnlyList<PdfBookmarkNode>? Nodes { get; }
 
     public string Title { get; }
 
@@ -33,14 +32,14 @@ public sealed record PdfBookmarkNode
 
     public double? OffsetY { get; }
     
-    public PdfBookmarkNode(string title, int? pageNumber, double? offsetY, IEnumerable<PdfBookmarkNode>? children)
+    public PdfBookmarkNode(string title, int? pageNumber, double? offsetY, IReadOnlyList<PdfBookmarkNode>? children)
     {
         Title = title;
         PageNumber = pageNumber;
         OffsetY = offsetY;
         if (children is not null)
         {
-            Nodes = new ObservableCollection<PdfBookmarkNode>(children);
+            Nodes = children;
         }
     }
 }
