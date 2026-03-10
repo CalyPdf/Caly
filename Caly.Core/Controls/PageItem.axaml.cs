@@ -33,7 +33,7 @@ namespace Caly.Core.Controls;
 /// <summary>
 /// Control that represents a single page in a PDF document.
 /// </summary>
-[TemplatePart("PART_PageTextLayerControl", typeof(PageInteractiveLayerControl))]
+[TemplatePart("PART_PageInteractiveLayerControl", typeof(PageInteractiveLayerControl))]
 public sealed class PageItem : ContentControl
 {
     /// <summary>
@@ -136,9 +136,9 @@ public sealed class PageItem : ContentControl
     }
 
     /// <summary>
-    /// Gets the text layer.
+    /// Gets the interactive layer.
     /// </summary>
-    public PageInteractiveLayerControl? TextLayer { get; set; }
+    public PageInteractiveLayerControl? InteractiveLayer { get; set; }
 
     public PageItem()
     {
@@ -154,7 +154,7 @@ public sealed class PageItem : ContentControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        TextLayer = e.NameScope.FindFromNameScope<PageInteractiveLayerControl>("PART_PageTextLayerControl");
+        InteractiveLayer = e.NameScope.FindFromNameScope<PageInteractiveLayerControl>("PART_PageInteractiveLayerControl");
     }
     
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

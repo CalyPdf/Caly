@@ -279,7 +279,7 @@ public sealed class PageItemsControl : ItemsControl
     {
         double yOffset = 0; // Top of page
         
-        var textLayer = GetPageItem(pageNumber)?.TextLayer?.PdfTextLayer;
+        var textLayer = GetPageItem(pageNumber)?.InteractiveLayer?.PdfTextLayer;
         if (textLayer is not null)
         {
             var word = textLayer[wordIndex];
@@ -397,16 +397,16 @@ public sealed class PageItemsControl : ItemsControl
         pageItem.Loaded -= PageItem_Loaded;
         pageItem.Unloaded -= PageItem_Unloaded;
 
-        if (pageItem.TextLayer is null)
+        if (pageItem.InteractiveLayer is null)
         {
             return;
         }
 
-        pageItem.TextLayer.PointerMoved -= TextLayer_PointerMoved;
-        pageItem.TextLayer.PointerWheelChanged -= TextLayer_PointerMoved;
-        pageItem.TextLayer.PointerExited -= TextLayer_PointerExited;
-        pageItem.TextLayer.PointerReleased -= TextLayer_PointerReleased;
-        pageItem.TextLayer.PointerPressed -= TextLayer_PointerPressed;
+        pageItem.InteractiveLayer.PointerMoved -= InteractiveLayerPointerMoved;
+        pageItem.InteractiveLayer.PointerWheelChanged -= InteractiveLayerPointerMoved;
+        pageItem.InteractiveLayer.PointerExited -= InteractiveLayerPointerExited;
+        pageItem.InteractiveLayer.PointerReleased -= InteractiveLayerPointerReleased;
+        pageItem.InteractiveLayer.PointerPressed -= InteractiveLayerPointerPressed;
         pageItem.BeforeRotation -= OnBeforePageRotation;
     }
 
@@ -419,16 +419,16 @@ public sealed class PageItemsControl : ItemsControl
 
         pageItem.Loaded -= PageItem_Loaded;
 
-        if (pageItem.TextLayer is null)
+        if (pageItem.InteractiveLayer is null)
         {
             return;
         }
 
-        pageItem.TextLayer.PointerMoved += TextLayer_PointerMoved;
-        pageItem.TextLayer.PointerWheelChanged += TextLayer_PointerMoved;
-        pageItem.TextLayer.PointerExited += TextLayer_PointerExited;
-        pageItem.TextLayer.PointerReleased += TextLayer_PointerReleased;
-        pageItem.TextLayer.PointerPressed += TextLayer_PointerPressed;
+        pageItem.InteractiveLayer.PointerMoved += InteractiveLayerPointerMoved;
+        pageItem.InteractiveLayer.PointerWheelChanged += InteractiveLayerPointerMoved;
+        pageItem.InteractiveLayer.PointerExited += InteractiveLayerPointerExited;
+        pageItem.InteractiveLayer.PointerReleased += InteractiveLayerPointerReleased;
+        pageItem.InteractiveLayer.PointerPressed += InteractiveLayerPointerPressed;
         pageItem.BeforeRotation += OnBeforePageRotation;
     }
 
@@ -453,7 +453,7 @@ public sealed class PageItemsControl : ItemsControl
         }, DispatcherPriority.Loaded);
     }
 
-    private void TextLayer_PointerPressed(object? sender, PointerPressedEventArgs e)
+    private void InteractiveLayerPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
 
@@ -569,7 +569,7 @@ public sealed class PageItemsControl : ItemsControl
         System.Diagnostics.Debug.WriteLine($"HandleMultipleClick: {startWord} -> {endWord}.");
     }
 
-    private void TextLayer_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    private void InteractiveLayerPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
 
@@ -664,7 +664,7 @@ public sealed class PageItemsControl : ItemsControl
         e.PreventGestureRecognition();
     }
 
-    private static void TextLayer_PointerExited(object? sender, PointerEventArgs e)
+    private static void InteractiveLayerPointerExited(object? sender, PointerEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
 
@@ -677,7 +677,7 @@ public sealed class PageItemsControl : ItemsControl
         interactiveLayer.HideAnnotation();
     }
 
-    private void TextLayer_PointerMoved(object? sender, PointerEventArgs e)
+    private void InteractiveLayerPointerMoved(object? sender, PointerEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
 
@@ -924,13 +924,13 @@ public sealed class PageItemsControl : ItemsControl
             return false;
         }
 
-        if (endPage.TextLayer is null)
+        if (endPage.InteractiveLayer is null)
         {
             // Template not yet applied on the target page — do nothing.
             return false;
         }
 
-        e.Pointer.Capture(endPage.TextLayer); // Switch capture to new page
+        e.Pointer.Capture(endPage.InteractiveLayer); // Switch capture to new page
         return true;
     }
 
