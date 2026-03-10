@@ -37,6 +37,12 @@ public sealed class ThumbnailControl : TemplatedControl
 
     private const double _borderThickness = 2;
 
+#if DEBUG
+    private static readonly IImmutableSolidColorBrush BackgroundBrush = Brushes.HotPink;
+#else
+    private static readonly IImmutableSolidColorBrush BackgroundBrush = Brushes.White;
+#endif
+    
     private static readonly Color AreaColor = Colors.DodgerBlue;
     private static readonly Brush AreaBrush = new SolidColorBrush(AreaColor);
     private static readonly Brush AreaTransparentBrush = new SolidColorBrush(AreaColor, 0.3);
@@ -127,21 +133,13 @@ public sealed class ThumbnailControl : TemplatedControl
             }
             else
             {
-#if DEBUG
-                context.FillRectangle(Brushes.HotPink, Bounds);
-#else
-                context.FillRectangle(Brushes.White, Bounds);
-#endif
+                context.FillRectangle(BackgroundBrush, Bounds);
             }
         }
         catch (Exception e)
         {
             // We just ignore for the moment
-#if DEBUG
-            context.FillRectangle(Brushes.HotPink, Bounds);
-#else
-            context.FillRectangle(Brushes.White, Bounds);
-#endif
+            context.FillRectangle(BackgroundBrush, Bounds);
             Debug.WriteExceptionToFile(e);
         }
 
@@ -152,14 +150,19 @@ public sealed class ThumbnailControl : TemplatedControl
 
         var area = VisibleArea.Value.TransformToAABB(_scale);
 
-        if (area is { Width: > _borderThickness, Height: > _borderThickness })
+        const double minSize = _borderThickness * 2;
+        if (area is { Width: > minSize, Height: > minSize })
         {
             context.DrawRectangle(AreaTransparentBrush.ToImmutable(), AreaPen.ToImmutable(),
                 area.Deflate(_borderThickness / 2.0));
         }
         else
         {
-            context.DrawRectangle(AreaBrush.ToImmutable(), null, area);
+            // Make sure the area is still visible even zoom level is large.
+            // We create a rect with a min size and same aspect ratio that
+            // has the same center as the actual area.
+            var rect = area.CenterRect(new Rect(0, 0, area.Size.AspectRatio * minSize, minSize));
+            context.DrawRectangle(AreaBrush.ToImmutable(), null, rect);
         }
     }
     
