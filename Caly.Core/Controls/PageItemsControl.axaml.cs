@@ -100,6 +100,13 @@ public sealed class PageItemsControl : ItemsControl
             o => o.LayoutTransform);
 
     /// <summary>
+    /// Defines the <see cref="InteractiveActionOver"/> property. Starts at 1.
+    /// </summary>
+    public static readonly StyledProperty<string?> InteractiveActionOverProperty =
+        AvaloniaProperty.Register<PageItemsControl, string?>(nameof(InteractiveActionOver),
+            defaultBindingMode: BindingMode.OneWayToSource);
+
+    /// <summary>
     /// Defines the <see cref="PageCount"/> property.
     /// </summary>
     public static readonly StyledProperty<int> PageCountProperty =
@@ -203,6 +210,11 @@ public sealed class PageItemsControl : ItemsControl
         private set => SetAndRaise(LayoutTransformControlProperty, ref field, value);
     }
 
+    public string? InteractiveActionOver
+    {
+        get => GetValue(InteractiveActionOverProperty);
+        set => SetValue(InteractiveActionOverProperty, value);
+    }
     public int PageCount
     {
         get => GetValue(PageCountProperty);
@@ -650,10 +662,9 @@ public sealed class PageItemsControl : ItemsControl
                  *  launcher.LaunchUriAsync(new Uri(match.ToString()))
                  */
 
-                var match = PdfTextLayerHelper.GetInteractiveMatch(line);
-                if (!match.IsEmpty)
+                if (!string.IsNullOrEmpty(line.InteractiveLink))
                 {
-                    CalyExtensions.OpenUrl(match);
+                    CalyExtensions.OpenUrl(line.InteractiveLink);
                 }
             }
         }
@@ -664,7 +675,7 @@ public sealed class PageItemsControl : ItemsControl
         e.PreventGestureRecognition();
     }
 
-    private static void InteractiveLayerPointerExited(object? sender, PointerEventArgs e)
+    private void InteractiveLayerPointerExited(object? sender, PointerEventArgs e)
     {
         Debug.ThrowNotOnUiThread();
 
@@ -675,6 +686,7 @@ public sealed class PageItemsControl : ItemsControl
 
         interactiveLayer.SetDefaultCursor();
         interactiveLayer.HideAnnotation();
+        SetCurrentValue(InteractiveActionOverProperty, null);
     }
 
     private void InteractiveLayerPointerMoved(object? sender, PointerEventArgs e)
@@ -800,7 +812,7 @@ public sealed class PageItemsControl : ItemsControl
     /// <summary>
     /// Handle mouse hover over words, links or others
     /// </summary>
-    private static void HandleMouseMoveOver(PageInteractiveLayerControl control, PointerPointProperties properties, Point loc)
+    private void HandleMouseMoveOver(PageInteractiveLayerControl control, PointerPointProperties properties, Point loc)
     {
         PdfAnnotation? annotation = control.PdfTextLayer!.FindAnnotationOver(loc.X, loc.Y);
 
@@ -817,6 +829,11 @@ public sealed class PageItemsControl : ItemsControl
             if (annotation.IsInteractive)
             {
                 control.SetHandCursor();
+                if (annotation.Action is UriAction uriAction)
+                {
+                    SetCurrentValue(InteractiveActionOverProperty, $"Open '{uriAction.Uri}'");
+                }
+                
                 return;
             }
         }
@@ -828,18 +845,22 @@ public sealed class PageItemsControl : ItemsControl
         PdfWord? word = control.PdfTextLayer!.FindWordOver(loc.X, loc.Y);
         if (word is not null)
         {
-            if (control.PdfTextLayer.GetLine(word)?.IsInteractive == true)
+            //if (control.PdfTextLayer.GetLine(word)?.IsInteractive == true)
+            if (control.PdfTextLayer.GetLine(word) is { IsInteractive: true } line)
             {
                 control.SetHandCursor();
+                SetCurrentValue(InteractiveActionOverProperty, $"Open '{line.InteractiveLink}'");
             }
             else
             {
                 control.SetIbeamCursor();
+                SetCurrentValue(InteractiveActionOverProperty, null);
             }
         }
         else
         {
             control.SetDefaultCursor();
+            SetCurrentValue(InteractiveActionOverProperty, null);
         }
     }
 

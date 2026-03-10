@@ -18,6 +18,7 @@
 
         <Setter Property="MinZoomLevel" Value="{Binding MinZoomLevel}"/>
 		<Setter Property="MaxZoomLevel" Value="{Binding MaxZoomLevel}"/>
+		<Setter Property="InteractiveActionOver" Value="{Binding InteractiveActionOver}"/>
 
 		<Setter Property="Template">
 			<ControlTemplate>

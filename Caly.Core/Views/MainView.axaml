@@ -55,6 +55,7 @@
 					<ToolTip.Tip>Settings</ToolTip.Tip>
 				</PathIcon>
 			</ToggleButton>
+			<TextBlock Text="{Binding SelectedDocument.InteractiveActionOver, FallbackValue=' '}" VerticalAlignment="Center"/>
 		</DockPanel>
 	</Grid>
 </UserControl>
