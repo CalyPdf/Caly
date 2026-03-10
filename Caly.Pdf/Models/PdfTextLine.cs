@@ -36,6 +36,8 @@ public sealed class PdfTextLine : IPdfTextElement
 
     public bool IsInteractive { get; internal set; }
 
+    public string? InteractiveLink { get; internal set; }
+
     internal ushort WordStartIndex { get; set; }
 
     public TextOrientation TextOrientation { get; }

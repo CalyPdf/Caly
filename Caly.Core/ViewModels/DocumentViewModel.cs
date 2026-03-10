@@ -86,6 +86,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     [ObservableProperty] private Range? _realisedThumbnails;
 
+    [ObservableProperty] private string? _interactiveActionOver;
+
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
     /// <para><c>null</c> if not selected.</para>

@@ -43,9 +43,27 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<DocumentViewModel> PdfDocuments { get; } = new();
 
-    [ObservableProperty] private int _selectedDocumentIndex;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedDocument))]
+    private int _selectedDocumentIndex;
 
     [ObservableProperty] private bool _isSettingsPaneOpen;
+
+    public DocumentViewModel? SelectedDocument
+    {
+        get
+        {
+            try
+            {
+                return (SelectedDocumentIndex < 0 || PdfDocuments.Count == 0) ? null : PdfDocuments[SelectedDocumentIndex];
+            }
+            catch (Exception e)
+            {
+                Debug.WriteExceptionToFile(e);
+                return null;
+            }
+        }
+    }
 
     public string Version => CalyExtensions.CalyVersion;
     
@@ -101,20 +119,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         _documentCollectionDisposable.Dispose();
     }
-
-    private DocumentViewModel? GetCurrentPdfDocument()
-    {
-        try
-        {
-            return (SelectedDocumentIndex < 0 || PdfDocuments.Count == 0) ? null : PdfDocuments[SelectedDocumentIndex];
-        }
-        catch (Exception e)
-        {
-            Debug.WriteExceptionToFile(e);
-            return null;
-        }
-    }
-
+    
     [RelayCommand]
     private async Task OpenFile(CancellationToken token)
     {
@@ -152,7 +157,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task CloseDocument(CancellationToken token)
     {
-        DocumentViewModel? vm = GetCurrentPdfDocument();
+        DocumentViewModel? vm = SelectedDocument;
         if (vm is null)
         {
             return;
@@ -170,13 +175,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void ActivateSearchTextTab()
     {
-        GetCurrentPdfDocument()?.ActivateSearchTextTabCommand.Execute(null);
+        SelectedDocument?.ActivateSearchTextTabCommand.Execute(null);
     }
 
     [RelayCommand]
     private Task CopyText(CancellationToken token)
     {
-        DocumentViewModel? vm = GetCurrentPdfDocument();
+        DocumentViewModel? vm = SelectedDocument;
         return vm is null ? Task.CompletedTask : vm.CopyTextCommand.ExecuteAsync(null);
     }
 

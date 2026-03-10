@@ -179,6 +179,14 @@ namespace Caly.Pdf
                 foreach (PdfTextLine line in block.TextLines)
                 {
                     line.IsInteractive = IsInteractive(line);
+                    if (line.IsInteractive)
+                    {
+                        var match = GetInteractiveMatch(line);
+                        if (!match.IsEmpty)
+                        {
+                            line.InteractiveLink = new string(match);
+                        }
+                    }
 
                     ushort lineStartIndex = wordIndex;
 
