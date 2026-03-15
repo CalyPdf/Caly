@@ -28,7 +28,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media.Transformation;
-using Avalonia.VisualTree;
 using Caly.Core.Models;
 using Caly.Core.Utilities;
 using Caly.Pdf;
@@ -37,7 +36,6 @@ using System;
 using System.Linq;
 using System.Windows.Input;
 using Avalonia.Threading;
-using Tabalonia.Controls;
 using UglyToad.PdfPig.Actions;
 using UglyToad.PdfPig.Core;
 
@@ -76,12 +74,9 @@ public sealed class PageItemsControl : ItemsControl
     private Point? _currentPosition;
     private bool _isSettingPageVisibility;
     private bool _isZooming;
-    private bool _isTabDragging;
     private bool _pendingScrollToPage;
     private bool _isUpdatePagesVisibilityScheduled;
-
-    private TabsControl? _tabsControl;
-
+    
     private readonly EventHandler<ScrollChangedEventArgs> _scrollChangedHandler;
     private readonly EventHandler<SizeChangedEventArgs> _sizeChangedHandler;
 
@@ -387,9 +382,9 @@ public sealed class PageItemsControl : ItemsControl
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
-        if (_isTabDragging || container is not PageItem pageItem)
+        if (container is not PageItem pageItem)
         {
-            System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1} (IsTabDragging: {_isTabDragging})");
+            System.Diagnostics.Debug.WriteLine($"Skipping LoadPage() for page {index + 1}");
             return;
         }
 
@@ -1127,14 +1122,7 @@ public sealed class PageItemsControl : ItemsControl
         LayoutTransform.AddHandler(PointerPressedEvent, OnPointerPressed);
         LayoutTransform.AddHandler(PointerMovedEvent, OnPointerMoved);
         LayoutTransform.AddHandler(PointerReleasedEvent, OnPointerReleased);
-
-        _tabsControl = this.FindAncestorOfType<TabsControl>();
-        if (_tabsControl is not null)
-        {
-            _tabsControl.TabDragStarted += TabControlOnTabDragStarted;
-            _tabsControl.TabDragCompleted += TabControlOnTabDragCompleted;
-        }
-
+        
         if (CalyExtensions.IsMobilePlatform())
         {
             LayoutTransform.GestureRecognizers.Add(new PinchGestureRecognizer());
@@ -1171,40 +1159,6 @@ public sealed class PageItemsControl : ItemsControl
                 //Gestures.RemoveHoldingHandler(LayoutTransformControl, _onHoldingChangedHandler);
             }
         }
-
-        if (_tabsControl is not null)
-        {
-            _tabsControl.TabDragStarted -= TabControlOnTabDragStarted;
-            _tabsControl.TabDragCompleted -= TabControlOnTabDragCompleted;
-        }
-    }
-
-    private void TabControlOnTabDragStarted(object? sender, Tabalonia.Events.DragTabDragStartedEventArgs e)
-    {
-        _isTabDragging = true;
-    }
-
-    private void TabControlOnTabDragCompleted(object? sender, Tabalonia.Events.DragTabDragCompletedEventArgs e)
-    {
-        if (!_isTabDragging)
-        {
-            return;
-        }
-
-        _isTabDragging = false;
-        foreach (var pageItem in GetRealizedContainers().OfType<PageItem>())
-        {
-            pageItem.SetCurrentValue(PageItem.VisibleAreaProperty, null);
-        }
-
-        if (SelectedPageNumber.HasValue)
-        {
-            // Ensure we are on the correct page
-            // and containers are realised
-            GoToPage(SelectedPageNumber.Value, 0);
-        }
-
-        PostUpdatePagesVisibility();
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
@@ -1331,7 +1285,7 @@ public sealed class PageItemsControl : ItemsControl
     private bool UpdatePagesVisibility()
     {
         // Exit early if the view is unstable (e.g., user interacting)
-        if (_isSettingPageVisibility || _isTabDragging || _isZooming)
+        if (_isSettingPageVisibility || _isZooming)
         {
             return false;
         }
@@ -1833,7 +1787,6 @@ public sealed class PageItemsControl : ItemsControl
         _startPointerPressed = null;
         _isSettingPageVisibility = false;
         _isZooming = false;
-        _isTabDragging = false;
         _pendingScrollToPage = false;
         _isPinching = false;
         _isUpdatePagesVisibilityScheduled = false;
