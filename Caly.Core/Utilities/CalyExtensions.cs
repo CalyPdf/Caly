@@ -251,27 +251,50 @@ internal static class CalyExtensions
     }
 
     /// <summary>
-    /// Open a url.
+    /// Open a uri.
     /// </summary>
-    internal static void OpenUrl(string? url)
+    internal static void OpenUri(string? uri)
     {
-        if (string.IsNullOrEmpty(url))
+        // https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
+        if (string.IsNullOrEmpty(uri))
         {
             return;
         }
 
         try
         {
-            if (!url.StartsWith("http"))
+            var index = uri.IndexOf(':');
+            if (index == -1)
             {
-                // https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
-                // We only want to open http / https uris in this method.
-                // We force 'http'.
-                url = $"http://{url}";
+                if (!uri.StartsWith("http"))
+                {
+                    // We only want to open http / https uris in this method.
+                    // We force 'http'.
+                    uri = $"http://{uri}";
+                }
+            }
+            else
+            {
+                var scheme = uri.AsSpan(0, index);
+                switch (scheme)
+                {
+                    case "ftp":
+                    case "http":
+                    case "https":
+                    case "mailto":
+                    case "tel":
+                    case "imap":
+                        // OK
+                        break;
+
+                    case "file": // TODO - Open directory?
+                    default:
+                        return;
+                }
             }
 
-            var uri = new Uri(url);
-            ProcessStart(uri.AbsoluteUri);
+            var uriObj = new Uri(uri);
+            ProcessStart(uriObj.AbsoluteUri);
         }
         catch (Exception e)
         {
@@ -282,9 +305,9 @@ internal static class CalyExtensions
     /// <summary>
     /// Open a url.
     /// </summary>
-    internal static void OpenUrl(ReadOnlySpan<char> url)
+    internal static void OpenUri(ReadOnlySpan<char> url)
     {
-        OpenUrl(new string(url));
+        OpenUri(new string(url));
     }
 
     /// <summary>
