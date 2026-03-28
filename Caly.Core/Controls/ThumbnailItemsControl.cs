@@ -29,6 +29,7 @@ using Caly.Core.Utilities;
 using System;
 using System.Linq;
 using System.Windows.Input;
+using Avalonia.Controls.Presenters;
 
 namespace Caly.Core.Controls;
 
@@ -86,7 +87,7 @@ public sealed class ThumbnailItemsControl : ListBox
         get => GetValue(VisibleThumbnailsProperty);
         set => SetValue(VisibleThumbnailsProperty, value);
     }
-
+    
     public ThumbnailItemsControl()
     {
         _scrollChangedHandler = (_, _) => PostUpdateThumbnailsVisibility();
@@ -167,7 +168,7 @@ public sealed class ThumbnailItemsControl : ListBox
         int lastVisibleIndex = -1;
         for (int index = firstRealisedIndex; index < lastRealisedIndex; ++index)
         {
-            if (ContainerFromIndex(index) is not ThumbnailItem thumbnailItem)
+            if (ContainerFromIndex(index) is not ListBoxItem thumbnailItem)
             {
                 continue;
             }
@@ -245,17 +246,13 @@ public sealed class ThumbnailItemsControl : ListBox
 
         return ItemCount;
     }
-
-    protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
-    {
-        return new ThumbnailItem();
-    }
+    
 
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
 
-        if (container is not ThumbnailItem)
+        if (container is not ListBoxItem)
         {
             return;
         }
@@ -309,8 +306,8 @@ public sealed class ThumbnailItemsControl : ListBox
             return;
         }
 
-        var realised = GetRealizedContainers().OfType<ThumbnailItem>();
-        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<ThumbnailItem>();
+        var realised = GetRealizedContainers().OfType<ListBoxItem>();
+        var visibleChildren = ItemsPanelRoot.Children.Where(c => c.IsVisible).OfType<ListBoxItem>();
 
         foreach (var child in visibleChildren.Except(realised))
         {

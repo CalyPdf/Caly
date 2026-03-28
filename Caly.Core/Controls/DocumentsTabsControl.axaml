@@ -230,7 +230,40 @@
                                                     VerticalAlignment="Stretch"
                                                     BorderThickness="0"
                                                     ItemsSource="{Binding Pages}"
-                                                    SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}"/>
+                                                    SelectedIndex="{Binding SelectedPageIndex, Mode=TwoWay}">
+
+                                                    <controls:ThumbnailItemsControl.Styles>
+                                                        <Style Selector="ListBoxItem">
+                                                            <Setter Property="HorizontalAlignment" Value="Center" />
+                                                        </Style>
+                                                    </controls:ThumbnailItemsControl.Styles>
+
+                                                    <controls:ThumbnailItemsControl.ItemTemplate>
+
+                                                        <DataTemplate x:DataType="vm:PageViewModel">
+                                                            
+                                                            <DockPanel HorizontalAlignment="Center">
+                                                                <Grid DockPanel.Dock="Top"
+                                                                      Margin="2,3,2,0"
+                                                                      Width="{Binding ThumbnailSize.Width}"
+                                                                      Height="{Binding ThumbnailSize.Height}">
+                                                                    <controls:ThumbnailControl
+                                                                        VisibleArea="{Binding VisibleArea}"
+                                                                        ThumbnailSize="{Binding ThumbnailSize}"
+                                                                        PageSize="{Binding Size}"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        VerticalAlignment="Stretch"/>
+                                                                </Grid>
+                                                                <Label DockPanel.Dock="Top"
+                                                                       Content="{Binding PageNumber}"
+                                                                       HorizontalAlignment="Stretch"
+                                                                       HorizontalContentAlignment="Center"
+                                                                       Padding="0"/>
+                                                            </DockPanel>
+                                                        </DataTemplate>
+                                                    </controls:ThumbnailItemsControl.ItemTemplate>
+
+                                                </controls:ThumbnailItemsControl>
                                             </Grid>
 										</TabItem>
 
