@@ -239,27 +239,29 @@
                                                     </controls:ThumbnailItemsControl.Styles>
 
                                                     <controls:ThumbnailItemsControl.ItemTemplate>
-
                                                         <DataTemplate x:DataType="vm:PageViewModel">
                                                             
-                                                            <DockPanel HorizontalAlignment="Center">
-                                                                <Grid DockPanel.Dock="Top"
-                                                                      Margin="2,3,2,0"
-                                                                      Width="{Binding ThumbnailSize.Width}"
-                                                                      Height="{Binding ThumbnailSize.Height}">
-                                                                    <controls:ThumbnailControl
-                                                                        VisibleArea="{Binding VisibleArea}"
+                                                            <Grid Margin="3,4"
+                                                                  Width="{Binding ThumbnailSize.Width}"
+                                                                  Height="{Binding ThumbnailSize.Height}">
+                                                                <controls:ThumbnailControl VisibleArea="{Binding VisibleArea}"
                                                                         ThumbnailSize="{Binding ThumbnailSize}"
                                                                         PageSize="{Binding Size}"
                                                                         HorizontalAlignment="Stretch"
                                                                         VerticalAlignment="Stretch"/>
-                                                                </Grid>
-                                                                <Label DockPanel.Dock="Top"
-                                                                       Content="{Binding PageNumber}"
-                                                                       HorizontalAlignment="Stretch"
+                                                                <Label Content="{Binding PageNumber}"
+                                                                       MinWidth="25"
+                                                                       HorizontalAlignment="Center"
                                                                        HorizontalContentAlignment="Center"
-                                                                       Padding="0"/>
-                                                            </DockPanel>
+                                                                       VerticalAlignment="Bottom"
+                                                                       Padding="3,0"
+                                                                       Margin="3"
+                                                                       Background="{DynamicResource SystemChromeMediumLowColor}"
+                                                                       BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                                                       BorderThickness="1"
+                                                                       CornerRadius="7"/>
+                                                            </Grid>
+
                                                         </DataTemplate>
                                                     </controls:ThumbnailItemsControl.ItemTemplate>
 
