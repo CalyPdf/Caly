@@ -55,16 +55,30 @@
                                                VisiblePages="{TemplateBinding VisiblePages, Mode=TwoWay}"
                                                RefreshPages="{TemplateBinding RefreshPages}"/>
 
-                    <!-- Progress Ring for when the document is opening -->
-                    <progRing:ProgressRing Width="50"
-                                           Height="50"
-                                           IsActive="{Binding !Pages.Count}"
-                                           IsEnabled="{Binding !Pages.Count}"
-                                           IsVisible="{Binding !Pages.Count}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SystemAccentColor}"/>
+                    <Grid IsVisible="{Binding !Pages.Count}">
+                        <!-- Progress Ring for when the document is opening -->
+                        <progRing:ProgressRing Width="50"
+                                               Height="50"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource SystemAccentColor}"
+                                               IsVisible="{Binding IsPagesLoading}"
+                                               IsActive="{Binding IsPagesLoading}"
+                                               IsEnabled="{Binding IsPagesLoading}"/>
 
+                        <!-- Corrupted document icon -->
+                        <Border Padding="20"
+                                IsVisible="{Binding !IsPagesLoading}"
+                                IsEnabled="{Binding !IsPagesLoading}">
+                            <PathIcon Width="50"
+                                      Height="50"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Data="{StaticResource document_dismiss_regular}"
+                                      Opacity="200"/>
+                        </Border>
+                    </Grid>
+					
 				</Grid>
 			</ControlTemplate>
 		</Setter>

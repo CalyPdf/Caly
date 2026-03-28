@@ -88,6 +88,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
     [ObservableProperty] private string? _interactiveActionOver;
 
+    [ObservableProperty] private bool _isPagesLoading = true; // Start state is true, even if pages have not started loading just yet
+
     /// <summary>
     /// Starts at <c>1</c>, ends at <see cref="PageCount"/>.
     /// <para><c>null</c> if not selected.</para>
@@ -371,40 +373,50 @@ public sealed partial class DocumentViewModel : ViewModelBase
     private async Task LoadPages()
     {
         Debug.ThrowOnUiThread();
-
+        
         System.Diagnostics.Debug.Assert(TextSelection is not null);
 
-        if (PageCount == 0)
+        await Dispatcher.UIThread.InvokeAsync(() => IsPagesLoading = true);
+
+        try
         {
-            if (IsPasswordProtected)
+            if (PageCount == 0)
             {
-                throw new Exception("Could not open password protected document.");
+                if (IsPasswordProtected)
+                {
+                    throw new Exception("Could not open password protected document.");
+                }
+
+                throw new Exception("Cannot load pages because document has 0 pages.");
             }
-            throw new Exception("Cannot load pages because document has 0 pages.");
-        }
 
-        // Use 1st page size as default page size
-        var firstPage = new PageViewModel(1, TextSelection, _pdfService.PpiScale);
-        var pageSize = await _pdfPageService.GetPageSize(1, _mainToken).ConfigureAwait(false);
-        if (pageSize.HasValue)
-        {
-            // Page is not yet in the collection — no UI observer yet, safe to call from thread pool
-            firstPage.SetSize(pageSize.Value);
-        }
-
-        var defaultSize = firstPage.Size;
-
-        Dispatcher.UIThread.Invoke(() => Pages.Add(firstPage));
-
-        for (int p = 2; p <= PageCount; ++p)
-        {
-            _mainToken.ThrowIfCancellationRequested();
-            var newPage = new PageViewModel(p, TextSelection, _pdfService.PpiScale)
+            // Use 1st page size as default page size
+            var firstPage = new PageViewModel(1, TextSelection, _pdfService.PpiScale);
+            var pageSize = await _pdfPageService.GetPageSize(1, _mainToken).ConfigureAwait(false);
+            if (pageSize.HasValue)
             {
-                Size = defaultSize
-            };
-            _pdfPageService.RequestPageSize(newPage);
-            Dispatcher.UIThread.Invoke(() => Pages.Add(newPage)); // Could do in batches
+                // Page is not yet in the collection — no UI observer yet, safe to call from thread pool
+                firstPage.SetSize(pageSize.Value);
+            }
+
+            var defaultSize = firstPage.Size;
+
+            Dispatcher.UIThread.Invoke(() => Pages.Add(firstPage));
+
+            for (int p = 2; p <= PageCount; ++p)
+            {
+                _mainToken.ThrowIfCancellationRequested();
+                var newPage = new PageViewModel(p, TextSelection, _pdfService.PpiScale)
+                {
+                    Size = defaultSize
+                };
+                _pdfPageService.RequestPageSize(newPage);
+                Dispatcher.UIThread.Invoke(() => Pages.Add(newPage)); // Could do in batches
+            }
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => IsPagesLoading = false);
         }
     }
 
