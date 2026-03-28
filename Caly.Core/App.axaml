@@ -13,7 +13,6 @@
                 <ResourceInclude Source="avares://Caly.Core/Controls/DocumentPropertiesControl.axaml"/>
 
                 <ResourceInclude Source="avares://Caly.Core/Controls/ThumbnailControl.axaml"/>
-                <ResourceInclude Source="avares://Caly.Core/Controls/ThumbnailItem.axaml"/>
 
                 <ResourceInclude Source="avares://Caly.Core/Controls/PageItemsControl.axaml"/>
 				<ResourceInclude Source="avares://Caly.Core/Controls/PageItem.axaml"/>
