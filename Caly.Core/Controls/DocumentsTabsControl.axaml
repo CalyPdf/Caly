@@ -20,7 +20,8 @@
                            AddItemCommand="{Binding OpenFileCommand}"
                            CloseItemCommand="{Binding CloseTabCommand}"
                            ItemsSource="{Binding PdfDocuments}"
-                           SelectedIndex="{Binding SelectedDocumentIndex}">
+                           SelectedIndex="{Binding SelectedDocumentIndex}"
+                           MinTabItemWidth="100">
 		<TabControl.ItemTemplate>
 			<DataTemplate>
 				<TextBlock DockPanel.Dock="Left"
