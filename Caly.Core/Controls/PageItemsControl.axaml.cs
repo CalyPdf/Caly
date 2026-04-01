@@ -613,7 +613,7 @@ public sealed class PageItemsControl : ItemsControl
                         string? uri = ((UriAction)annotation.Action)?.Uri;
                         if (!string.IsNullOrEmpty(uri))
                         {
-                            CalyExtensions.OpenUri(uri);
+                            CalyExtensions.OpenUriAsync(uri);
                             return;
                         }
                         break;
@@ -659,7 +659,7 @@ public sealed class PageItemsControl : ItemsControl
 
                 if (!string.IsNullOrEmpty(line.InteractiveLink))
                 {
-                    CalyExtensions.OpenUri(line.InteractiveLink);
+                    CalyExtensions.OpenUriAsync(line.InteractiveLink);
                 }
             }
         }

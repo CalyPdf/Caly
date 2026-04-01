@@ -35,7 +35,7 @@ internal partial class PdfDocumentsManagerService
                 return false;
             }
             
-            CalyExtensions.OpenFile(path);
+            await CalyExtensions.OpenFile(path);
             return true;
         }));
     }
