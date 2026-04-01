@@ -25,6 +25,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
@@ -166,23 +167,42 @@ internal static class CalyExtensions
         }
     }
 
-    internal static void OpenFile(string? path)
+    internal static Task OpenFile(string? path)
     {
-        if (string.IsNullOrEmpty(path) || !IsValidFilePath(path) || !File.Exists(path))
+        return Task.Run(async () =>
         {
-            return;
-        }
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
 
-        if (path.IsPdf())
-        {
-            OpenPdfDocument(path);
-            return;
-        }
+            if (!IsValidFilePath(path))
+            {
+                App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning,
+                    "Invalid Path",
+                    $"'{path}' is not valid."));
+                return;
+            }
 
-        // We don't want to directly open any other file extension
-        // as this could be harmful. We just open the directory.
-        var directory = Path.GetDirectoryName(path);
-        OpenDirectory(directory);
+            if (!File.Exists(path))
+            {
+                App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning,
+                    "File Not Found",
+                    $"'{path}' does not exist."));
+                return;
+            }
+
+            if (path.IsPdf())
+            {
+                await OpenPdfDocument(path);
+                return;
+            }
+
+            // We don't want to directly open any other file extension
+            // as this could be harmful. We just open the directory.
+            var directory = Path.GetDirectoryName(path);
+            await OpenDirectory(directory);
+        });
     }
 
     private static bool IsValidFilePath(ReadOnlySpan<char> path)
@@ -215,54 +235,88 @@ internal static class CalyExtensions
     /// <summary>
     /// Open a pdf document with Caly.
     /// </summary>
-    internal static void OpenPdfDocument(string? path)
+    private static Task OpenPdfDocument(string? path)
     {
-        try
+        return Task.Run(() =>
         {
-            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            try
             {
-                return;
-            }
+                if (string.IsNullOrEmpty(path))
+                {
+                    return;
+                }
 
-            if (!path.IsPdf())
-            {
-                return;
-            }
+                if (!File.Exists(path))
+                {
+                    App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning,
+                        "File Not Found",
+                        $"'{path}' does not exist."));
+                    return;
+                }
 
-            if (FilePipeStream.SendPath(path))
-            {
-                FilePipeStream.SendBringToFront();
+                if (!path.IsPdf())
+                {
+                    App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning,
+                        "File is not a Pdf",
+                        $"'{path}' is not a Pdf document."));
+                    return;
+                }
+
+                if (FilePipeStream.SendPath(path))
+                {
+                    FilePipeStream.SendBringToFront();
+                }
             }
-        }
-        catch (Exception e)
-        {
-            Debug.WriteExceptionToFile(e);
-        }
+            catch (Exception e)
+            {
+                Debug.WriteExceptionToFile(e);
+            }
+        });
     }
 
-    internal static void OpenDirectory(string? path)
+    internal static Task OpenDirectory(string? path)
     {
-        if (string.IsNullOrEmpty(path) || !IsValidPath(path) || !Directory.Exists(path))
+        return Task.Run(() =>
         {
-            return;
-        }
+            if (string.IsNullOrEmpty(path) || !IsValidPath(path) || !Directory.Exists(path))
+            {
+                return;
+            }
 
-        ProcessStart(path);
+            if (!IsValidPath(path))
+            {
+                App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning,
+                    "Invalid Path",
+                    $"'{path}' is not valid."));
+                return;
+            }
+
+            if (!Directory.Exists(path))
+            {
+                App.Messenger.Send(new ShowNotificationMessage(NotificationType.Warning,
+                    "Directory Not Found",
+                    $"'{path}' does not exist."));
+                return;
+            }
+
+            ProcessStart(path);
+        });
     }
 
     /// <summary>
     /// Open a uri.
+    /// <para>Warning: This is an <c>async void</c> method.</para>
     /// </summary>
-    internal static void OpenUri(string? uri)
+    internal static async void OpenUriAsync(string? uri)
     {
-        // https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
-        if (string.IsNullOrEmpty(uri))
-        {
-            return;
-        }
-
         try
         {
+            // https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
+            if (string.IsNullOrEmpty(uri))
+            {
+                return;
+            }
+
             var index = uri.IndexOf(':');
             if (index == -1)
             {
@@ -273,41 +327,41 @@ internal static class CalyExtensions
                     uri = $"http://{uri}";
                 }
             }
-            else
+
+            var scheme = uri.AsSpan(0, index);
+            switch (scheme)
             {
-                var scheme = uri.AsSpan(0, index);
-                switch (scheme)
+                case "ftp":
+                case "http":
+                case "https":
+                case "mailto":
+                case "tel":
+                case "imap":
                 {
-                    case "ftp":
-                    case "http":
-                    case "https":
-                    case "mailto":
-                    case "tel":
-                    case "imap":
-                        // OK
-                        break;
-
-                    case "file": // TODO - Open directory?
-                    default:
-                        return;
+                    var uriObj = new Uri(uri);
+                    await Task.Run(() => ProcessStart(uriObj.AbsoluteUri));
                 }
-            }
+                    break;
 
-            var uriObj = new Uri(uri);
-            ProcessStart(uriObj.AbsoluteUri);
+                case "file":
+                {
+                    var uriObj = new Uri(uri);
+                    if (!string.IsNullOrWhiteSpace(uriObj.LocalPath))
+                    {
+                        await OpenFile(uriObj.LocalPath);
+                    }
+                    else
+                    {
+                        // Ignore non-local path
+                    }
+                }
+                    break;
+            }
         }
         catch (Exception e)
         {
             Debug.WriteExceptionToFile(e);
         }
-    }
-
-    /// <summary>
-    /// Open a url.
-    /// </summary>
-    internal static void OpenUri(ReadOnlySpan<char> url)
-    {
-        OpenUri(new string(url));
     }
 
     /// <summary>
@@ -319,6 +373,8 @@ internal static class CalyExtensions
         // https://brockallen.com/2016/09/24/process-start-for-urls-on-net-core/
 
         // See https://docs.avaloniaui.net/docs/concepts/services/launcher to use avalonia to do so
+
+        Debug.ThrowOnUiThread();
 
         try
         {
