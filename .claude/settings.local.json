@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:api.nuget.org)",
+      "Bash(dir /S /B \"C:\\\\Users\\\\Bob\\\\.nuget\\\\packages\\\\sharpippnext\\\\3.0.0\")",
+      "Bash(grep \"\\\\.cs$\")"
+    ]
+  }
+}

@@ -19,6 +19,8 @@
 // SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -29,6 +31,7 @@ using Caly.Core.Models;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.ViewModels;
 using Caly.Core.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Caly.Core.Services;
 
@@ -168,6 +171,29 @@ internal sealed class DialogService : IDialogService
                 window.Show();
                 _previousExceptionWindowMessage = exception.Message;
             }
+        }, DispatcherPriority.Loaded);
+    }
+
+    public async Task ShowPrintDialogAsync(
+        IPdfDocumentService documentService,
+        IReadOnlyList<PageViewModel> pages,
+        int currentPage,
+        CancellationToken token = default)
+    {
+        await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            Debug.ThrowNotOnUiThread();
+
+            if (_target is not Window w)
+                return;
+
+            var printService = App.Current?.Services?.GetRequiredService<IPrintService>();
+            if (printService is null)
+                return;
+
+            var vm = new PrintDialogViewModel(printService, documentService, pages, currentPage);
+            var window = new PrintDialogWindow { DataContext = vm };
+            await window.ShowDialog(w);
         }, DispatcherPriority.Loaded);
     }
 }
