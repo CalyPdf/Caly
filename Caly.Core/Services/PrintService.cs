@@ -20,30 +20,36 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Services.Interfaces;
 using SharpIpp;
 using SharpIpp.Models.Requests;
-using SharpIpp.Protocol.Models;
 using SkiaSharp;
+using Vanara.PInvoke;
+using static Vanara.PInvoke.Gdi32;
+using static Vanara.PInvoke.WinSpool;
 
 namespace Caly.Core.Services;
 
 /// <summary>
-/// Cross-platform print service built on SharpIppNext (IPP protocol).
+/// Cross-platform print service.
 /// <para>
-/// Printer discovery uses the CUPS IPP extension on all platforms, with a PowerShell
-/// fallback on Windows when CUPS is not available.  The print job is rendered entirely
-/// in-memory (no temporary files) using SkiaSharp and sent over IPP via SharpIppNext.
+/// On Windows, printer discovery uses the Win32 Print Spooler via Vanara.PInvoke.Printing
+/// (<c>EnumPrinters</c>) and jobs are submitted via the GDI printer-DC path
+/// (<c>CreateDC</c> / <c>StartDoc</c> / <c>StartPage</c> / <c>StretchDIBits</c> /
+/// <c>EndPage</c> / <c>EndDoc</c> / <c>DeleteDC</c>).
+/// On Linux/macOS, CUPS IPP discovery is tried first with an <c>lpstat</c> fallback;
+/// jobs are sent via SharpIppNext as JPEG images.
 /// </para>
 /// </summary>
 internal sealed class PrintService : IPrintService, IDisposable
 {
-    // Re-use a single client (and its internal HttpClient) for the process lifetime.
+    // Re-used for non-Windows IPP printing only.
     private readonly SharpIppClient _ippClient = new();
 
     private static readonly Uri s_cupsLocalUri = new("ipp://localhost:631/");
@@ -56,31 +62,54 @@ internal sealed class PrintService : IPrintService, IDisposable
 
     public async Task<IReadOnlyList<PrinterInfo>> GetAvailablePrintersAsync(CancellationToken token = default)
     {
-        // Try CUPS first — works natively on Linux/macOS and on Windows when CUPS
-        // (or a compatible server) is installed.
+        if (OperatingSystem.IsWindows())
+        {
+            return await GetWindowsPrintersAsync(token).ConfigureAwait(false);
+        }
+
         try
         {
             var cupsPrinters = await GetCupsPrintersAsync(token).ConfigureAwait(false);
             if (cupsPrinters.Count > 0)
+            {
                 return cupsPrinters;
+            }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"PrintService: CUPS discovery failed: {ex.Message}");
         }
 
-        // Fallback: enumerate printers through the OS and construct IPP URIs.
-        if (OperatingSystem.IsWindows())
-            return await GetWindowsPrintersAsync(token).ConfigureAwait(false);
-
-        // On Linux/macOS without CUPS, fall back to lpstat.
         return await GetLpstatPrintersAsync(token).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Queries the local CUPS server via SharpIppNext and returns each printer's
-    /// display name plus its first supported IPP URI.
-    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static Task<IReadOnlyList<PrinterInfo>> GetWindowsPrintersAsync(CancellationToken token)
+    {
+        return Task.Run<IReadOnlyList<PrinterInfo>>(() =>
+        {
+            token.ThrowIfCancellationRequested();
+
+            var result = new List<PrinterInfo>();
+            try
+            {
+                foreach (var p in EnumPrinters<PRINTER_INFO_2>(
+                    PRINTER_ENUM.PRINTER_ENUM_LOCAL | PRINTER_ENUM.PRINTER_ENUM_CONNECTIONS))
+                {
+                    var name = p.pPrinterName;
+                    if (!string.IsNullOrWhiteSpace(name))
+                        result.Add(new PrinterInfo(name, BuildCupsUri(name)));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PrintService: EnumPrinters failed: {ex.Message}");
+            }
+
+            return result;
+        }, token);
+    }
+
     private async Task<IReadOnlyList<PrinterInfo>> GetCupsPrintersAsync(CancellationToken token)
     {
         var request = new CUPSGetPrintersRequest
@@ -104,13 +133,9 @@ internal sealed class PrintService : IPrintService, IDisposable
             if (string.IsNullOrWhiteSpace(name))
                 continue;
 
-            // PrinterUriSupported is string[] in SharpIppNext 3.x.
             var uriStr = p.PrinterUriSupported?.FirstOrDefault(u => !string.IsNullOrWhiteSpace(u));
             if (uriStr is null || !Uri.TryCreate(uriStr, UriKind.Absolute, out var uri))
-            {
-                // Build a best-effort URI from the printer name.
                 uri = BuildCupsUri(name);
-            }
 
             result.Add(new PrinterInfo(name, uri));
         }
@@ -118,51 +143,6 @@ internal sealed class PrintService : IPrintService, IDisposable
         return result;
     }
 
-    /// <summary>
-    /// Enumerates printers on Windows using PowerShell and constructs IPP URIs by
-    /// inspecting the printer port for a host address (for network printers) or falling
-    /// back to the local CUPS-compatible URI for local printers.
-    /// </summary>
-    private static async Task<IReadOnlyList<PrinterInfo>> GetWindowsPrintersAsync(CancellationToken token)
-    {
-        // One-liner that outputs "Name|ipp://host:port/" or "Name|ipp://localhost:631/printers/Name"
-        // per printer. PS5-compatible (no $null-conditional operators).
-        const string script = """
-            Get-Printer | ForEach-Object {
-                $p = $_
-                $uri = $null
-                try {
-                    $port = Get-PrinterPort -Name $p.PortName -ErrorAction Stop
-                    if ($port -ne $null -and
-                        $port.PSObject.Properties.Name -contains 'PrinterHostAddress' -and
-                        $port.PrinterHostAddress) {
-                        $portNum = 631
-                        if ($port.PSObject.Properties.Name -contains 'PortNumber' -and
-                            $port.PortNumber -gt 0) {
-                            $portNum = $port.PortNumber
-                        }
-                        $uri = 'ipp://' + $port.PrinterHostAddress + ':' + $portNum + '/'
-                    }
-                } catch {}
-                if (-not $uri) {
-                    $uri = 'ipp://localhost:631/printers/' + [uri]::EscapeDataString($p.Name)
-                }
-                $p.Name + '|' + $uri
-            }
-            """;
-
-        var output = await RunProcessAsync(
-            "powershell",
-            ["-NoProfile", "-NonInteractive", "-Command", script],
-            token).ConfigureAwait(false);
-
-        return ParsePipeSeparatedPrinters(output);
-    }
-
-    /// <summary>
-    /// Fallback for non-CUPS Linux/macOS: runs <c>lpstat -a</c> and constructs
-    /// a CUPS IPP URI for each printer.
-    /// </summary>
     private static async Task<IReadOnlyList<PrinterInfo>> GetLpstatPrintersAsync(CancellationToken token)
     {
         var output = await RunProcessAsync("lpstat", ["-a"], token).ConfigureAwait(false);
@@ -179,27 +159,6 @@ internal sealed class PrintService : IPrintService, IDisposable
         return result;
     }
 
-    private static IReadOnlyList<PrinterInfo> ParsePipeSeparatedPrinters(string output)
-    {
-        var result = new List<PrinterInfo>();
-        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            var pipe = line.IndexOf('|');
-            if (pipe <= 0)
-                continue;
-
-            var name = line[..pipe].Trim();
-            var uriStr = line[(pipe + 1)..].Trim();
-
-            if (!string.IsNullOrWhiteSpace(name) &&
-                Uri.TryCreate(uriStr, UriKind.Absolute, out var uri))
-            {
-                result.Add(new PrinterInfo(name, uri));
-            }
-        }
-        return result;
-    }
-
     private static Uri BuildCupsUri(string printerName)
         => new($"ipp://localhost:631/printers/{Uri.EscapeDataString(printerName)}");
 
@@ -213,114 +172,317 @@ internal sealed class PrintService : IPrintService, IDisposable
         IReadOnlyList<PrintPageInfo> pages,
         CancellationToken token = default)
     {
-        // Render all selected pages into a MemoryStream as a PDF document.
-        // No file is ever written to disk.
-        using var pdfStream = new MemoryStream();
-        await RenderToPdfStreamAsync(pdfStream, documentService, pages, token).ConfigureAwait(false);
-        pdfStream.Position = 0;
-
-        // Send the PDF bytes directly to the printer via IPP.
-        var request = new PrintJobRequest
+        // Render all pages to bitmaps first (async, independent of delivery path).
+        var bitmaps = new SKBitmap?[pages.Count];
+        try
         {
-            Document = pdfStream,
-            OperationAttributes = new PrintJobOperationAttributes
+            for (int i = 0; i < pages.Count; i++)
             {
-                PrinterUri = printer.IppUri,
-                DocumentFormat = "application/pdf",
-                DocumentName = documentService.FileName ?? "Document"
+                token.ThrowIfCancellationRequested();
+                bitmaps[i] = await RenderPageToBitmapAsync(documentService, pages[i], token)
+                    .ConfigureAwait(false);
             }
-        };
 
-        var response = await _ippClient.PrintJobAsync(request, token).ConfigureAwait(false);
-
-        // 0x0000–0x00FF are the IPP success range (RFC 8011).
-        if ((short)response.StatusCode >= 0x0100)
+            if (OperatingSystem.IsWindows())
+                await PrintWindowsAsync(printer, documentService.FileName, bitmaps, token).ConfigureAwait(false);
+            else
+                await PrintIppAsync(printer, documentService.FileName, bitmaps, token).ConfigureAwait(false);
+        }
+        finally
         {
-            throw new InvalidOperationException(
-                $"The printer rejected the job (IPP status {response.StatusCode:X4}: {response.StatusCode}).");
+            foreach (var bmp in bitmaps)
+                bmp?.Dispose();
         }
     }
 
     // -------------------------------------------------------------------------
-    // Skia rendering — in-memory only, no temp files
+    // Windows — GDI printer-DC path
     // -------------------------------------------------------------------------
 
-    private static async Task RenderToPdfStreamAsync(
-        MemoryStream destination,
-        IPdfDocumentService documentService,
-        IReadOnlyList<PrintPageInfo> pages,
+    /// <summary>
+    /// Prints pre-rendered page bitmaps via the GDI printer Device Context.
+    /// All Win32 GDI calls are made on a single threadpool thread to avoid
+    /// handle affinity issues.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static Task PrintWindowsAsync(
+        PrinterInfo printer,
+        string? documentName,
+        SKBitmap?[] bitmaps,
         CancellationToken token)
     {
-        // PDF rendering is CPU-intensive; move it off the UI thread.
-        await Task.Run(async () =>
+        return Task.Run(() =>
         {
-            float ppiScale = (float)documentService.PpiScale;
-            // Scale from PpiScale (144 dpi) coordinate space back to PDF point space (72 dpi).
-            float scale = 1.0f / ppiScale;
-
-            using var document = SKDocument.CreatePdf(destination);
-
-            foreach (var pageInfo in pages)
+            // Create a printer DC.  DeleteDC is called via finally.
+            var hdc = CreateDC(null, printer.Name, null, IntPtr.Zero);
+            if (hdc.IsNull)
             {
-                token.ThrowIfCancellationRequested();
-
-                var pageSize = await documentService.GetPageSizeAsync(pageInfo.PageNumber, token)
-                    .ConfigureAwait(false);
-                if (pageSize is null)
-                    continue;
-
-                using var picRef = await documentService.GetRenderPageAsync(pageInfo.PageNumber, token)
-                    .ConfigureAwait(false);
-                if (picRef is null)
-                    continue;
-
-                float pdfW = (float)pageSize.Value.Width;   // in points (1/72 inch)
-                float pdfH = (float)pageSize.Value.Height;
-                int rotation = pageInfo.Rotation;
-
-                // Swap page dimensions for 90°/270° rotations so the page fits correctly.
-                float pageW = (rotation == 90 || rotation == 270) ? pdfH : pdfW;
-                float pageH = (rotation == 90 || rotation == 270) ? pdfW : pdfH;
-
-                // BeginPage returns a canvas owned by the document – do NOT dispose it.
-                var canvas = document.BeginPage(pageW, pageH);
-
-                // Apply user rotation so the page prints upright.
-                switch (rotation)
-                {
-                    case 90:
-                        canvas.Translate(pageW, 0);
-                        canvas.RotateDegrees(90);
-                        break;
-                    case 180:
-                        canvas.Translate(pageW, pageH);
-                        canvas.RotateDegrees(180);
-                        break;
-                    case 270:
-                        canvas.Translate(0, pageH);
-                        canvas.RotateDegrees(270);
-                        break;
-                }
-
-                // Scale the SKPicture (recorded at PpiScale / 144 dpi) into PDF points (72 dpi).
-                canvas.Scale(scale, scale);
-                canvas.DrawPicture(picRef.Item);
-
-                document.EndPage();
+                throw new InvalidOperationException($"Cannot create DC for printer '{printer.Name}' (Win32 error {Marshal.GetLastWin32Error()}).");
             }
 
-            // Flush and finalise the PDF. Must be called before reading the stream.
-            document.Close();
-        }, token).ConfigureAwait(false);
+            try
+            {
+                var docInfo = new DOCINFO { lpszDocName = documentName ?? "Document" };
+                if (StartDoc(hdc, docInfo) <= 0)
+                {
+                    throw new InvalidOperationException($"StartDoc failed (Win32 error {Marshal.GetLastWin32Error()}).");
+                }
+
+                try
+                {
+                    int printerW = GetDeviceCaps(hdc, DeviceCap.HORZRES);
+                    int printerH = GetDeviceCaps(hdc, DeviceCap.VERTRES);
+
+                    foreach (var bitmap in bitmaps)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        if (StartPage(hdc) <= 0)
+                        {
+                            throw new InvalidOperationException($"StartPage failed (Win32 error {Marshal.GetLastWin32Error()}).");
+                        }
+
+                        try
+                        {
+                            if (bitmap is not null)
+                            {
+                                DrawBitmapToHdc(hdc, bitmap, printerW, printerH);
+                            }
+                        }
+                        finally
+                        {
+                            _ = EndPage(hdc);
+                        }
+                    }
+                }
+                finally
+                {
+                    _ = EndDoc(hdc);
+                }
+            }
+            finally
+            {
+                _ = DeleteDC(hdc);
+            }
+        }, token);
+    }
+
+    /// <summary>
+    /// Blits <paramref name="bitmap"/> onto the printer DC using <c>StretchDIBits</c>,
+    /// scaling to fill the entire printable area while preserving aspect ratio.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static void DrawBitmapToHdc(HDC hdc, SKBitmap bitmap, int printerW, int printerH)
+    {
+        // Compute destination rect preserving aspect ratio.
+        float bitmapAspect = (float)bitmap.Width / bitmap.Height;
+        float printerAspect = (float)printerW / printerH;
+
+        int destW, destH, destX, destY;
+        if (bitmapAspect >= printerAspect)
+        {
+            destW = printerW;
+            destH = (int)(printerW / bitmapAspect);
+            destX = 0;
+            destY = (printerH - destH) / 2;
+        }
+        else
+        {
+            destH = printerH;
+            destW = (int)(printerH * bitmapAspect);
+            destX = (printerW - destW) / 2;
+            destY = 0;
+        }
+
+        // SKBitmap with BGRA8888 matches the Windows DIB RGBQUAD memory layout.
+        // Negative biHeight signals a top-down bitmap (matching SkiaSharp's origin).
+        var bmi = new BITMAPINFO
+        {
+            bmiHeader = new BITMAPINFOHEADER
+            {
+                biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
+                biWidth = bitmap.Width,
+                biHeight = -bitmap.Height,
+                biPlanes = 1,
+                biBitCount = 32,
+                biCompression = BitmapCompressionMode.BI_RGB
+            }
+        };
+
+        _ = StretchDIBits(hdc,
+            destX, destY, destW, destH,
+            0, 0, bitmap.Width, bitmap.Height,
+            bitmap.GetPixels(),
+            bmi,
+            DIBColorMode.DIB_RGB_COLORS,
+            RasterOperationMode.SRCCOPY);
+    }
+
+    // -------------------------------------------------------------------------
+    // Non-Windows — IPP path (JPEG images)
+    // -------------------------------------------------------------------------
+
+    private async Task PrintIppAsync(
+        PrinterInfo printer,
+        string? documentName,
+        SKBitmap?[] bitmaps,
+        CancellationToken token)
+    {
+        string docName = documentName ?? "Document";
+
+        // Send each page as a JPEG image/jpeg IPP document.
+        // Use PrintJob for the first page and SendDocument for subsequent pages
+        // so that all pages land in a single print queue entry.
+        int? jobId = null;
+
+        for (int i = 0; i < bitmaps.Length; i++)
+        {
+            token.ThrowIfCancellationRequested();
+
+            var bitmap = bitmaps[i];
+            if (bitmap is null)
+            {
+                continue;
+            }
+
+            bool isLast = i == bitmaps.Length - 1
+                          || Array.TrueForAll(bitmaps[(i + 1)..], b => b is null);
+
+            using var jpegStream = EncodeJpeg(bitmap);
+
+            if (jobId is null)
+            {
+                // First (or only) page — create the print job.
+                var printRequest = new PrintJobRequest
+                {
+                    Document = jpegStream,
+                    OperationAttributes = new PrintJobOperationAttributes
+                    {
+                        PrinterUri = printer.IppUri,
+                        DocumentFormat = "image/jpeg",
+                        DocumentName = docName
+                    }
+                };
+
+                var printResponse = await _ippClient.PrintJobAsync(printRequest, token)
+                    .ConfigureAwait(false);
+
+                if ((short)printResponse.StatusCode >= 0x0100)
+                {
+                    throw new InvalidOperationException($"The printer rejected the job (IPP status {printResponse.StatusCode:X4}: {printResponse.StatusCode}).");
+                }
+
+                if (!isLast)
+                {
+                    jobId = printResponse.JobAttributes?.JobId;
+                }
+            }
+            else
+            {
+                // Subsequent pages — append to the existing job via Send-Document.
+                var sendRequest = new SendDocumentRequest
+                {
+                    Document = jpegStream,
+                    OperationAttributes = new SendDocumentOperationAttributes
+                    {
+                        PrinterUri = printer.IppUri,
+                        JobId = jobId.Value,
+                        DocumentFormat = "image/jpeg",
+                        LastDocument = isLast
+                    }
+                };
+
+                var sendResponse = await _ippClient.SendDocumentAsync(sendRequest, token).ConfigureAwait(false);
+
+                if ((short)sendResponse.StatusCode >= 0x0100)
+                {
+                    throw new InvalidOperationException($"Send-Document failed (IPP status {sendResponse.StatusCode:X4}: {sendResponse.StatusCode}).");
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Rendering — SKPicture → SKBitmap
+    // -------------------------------------------------------------------------
+
+    private static async Task<SKBitmap?> RenderPageToBitmapAsync(
+        IPdfDocumentService documentService,
+        PrintPageInfo pageInfo,
+        CancellationToken token)
+    {
+        var pageSize = await documentService.GetPageSizeAsync(pageInfo.PageNumber, token)
+            .ConfigureAwait(false);
+        if (pageSize is null)
+        {
+            return null;
+        }
+
+        using var picRef = await documentService.GetRenderPageAsync(pageInfo.PageNumber, token)
+            .ConfigureAwait(false);
+        if (picRef is null)
+        {
+            return null;
+        }
+
+        float ppiScale = (float)documentService.PpiScale;
+        float pdfW = (float)pageSize.Value.Width;
+        float pdfH = (float)pageSize.Value.Height;
+        int rotation = pageInfo.Rotation;
+
+        // Bitmap dimensions at PpiScale resolution, with rotation taken into account.
+        int bitmapW = (rotation == 90 || rotation == 270)
+            ? (int)(pdfH * ppiScale)
+            : (int)(pdfW * ppiScale);
+        int bitmapH = (rotation == 90 || rotation == 270)
+            ? (int)(pdfW * ppiScale)
+            : (int)(pdfH * ppiScale);
+
+        // SKBitmap is created on the caller's thread; the canvas draw is synchronous.
+        var bitmap = new SKBitmap(bitmapW, bitmapH, SKColorType.Bgra8888, SKAlphaType.Premul);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.White);
+
+        // Apply the same rotation transform used for on-screen rendering.
+        // The SKPicture coordinate space is ppiScale × PDF-point units.
+        switch (rotation)
+        {
+            case 90:
+                canvas.Translate(bitmapW, 0);
+                canvas.RotateDegrees(90);
+                break;
+            case 180:
+                canvas.Translate(bitmapW, bitmapH);
+                canvas.RotateDegrees(180);
+                break;
+            case 270:
+                canvas.Translate(0, bitmapH);
+                canvas.RotateDegrees(270);
+                break;
+        }
+
+        canvas.DrawPicture(picRef.Item);
+        canvas.Flush();
+
+        return bitmap;
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
+    private static MemoryStream EncodeJpeg(SKBitmap bitmap)
+    {
+        var stream = new MemoryStream();
+        using var data = bitmap.Encode(SKEncodedImageFormat.Jpeg, quality: 100);
+        data.SaveTo(stream);
+        stream.Position = 0;
+        return stream;
+    }
+
     private static async Task<string> RunProcessAsync(string command, string[] args, CancellationToken token)
     {
-        var psi = new ProcessStartInfo(command)
+        var psi = new System.Diagnostics.ProcessStartInfo(command)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -329,11 +491,15 @@ internal sealed class PrintService : IPrintService, IDisposable
         };
 
         foreach (var arg in args)
+        {
             psi.ArgumentList.Add(arg);
+        }
 
-        using var process = Process.Start(psi);
+        using var process = System.Diagnostics.Process.Start(psi);
         if (process is null)
+        {
             return string.Empty;
+        }
 
         var output = await process.StandardOutput.ReadToEndAsync(token).ConfigureAwait(false);
         await process.WaitForExitAsync(token).ConfigureAwait(false);

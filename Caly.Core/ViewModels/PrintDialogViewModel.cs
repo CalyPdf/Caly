@@ -159,7 +159,9 @@ public sealed partial class PrintDialogViewModel : ViewModelBase
     {
         var pageNumbers = GetSelectedPageNumbers();
         if (pageNumbers is null || pageNumbers.Count == 0 || SelectedPrinter is null)
+        {
             return;
+        }
 
         IsPrinting = true;
         StatusMessage = "Sending to printer…";
@@ -167,11 +169,14 @@ public sealed partial class PrintDialogViewModel : ViewModelBase
 
         try
         {
-            var pages = pageNumbers
-                .Select(n => new PrintPageInfo(n, _pageRotations.TryGetValue(n, out var r) ? r : 0))
-                .ToList();
-
-            await _printService.PrintDocumentAsync(SelectedPrinter, _documentService, pages, token);
+            await Task.Run(() =>
+                {
+                    var pages = pageNumbers
+                        .Select(n => new PrintPageInfo(n, _pageRotations.TryGetValue(n, out var r) ? r : 0))
+                        .ToList();
+                    _printService.PrintDocumentAsync(SelectedPrinter, _documentService, pages, token);
+                },
+                token);
 
             StatusMessage = "Print job sent.";
             PrintCompleted?.Invoke(this, EventArgs.Empty);

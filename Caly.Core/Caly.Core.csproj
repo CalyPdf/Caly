@@ -33,6 +33,8 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
 		<PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.14.2" />
 		<PackageReference Include="SharpIppNext" Version="3.0.0" />
+		<PackageReference Include="Vanara.PInvoke.Gdi32" Version="5.0.1" />
+		<PackageReference Include="Vanara.PInvoke.Printing" Version="5.0.1" />
 		<PackageReference Include="SkiaSharp" Version="3.119.1" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
