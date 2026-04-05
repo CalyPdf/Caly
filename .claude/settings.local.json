@@ -7,7 +7,12 @@
       "WebFetch(domain:api.github.com)",
       "WebFetch(domain:api.nuget.org)",
       "Bash(dir /S /B \"C:\\\\Users\\\\Bob\\\\.nuget\\\\packages\\\\sharpippnext\\\\3.0.0\")",
-      "Bash(grep \"\\\\.cs$\")"
+      "Bash(grep \"\\\\.cs$\")",
+      "Bash(dotnet package:*)",
+      "Bash(curl -s \"https://api.nuget.org/v3-flatcontainer/microsoft.windows.cswin32/index.json\")",
+      "Bash(python3 -c \"import sys,json; versions=json.load\\(sys.stdin\\)['versions']; print\\(versions[-1]\\)\")",
+      "Bash(dotnet clean:*)",
+      "Bash(powershell -Command ':*)"
     ]
   }
 }
