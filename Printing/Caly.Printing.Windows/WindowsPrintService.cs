@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;  // [SupportedOSPlatform]
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Caly.Core.Services.Interfaces;
@@ -107,6 +107,7 @@ public sealed class WindowsPrintService : IPrintService
     // Printing
     // -------------------------------------------------------------------------
 
+    [SupportedOSPlatform("windows5.0")]
     public async Task PrintDocumentAsync(
         PrinterInfo printer,
         IPdfDocumentService documentService,
@@ -143,6 +144,7 @@ public sealed class WindowsPrintService : IPrintService
     /// All Win32 GDI calls are made on a single threadpool thread to avoid
     /// handle affinity issues.
     /// </summary>
+    [SupportedOSPlatform("windows5.0")]
     private static unsafe void PrintWindowsCore(
         PrinterInfo printer,
         string? documentName,
