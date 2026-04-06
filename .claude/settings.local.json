@@ -12,7 +12,9 @@
       "Bash(curl -s \"https://api.nuget.org/v3-flatcontainer/microsoft.windows.cswin32/index.json\")",
       "Bash(python3 -c \"import sys,json; versions=json.load\\(sys.stdin\\)['versions']; print\\(versions[-1]\\)\")",
       "Bash(dotnet clean:*)",
-      "Bash(powershell -Command ':*)"
+      "Bash(powershell -Command ':*)",
+      "Bash(uuidgen)",
+      "Bash(powershell -Command \"[guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\); [guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\); [guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\)\")"
     ]
   }
 }

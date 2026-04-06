@@ -139,8 +139,7 @@ public partial class App : Application
         services.AddSingleton<IFilesService, FilesService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
-        services.AddSingleton<IPrintService, PrintService>();
-        services.AddSingleton<IPdfDocumentsManagerService, PdfDocumentsManagerService>();
+services.AddSingleton<IPdfDocumentsManagerService, PdfDocumentsManagerService>();
 
         services.AddScoped<IPdfDocumentService, PdfPigDocumentService>();
         services.AddScoped<PdfPageService>();

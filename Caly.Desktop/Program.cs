@@ -195,7 +195,7 @@ namespace Caly.Desktop
         {
             try
             {
-                return AppBuilder.Configure<App>()
+                return AppBuilder.Configure<DesktopApp>()
                     .UsePlatformDetect()
                     .WithInterFont()
                     .UseSkia()
