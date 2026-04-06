@@ -5,10 +5,10 @@
 		<LangVersion>latest</LangVersion>
 		<Version>0.2.0.0</Version>
 		<SignAssembly>True</SignAssembly>
-		<AssemblyOriginatorKeyFile>..\Caly.snk</AssemblyOriginatorKeyFile>
+		<AssemblyOriginatorKeyFile>..\..\Caly.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Caly.Core\Caly.Core.csproj" />
+		<ProjectReference Include="..\..\Caly.Core\Caly.Core.csproj" />
 	</ItemGroup>
 </Project>
