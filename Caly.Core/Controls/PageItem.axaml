@@ -85,12 +85,16 @@
 													   VerticalAlignment="Center"
 													   Foreground="{DynamicResource SystemAccentColor}"/>
 
-								<controls:SkiaPdfPageControl Picture="{Binding PdfPicture}"
-								                             PpiScale="{Binding PpiScale}"
-                                                             VisibleArea="{Binding VisibleArea}"
-															 IsPageVisible="{Binding IsPageVisible}"
-															 HorizontalAlignment="Stretch"
-															 VerticalAlignment="Stretch"/>
+								<controls:TiledPdfPageControl Picture="{Binding PdfPicture}"
+								                              PpiScale="{Binding PpiScale}"
+								                              VisibleArea="{Binding VisibleArea}"
+								                              IsPageVisible="{Binding IsPageVisible}"
+								                              PageNumber="{Binding PageNumber}"
+								                              PageDisplaySize="{Binding Size}"
+								                              ZoomLevel="{Binding $parent[controls:PageItemsControl].ZoomLevel}"
+								                              TileRenderService="{Binding $parent[controls:PageItemsControl].((vm:DocumentViewModel)DataContext).TileRenderService}"
+								                              HorizontalAlignment="Stretch"
+								                              VerticalAlignment="Stretch"/>
 
 								<controls:PageInteractiveLayerControl Name="PART_PageInteractiveLayerControl"
                                                                       VisibleArea="{Binding VisibleArea}"

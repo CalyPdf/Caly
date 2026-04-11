@@ -34,6 +34,8 @@ public partial class DocumentViewModel : IAsyncDisposable
 
         System.Diagnostics.Debug.Assert(_mainCts.IsCancellationRequested);
 
+        await _tileRenderService.DisposeAsync();
+
         await Parallel.ForEachAsync(Pages, CancellationToken.None, (p, _) => p.DisposeAsync());
 
         Pages.Clear();
