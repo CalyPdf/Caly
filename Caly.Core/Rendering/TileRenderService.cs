@@ -85,7 +85,6 @@ public sealed class TileRenderService : IAsyncDisposable
         }
     }
 
-    private readonly TileCache _cache;
     private readonly ChannelWriter<TileRequest> _requestWriter;
     private readonly ChannelReader<TileRequest> _requestReader;
     private readonly CancellationTokenSource _cts = new();
@@ -124,7 +123,7 @@ public sealed class TileRenderService : IAsyncDisposable
     /// <summary>
     /// Gets the tile cache used by this service.
     /// </summary>
-    public TileCache Cache => _cache;
+    public TileCache Cache { get; }
 
     public TileRenderService() : this(new TileCache())
     {
@@ -132,7 +131,7 @@ public sealed class TileRenderService : IAsyncDisposable
 
     public TileRenderService(TileCache cache)
     {
-        _cache = cache;
+        Cache = cache;
 
         var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<TileRequest>()
         {
@@ -191,10 +190,10 @@ public sealed class TileRenderService : IAsyncDisposable
 
     private static readonly SKImageInfo FullTileImageInfo = new(TileGrid.TilePixelSize, TileGrid.TilePixelSize, SKColorType.Bgra8888, SKAlphaType.Premul);
 
-    private Task RenderTile(TileRenderRequest request)
+    private Task RenderTile(TileRequest request)
     {
         // Skip if already in cache (another request may have rendered it)
-        if (_cache.Contains(request.Key))
+        if (Cache.Contains(request.Key))
         {
             return Task.CompletedTask;
         }
@@ -261,7 +260,7 @@ public sealed class TileRenderService : IAsyncDisposable
             var bitmap = new SKBitmap(imageInfo);
             surface.ReadPixels(imageInfo, bitmap.GetPixels(), imageInfo.RowBytes, 0, 0);
 
-            _cache.Add(request.Key, bitmap);
+            Cache.Add(request.Key, bitmap);
         }
         finally
         {
@@ -275,29 +274,7 @@ public sealed class TileRenderService : IAsyncDisposable
 
         return Task.CompletedTask;
     }
-
-    // Use a wrapper struct to pass render parameters since the inner class is private
-    private readonly struct TileRenderRequest
-    {
-        public TileKey Key { get; init; }
-        public IRef<SKPicture> Picture { get; init; }
-        public double PpiScale { get; init; }
-        public Size PageDisplaySize { get; init; }
-        public CancellationToken Token { get; init; }
-    }
-
-    private Task RenderTile(TileRequest request)
-    {
-        return RenderTile(new TileRenderRequest
-        {
-            Key = request.Key,
-            Picture = request.Picture,
-            PpiScale = request.PpiScale,
-            PageDisplaySize = request.PageDisplaySize,
-            Token = request.Token
-        });
-    }
-
+    
     /// <summary>
     /// Requests tiles for a page. Missing tiles are queued for background rendering.
     /// The caller provides a cloned picture reference per tile.
@@ -326,7 +303,7 @@ public sealed class TileRenderService : IAsyncDisposable
             var key = new TileKey(pageNumber, tileLevel, size.Column, size.Row);
 
             // Skip if already in cache or in-flight
-            if (_cache.Contains(key) || !_inFlight.TryAdd(key, 0))
+            if (Cache.Contains(key) || !_inFlight.TryAdd(key, 0))
             {
                 continue;
             }
@@ -374,7 +351,7 @@ public sealed class TileRenderService : IAsyncDisposable
             cts.Dispose();
         }
 
-        _cache.InvalidatePage(pageNumber);
+        Cache.InvalidatePage(pageNumber);
     }
 
     /// <summary>
@@ -410,7 +387,7 @@ public sealed class TileRenderService : IAsyncDisposable
 
         _pageTokens.Clear();
         _inFlight.Clear();
-        _cache.Dispose();
+        Cache.Dispose();
         _cts.Dispose();
     }
 }
