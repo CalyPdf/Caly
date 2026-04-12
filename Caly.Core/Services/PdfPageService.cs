@@ -23,6 +23,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Caly.Core.Models;
+using Caly.Core.Rendering;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
@@ -172,6 +173,7 @@ namespace Caly.Core.Services
         public PdfPageService(IPdfDocumentService pdfDocumentService)
         {
             _pdfDocumentService = pdfDocumentService;
+            TileRenderService = new TileRenderService();
 
             var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
             {
@@ -201,6 +203,11 @@ namespace Caly.Core.Services
         }
 
         public int NumberOfPages => _pdfDocumentService.NumberOfPages;
+
+        /// <summary>
+        /// The tile render service for this document.
+        /// </summary>
+        public TileRenderService TileRenderService { get; }
 
         private readonly ConcurrentDictionary<int, IRef<SKPicture>> _cachePictures = new();
         private readonly ConcurrentDictionary<int, PdfTextLayer> _cacheTextLayers = new();
@@ -619,6 +626,7 @@ namespace Caly.Core.Services
                 {
                     System.Diagnostics.Debug.WriteLine($"Removed page #{kvp.Key}'s picture from cache.");
                     picture.Dispose();
+                    TileRenderService?.InvalidatePage(kvp.Key);
                 }
             }
         }
@@ -820,6 +828,8 @@ namespace Caly.Core.Services
         public async ValueTask DisposeAsync()
         {
             await _mainCts.CancelAsync();
+
+            await TileRenderService.DisposeAsync();
 
             await _pagesCts.CancelAsync();
             _pagesCts.Dispose();
