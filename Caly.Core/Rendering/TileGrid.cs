@@ -1,22 +1,3 @@
-// Copyright (c) 2025 BobLd
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
 
 using System;
 using System.Collections.Generic;
@@ -103,8 +84,8 @@ public static class TileGrid
     /// <param name="tileLevel">The tile level.</param>
     /// <param name="results">Optional pre-allocated list to reuse. If provided, it will be cleared and filled.
     /// If null, a new list is allocated.</param>
-    /// <returns>List of (column, row) pairs for visible tiles.</returns>
-    public static List<PixelSize> GetVisibleTiles(Rect visibleArea, Size pageDisplaySize, int tileLevel, List<PixelSize>? results = null)
+    /// <returns>List of tile coordinates for visible tiles.</returns>
+    public static List<TileCoord> GetVisibleTiles(Rect visibleArea, Size pageDisplaySize, int tileLevel, List<TileCoord>? results = null)
     {
         var dimensions = GetGridDimensions(pageDisplaySize, tileLevel);
         double tileScale = GetTileLevelScale(tileLevel);
@@ -112,13 +93,24 @@ public static class TileGrid
 
         int startCol = Math.Max(0, (int)(visibleArea.Left / tileDisplaySize));
         int startRow = Math.Max(0, (int)(visibleArea.Top / tileDisplaySize));
-        int endCol = Math.Min(dimensions.Width - 1, (int)(visibleArea.Right / tileDisplaySize));
-        int endRow = Math.Min(dimensions.Height - 1, (int)(visibleArea.Bottom / tileDisplaySize));
+        int endCol = Math.Min(dimensions.Width - 1, (int)Math.Ceiling(visibleArea.Right / tileDisplaySize) - 1);
+        int endRow = Math.Min(dimensions.Height - 1, (int)Math.Ceiling(visibleArea.Bottom / tileDisplaySize) - 1);
+
+        if (startCol > endCol || startRow > endRow)
+        {
+            if (results is null)
+            {
+                return new List<TileCoord>();
+            }
+
+            results.Clear();
+            return results;
+        }
 
         int capacity = (endCol - startCol + 1) * (endRow - startRow + 1);
         if (results is null)
         {
-            results = new List<PixelSize>(capacity);
+            results = new List<TileCoord>(capacity);
         }
         else
         {
@@ -133,7 +125,7 @@ public static class TileGrid
         {
             for (int c = startCol; c <= endCol; c++)
             {
-                results.Add(new (c, r));
+                results.Add(new TileCoord(c, r));
             }
         }
 

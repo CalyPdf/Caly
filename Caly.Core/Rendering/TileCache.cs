@@ -66,7 +66,16 @@ public sealed class TileCache : IDisposable
     /// <summary>
     /// Gets the current memory usage of the cache in bytes.
     /// </summary>
-    public long CurrentMemoryBytes => Interlocked.Read(ref _currentMemoryBytes);
+    public long CurrentMemoryBytes
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _currentMemoryBytes;
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the number of tiles currently in the cache.
@@ -125,6 +134,7 @@ public sealed class TileCache : IDisposable
     {
         long memorySize = bitmap.ByteCount;
         var bitmapRef = RefCountable.Create(bitmap);
+        List<CacheEntry>? evicted = null;
 
         lock (_lock)
         {
@@ -135,10 +145,22 @@ public sealed class TileCache : IDisposable
                 return;
             }
 
-            // Evict until under budget
+            // Reject tiles that exceed the entire budget — adding them would evict
+            // everything and still blow past the limit.
+            if (memorySize > _maxMemoryBytes)
+            {
+                bitmapRef.Dispose();
+                return;
+            }
+
+            // Evict until under budget, collecting entries to dispose outside the lock
             while (_currentMemoryBytes + memorySize > _maxMemoryBytes && _lruList.Count > 0)
             {
-                EvictOldestLocked();
+                var evictedEntry = EvictOldestLocked();
+                if (evictedEntry is not null)
+                {
+                    (evicted ??= []).Add(evictedEntry);
+                }
             }
 
             var entry = new CacheEntry(bitmapRef, key, memorySize);
@@ -146,7 +168,16 @@ public sealed class TileCache : IDisposable
             entry.LruNode = node;
 
             _entries[key] = entry;
-            Interlocked.Add(ref _currentMemoryBytes, memorySize);
+            _currentMemoryBytes += memorySize;
+        }
+
+        // Dispose evicted entries outside the lock
+        if (evicted is not null)
+        {
+            foreach (var entry in evicted)
+            {
+                entry.BitmapRef.Dispose();
+            }
         }
     }
 
@@ -206,19 +237,27 @@ public sealed class TileCache : IDisposable
         }
     }
 
-    private void EvictOldestLocked()
+    /// <summary>
+    /// Removes the oldest entry from the cache and returns it for disposal outside the lock.
+    /// Returns null if the LRU list is empty or the entry was not found.
+    /// </summary>
+    private CacheEntry? EvictOldestLocked()
     {
         var oldest = _lruList.Last;
         if (oldest is null)
         {
-            return;
+            return null;
         }
 
         if (_entries.TryGetValue(oldest.Value, out var entry))
         {
             RemoveEntryLocked(entry);
-            entry.BitmapRef.Dispose();
+            return entry;
         }
+
+        // Orphaned LRU node — remove it to prevent infinite loop
+        _lruList.RemoveLast();
+        return null;
     }
 
     private void RemoveEntryLocked(CacheEntry entry)
@@ -230,7 +269,7 @@ public sealed class TileCache : IDisposable
             entry.LruNode = null;
         }
 
-        Interlocked.Add(ref _currentMemoryBytes, -entry.MemorySize);
+        _currentMemoryBytes -= entry.MemorySize;
     }
 
     public void Dispose()
@@ -244,7 +283,7 @@ public sealed class TileCache : IDisposable
 
             _entries.Clear();
             _lruList.Clear();
-            Interlocked.Exchange(ref _currentMemoryBytes, 0);
+            _currentMemoryBytes = 0;
         }
     }
 }

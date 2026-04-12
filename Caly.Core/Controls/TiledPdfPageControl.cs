@@ -161,7 +161,7 @@ public sealed class TiledPdfPageControl : Control
                     using var borderPaint = new SKPaint();
                     borderPaint.Style = SKPaintStyle.Stroke;
                     borderPaint.Color = SKColors.Red.WithAlpha(120);
-                    borderPaint.StrokeWidth = 5f;
+                    borderPaint.StrokeWidth = 2f;
 #endif
 
                     foreach (var tile in _tiles)
@@ -281,7 +281,7 @@ public sealed class TiledPdfPageControl : Control
     /// Reusable list for visible tile coordinates, avoiding per-frame allocation.
     /// Only used on the UI thread in <see cref="Render"/>.
     /// </summary>
-    private List<PixelSize>? _visibleTilesBuffer;
+    private List<TileCoord>? _visibleTilesBuffer;
 
     static TiledPdfPageControl()
     {
@@ -464,17 +464,17 @@ public sealed class TiledPdfPageControl : Control
         _visibleTilesBuffer = visibleTiles; // Keep reference for next frame reuse
 
         var tileEntries = new List<TileDrawEntry>(visibleTiles.Count);
-        List<PixelSize>? missingTiles = null;
+        List<TileCoord>? missingTiles = null;
         int pageNumber = PageNumber;
 
         foreach (var size in visibleTiles)
         {
-            var key = new TileKey(pageNumber, tileLevel, size.Width, size.Height);
+            var key = new TileKey(pageNumber, tileLevel, size.Column, size.Row);
 
             if (service.Cache.TryGet(key, out var bitmapRef) && bitmapRef is not null)
             {
                 // Exact-level tile available — use full bitmap as source
-                var displayRect = TileGrid.GetTileDisplayRect(size.Width, size.Height, tileLevel, pageDisplaySize);
+                var displayRect = TileGrid.GetTileDisplayRect(size.Column, size.Row, tileLevel, pageDisplaySize);
                 var destRect = new SKRect((float)displayRect.X, (float)displayRect.Y,
                     (float)displayRect.Right, (float)displayRect.Bottom);
 
@@ -484,7 +484,7 @@ public sealed class TiledPdfPageControl : Control
             else
             {
                 // Try to find a lower-level (coarser) tile as a fallback to avoid blank areas
-                var fallbackEntry = TryGetFallbackTile(service.Cache, pageNumber, tileLevel, size.Width, size.Height, pageDisplaySize);
+                var fallbackEntry = TryGetFallbackTile(service.Cache, pageNumber, tileLevel, size.Column, size.Row, pageDisplaySize);
                 if (fallbackEntry.HasValue)
                 {
                     tileEntries.Add(fallbackEntry.Value);

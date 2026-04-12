@@ -309,7 +309,7 @@ public sealed class TileRenderService : IAsyncDisposable
     /// <param name="tiles">List of (column, row) tile coordinates to render.</param>
     /// <param name="ppiScale">The PPI scale factor.</param>
     /// <param name="pageDisplaySize">The page display size (in display coordinates).</param>
-    public void RequestTiles(int pageNumber, IRef<SKPicture> picture, int tileLevel, IReadOnlyList<PixelSize> tiles, double ppiScale, Size pageDisplaySize)
+    public void RequestTiles(int pageNumber, IRef<SKPicture> picture, int tileLevel, IReadOnlyList<TileCoord> tiles, double ppiScale, Size pageDisplaySize)
     {
         if (_cts.IsCancellationRequested)
         {
@@ -323,7 +323,7 @@ public sealed class TileRenderService : IAsyncDisposable
         List<TileKey>? keysToRequest = null;
         foreach (var size in tiles)
         {
-            var key = new TileKey(pageNumber, tileLevel, size.Width, size.Height);
+            var key = new TileKey(pageNumber, tileLevel, size.Column, size.Row);
 
             // Skip if already in cache or in-flight
             if (_cache.Contains(key) || !_inFlight.TryAdd(key, 0))

@@ -64,7 +64,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
     /// <summary>
     /// Tile render service for this document, used by <see cref="Controls.TiledPdfPageControl"/>.
     /// </summary>
-    public TileRenderService TileRenderService => _tileRenderService;
+    public TileRenderService TileRenderService => _pdfPageService.TileRenderService;
 
     private readonly CancellationTokenSource _mainCts = new();
     private readonly CancellationToken _mainToken;
@@ -196,7 +196,6 @@ public sealed partial class DocumentViewModel : ViewModelBase
 
         _pdfService = new PdfPigDocumentService();
         _settingsService = new JsonSettingsService(null!);
-        _tileRenderService = new TileRenderService();
         _paneSize = 50;
 
         IsPasswordProtected = _pdfService.IsPasswordProtected;
@@ -219,8 +218,6 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _pdfPageService = pdfPageService;
         _settingsService = settingsService;
         _textSearchService = textSearchService;
-        _tileRenderService = new TileRenderService();
-        _pdfPageService.TileRenderService = _tileRenderService;
 
         _paneSize = _settingsService.GetSettings().PaneSize;
 

@@ -172,6 +172,7 @@ namespace Caly.Core.Services
 
         public PdfPageService(IPdfDocumentService pdfDocumentService)
         {
+            TileRenderService = new TileRenderService();
             _pdfDocumentService = pdfDocumentService;
 
             var channel = Channel.CreateUnboundedPrioritized(new UnboundedPrioritizedChannelOptions<RenderRequest>()
@@ -206,7 +207,7 @@ namespace Caly.Core.Services
         /// <summary>
         /// The tile render service for this document. Set by <see cref="DocumentViewModel"/> after construction.
         /// </summary>
-        public TileRenderService? TileRenderService { get; set; }
+        public TileRenderService TileRenderService { get; }
 
         private readonly ConcurrentDictionary<int, IRef<SKPicture>> _cachePictures = new();
         private readonly ConcurrentDictionary<int, PdfTextLayer> _cacheTextLayers = new();
@@ -852,6 +853,8 @@ namespace Caly.Core.Services
                     picture.Dispose();
                 }
             }
+
+            await TileRenderService.DisposeAsync();
 
             _mainCts.Dispose();
             
