@@ -24,6 +24,7 @@ using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Models;
+using Caly.Core.Rendering;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
@@ -58,6 +59,11 @@ public sealed partial class DocumentViewModel : ViewModelBase
     private readonly IPdfDocumentService _pdfService;
     private readonly PdfPageService _pdfPageService;
     private readonly ISettingsService _settingsService;
+
+    /// <summary>
+    /// Tile render service for this document, used by <see cref="Caly.Core.Controls.TiledPdfPageControl"/>.
+    /// </summary>
+    public TileRenderService TileRenderService => _pdfPageService.TileRenderService;
 
     private readonly CancellationTokenSource _mainCts = new();
     private readonly CancellationToken _mainToken;
