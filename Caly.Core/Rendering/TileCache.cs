@@ -28,13 +28,13 @@ namespace Caly.Core.Rendering;
 
 /// <summary>
 /// Thread-safe LRU tile cache with a configurable memory budget.
-/// Tiles are stored as ref-counted <see cref="SKBitmap"/> instances.
+/// Tiles are stored as ref-counted <see cref="SKImage"/> instances.
 /// </summary>
 public sealed class TileCache : IDisposable
 {
     private sealed class CacheEntry
     {
-        public IRef<SKBitmap> Bitmap { get; }
+        public IRef<SKImage> Image { get; }
 
         public TileKey Key { get; }
 
@@ -42,9 +42,9 @@ public sealed class TileCache : IDisposable
 
         public LinkedListNode<TileKey>? LruNode { get; set; }
 
-        public CacheEntry(IRef<SKBitmap> bitmap, TileKey key, int memorySize)
+        public CacheEntry(IRef<SKImage> image, TileKey key, int memorySize)
         {
-            Bitmap = bitmap;
+            Image = image;
             Key = key;
             MemorySize = memorySize;
         }
@@ -54,6 +54,18 @@ public sealed class TileCache : IDisposable
     private readonly LinkedList<TileKey> _lruList = new();
     private readonly Lock _lock = new();
     private readonly long _maxMemoryBytes;
+
+    /// <summary>
+    /// Secondary index: page number → set of tile keys for that page.
+    /// Allows O(page tiles) invalidation instead of O(all tiles).
+    /// </summary>
+    private readonly Dictionary<int, HashSet<TileKey>> _pageKeys = new();
+
+    /// <summary>
+    /// Secondary index: page number → set of cached tile levels.
+    /// Allows O(1) lookup in <see cref="GetCachedLevelsAbove"/> instead of O(N) scan.
+    /// </summary>
+    private readonly Dictionary<int, SortedSet<int>> _pageLevels = new();
 
     private long _currentMemoryBytes;
 
@@ -98,7 +110,7 @@ public sealed class TileCache : IDisposable
     /// Tries to get a tile from the cache, moving it to the front of the LRU list.
     /// Returns a cloned reference that the caller must dispose.
     /// </summary>
-    public bool TryGet(TileKey key, out IRef<SKBitmap>? bitmapRef)
+    public bool TryGet(in TileKey key, out IRef<SKImage>? imageRef)
     {
         lock (_lock)
         {
@@ -110,24 +122,26 @@ public sealed class TileCache : IDisposable
                     _lruList.AddFirst(entry.LruNode);
                 }
 
-                bitmapRef = entry.Bitmap.Clone();
+                imageRef = entry.Image.Clone();
                 return true;
             }
         }
 
-        bitmapRef = null;
+        imageRef = null;
         return false;
     }
 
     /// <summary>
-    /// Adds a tile bitmap to the cache. If adding exceeds the memory budget,
+    /// Adds a tile image to the cache. If adding exceeds the memory budget,
     /// LRU tiles are evicted. If the key already exists, the call is ignored.
-    /// The cache takes ownership of the bitmap.
+    /// The cache takes ownership of the image.
     /// </summary>
-    public void Add(TileKey key, SKBitmap bitmap)
+    /// <param name="key">The tile key.</param>
+    /// <param name="image">The SKImage to cache. The cache takes ownership.</param>
+    /// <param name="memorySize">The memory footprint of the image in bytes.</param>
+    public void Add(in TileKey key, SKImage image, int memorySize)
     {
-        int memorySize = bitmap.ByteCount;
-        IRef<SKBitmap> bitmapRef = RefCountable.Create(bitmap);
+        IRef<SKImage> imageRef = RefCountable.Create(image);
         List<CacheEntry>? evicted = null;
 
         lock (_lock)
@@ -135,15 +149,15 @@ public sealed class TileCache : IDisposable
             if (_entries.ContainsKey(key))
             {
                 // Already in cache, dispose the new ref
-                bitmapRef.Dispose();
+                imageRef.Dispose();
                 return;
             }
 
-            // Reject tiles that exceed the entire budget � adding them would evict
+            // Reject tiles that exceed the entire budget — adding them would evict
             // everything and still blow past the limit.
             if (memorySize > _maxMemoryBytes)
             {
-                bitmapRef.Dispose();
+                imageRef.Dispose();
                 return;
             }
 
@@ -157,12 +171,27 @@ public sealed class TileCache : IDisposable
                 }
             }
 
-            var entry = new CacheEntry(bitmapRef, key, memorySize);
+            var entry = new CacheEntry(imageRef, key, memorySize);
             var node = _lruList.AddFirst(key);
             entry.LruNode = node;
 
             _entries[key] = entry;
             _currentMemoryBytes += memorySize;
+
+            // Update secondary indexes
+            if (!_pageKeys.TryGetValue(key.PageNumber, out var keys))
+            {
+                keys = new HashSet<TileKey>();
+                _pageKeys[key.PageNumber] = keys;
+            }
+            keys.Add(key);
+
+            if (!_pageLevels.TryGetValue(key.PageNumber, out var levels))
+            {
+                levels = new SortedSet<int>();
+                _pageLevels[key.PageNumber] = levels;
+            }
+            levels.Add(key.TileLevel);
         }
 
         // Dispose evicted entries outside the lock
@@ -170,7 +199,7 @@ public sealed class TileCache : IDisposable
         {
             foreach (var entry in evicted)
             {
-                entry.Bitmap.Dispose();
+                entry.Image.Dispose();
             }
         }
     }
@@ -180,40 +209,35 @@ public sealed class TileCache : IDisposable
     /// </summary>
     public void InvalidatePage(int pageNumber)
     {
-        List<CacheEntry> toDispose;
+        List<CacheEntry>? toDispose = null;
 
         lock (_lock)
         {
-            // Collect entries to remove
-            List<TileKey>? keysToRemove = null;
-            foreach (var kvp in _entries)
-            {
-                if (kvp.Key.PageNumber == pageNumber)
-                {
-                    (keysToRemove ??= []).Add(kvp.Key);
-                }
-            }
-
-            if (keysToRemove is null)
+            if (!_pageKeys.TryGetValue(pageNumber, out var keys))
             {
                 return;
             }
 
-            toDispose = new List<CacheEntry>(keysToRemove.Count);
-            foreach (var key in keysToRemove)
+            toDispose = new List<CacheEntry>(keys.Count);
+            foreach (var key in keys)
             {
                 if (_entries.TryGetValue(key, out var entry))
                 {
                     toDispose.Add(entry);
-                    RemoveEntryLocked(entry);
+                    RemoveEntryFromPrimaryLocked(entry);
                 }
             }
+
+            // Clear secondary indexes for this page
+            keys.Clear();
+            _pageKeys.Remove(pageNumber);
+            _pageLevels.Remove(pageNumber);
         }
 
         // Dispose outside the lock
         foreach (var entry in toDispose)
         {
-            entry.Bitmap.Dispose();
+            entry.Image.Dispose();
         }
     }
 
@@ -223,16 +247,21 @@ public sealed class TileCache : IDisposable
     /// </summary>
     public void EvictPageLevelsExcept(int pageNumber, int keepLevel)
     {
-        List<CacheEntry> toDispose;
+        List<CacheEntry>? toDispose = null;
 
         lock (_lock)
         {
-            List<TileKey>? keysToRemove = null;
-            foreach (var kvp in _entries)
+            if (!_pageKeys.TryGetValue(pageNumber, out var keys))
             {
-                if (kvp.Key.PageNumber == pageNumber && kvp.Key.TileLevel != keepLevel)
+                return;
+            }
+
+            List<TileKey>? keysToRemove = null;
+            foreach (var key in keys)
+            {
+                if (key.TileLevel != keepLevel)
                 {
-                    (keysToRemove ??= []).Add(kvp.Key);
+                    (keysToRemove ??= []).Add(key);
                 }
             }
 
@@ -247,21 +276,43 @@ public sealed class TileCache : IDisposable
                 if (_entries.TryGetValue(key, out var entry))
                 {
                     toDispose.Add(entry);
-                    RemoveEntryLocked(entry);
+                    RemoveEntryFromPrimaryLocked(entry);
+                    keys.Remove(key);
                 }
+            }
+
+            // Rebuild level index for this page
+            if (_pageLevels.TryGetValue(pageNumber, out var levels))
+            {
+                levels.Clear();
+                foreach (var key in keys)
+                {
+                    levels.Add(key.TileLevel);
+                }
+
+                if (levels.Count == 0)
+                {
+                    _pageLevels.Remove(pageNumber);
+                }
+            }
+
+            if (keys.Count == 0)
+            {
+                _pageKeys.Remove(pageNumber);
             }
         }
 
+        // Dispose outside the lock
         foreach (var entry in toDispose)
         {
-            entry.Bitmap.Dispose();
+            entry.Image.Dispose();
         }
     }
 
     /// <summary>
     /// Checks whether a tile exists in the cache without modifying LRU order.
     /// </summary>
-    public bool Contains(TileKey key)
+    public bool Contains(in TileKey key)
     {
         lock (_lock)
         {
@@ -270,27 +321,97 @@ public sealed class TileCache : IDisposable
     }
 
     /// <summary>
-    /// Returns the distinct tile levels strictly above <paramref name="baseLevel"/> for which
-    /// the given page has any cached tiles, sorted ascending (closest level first).
-    /// Used to drive the finer-level fallback search when the exact-level tile for a
-    /// zoomed-out view is not yet rendered.
+    /// Finds tiles within the given grid range that are not in the cache,
+    /// acquiring the lock only once for the entire batch.
     /// </summary>
-    public IReadOnlyCollection<int>? GetCachedLevelsAbove(int pageNumber, int baseLevel)
+    public void FindMissing(int pageNumber, int tileLevel, int startCol, int startRow, int endCol, int endRow, List<TileCoord> missing)
     {
-        SortedSet<int>? seen = null;
-
         lock (_lock)
         {
-            foreach (var key in _entries.Keys)
+            for (int r = startRow; r <= endRow; r++)
             {
-                if (key.PageNumber == pageNumber && key.TileLevel > baseLevel)
+                for (int c = startCol; c <= endCol; c++)
                 {
-                    (seen ??= new SortedSet<int>()).Add(key.TileLevel);
+                    var key = new TileKey(pageNumber, tileLevel, c, r);
+                    if (!_entries.ContainsKey(key))
+                    {
+                        missing.Add(new TileCoord(c, r));
+                    }
                 }
             }
         }
+    }
 
-        return seen;
+    /// <summary>
+    /// Looks up every tile in the given grid range under a single lock acquisition. Hits are
+    /// returned as fresh ref-counted clones in <paramref name="outRefs"/> (row-major order); misses
+    /// leave the corresponding slot as <see langword="null"/>. The caller owns the returned
+    /// references and must dispose each non-null entry.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="TiledPdfPageControl.Render"/> calls this once per frame instead of calling
+    /// <see cref="TryGet"/> per tile. Rendering otherwise acquires the cache lock dozens of times
+    /// per frame while the background renderer is concurrently acquiring it to add completed
+    /// tiles — batching eliminates that contention on the UI thread.
+    /// </remarks>
+    public void TryGetRange(int pageNumber, int tileLevel, int startCol, int startRow, int endCol, int endRow,
+        Span<IRef<SKImage>?> outRefs)
+    {
+        lock (_lock)
+        {
+            int idx = 0;
+            for (int r = startRow; r <= endRow; r++)
+            {
+                for (int c = startCol; c <= endCol; c++)
+                {
+                    var key = new TileKey(pageNumber, tileLevel, c, r);
+                    if (_entries.TryGetValue(key, out var entry))
+                    {
+                        if (entry.LruNode is not null)
+                        {
+                            _lruList.Remove(entry.LruNode);
+                            _lruList.AddFirst(entry.LruNode);
+                        }
+
+                        outRefs[idx] = entry.Image.Clone();
+                    }
+                    else
+                    {
+                        outRefs[idx] = null;
+                    }
+
+                    idx++;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the distinct tile levels strictly above <paramref name="baseLevel"/> for which
+    /// the given page has any cached tiles, sorted ascending (closest level first).
+    /// Uses the pre-built <see cref="_pageLevels"/> index for O(1) lookup.
+    /// </summary>
+    public int[]? GetCachedLevelsAbove(int pageNumber, int baseLevel)
+    {
+        lock (_lock)
+        {
+            if (!_pageLevels.TryGetValue(pageNumber, out var levels))
+            {
+                return null;
+            }
+
+            // Return a snapshot copy — the live SortedSet view cannot be iterated
+            // outside the lock because background eviction may modify it concurrently.
+            var above = levels.GetViewBetween(baseLevel + 1, int.MaxValue);
+            if (above.Count == 0)
+            {
+                return null;
+            }
+
+            var snapshot = new int[above.Count];
+            above.CopyTo(snapshot);
+            return snapshot;
+        }
     }
 
     /// <summary>
@@ -310,7 +431,52 @@ public sealed class TileCache : IDisposable
         return entry;
     }
 
+    /// <summary>
+    /// Removes an entry from primary structures (entries dict + LRU list) and secondary indexes.
+    /// </summary>
     private void RemoveEntryLocked(CacheEntry entry)
+    {
+        RemoveEntryFromPrimaryLocked(entry);
+
+        // Update secondary indexes
+        if (_pageKeys.TryGetValue(entry.Key.PageNumber, out var keys))
+        {
+            keys.Remove(entry.Key);
+            if (keys.Count == 0)
+            {
+                _pageKeys.Remove(entry.Key.PageNumber);
+                _pageLevels.Remove(entry.Key.PageNumber);
+            }
+            else if (_pageLevels.TryGetValue(entry.Key.PageNumber, out var levels))
+            {
+                // Check if any other key at this level remains
+                bool levelStillPresent = false;
+                foreach (var k in keys)
+                {
+                    if (k.TileLevel == entry.Key.TileLevel)
+                    {
+                        levelStillPresent = true;
+                        break;
+                    }
+                }
+
+                if (!levelStillPresent)
+                {
+                    levels.Remove(entry.Key.TileLevel);
+                    if (levels.Count == 0)
+                    {
+                        _pageLevels.Remove(entry.Key.PageNumber);
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes an entry from the primary structures only (entries dict + LRU list + memory counter).
+    /// Does NOT update secondary indexes — caller is responsible.
+    /// </summary>
+    private void RemoveEntryFromPrimaryLocked(CacheEntry entry)
     {
         _entries.Remove(entry.Key);
         if (entry.LruNode is not null)
@@ -328,11 +494,13 @@ public sealed class TileCache : IDisposable
         {
             foreach (var entry in _entries.Values)
             {
-                entry.Bitmap.Dispose();
+                entry.Image.Dispose();
             }
 
             _entries.Clear();
             _lruList.Clear();
+            _pageKeys.Clear();
+            _pageLevels.Clear();
             _currentMemoryBytes = 0;
         }
     }

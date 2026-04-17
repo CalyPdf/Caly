@@ -36,7 +36,7 @@ namespace Caly.Core.Rendering;
 /// </summary>
 public sealed class TileRenderService : IAsyncDisposable
 {
-    private sealed class TileRequest
+    private readonly struct TileRequest
     {
         public TileKey Key { get; }
         public IRef<SKPicture> Picture { get; }
@@ -44,7 +44,7 @@ public sealed class TileRenderService : IAsyncDisposable
         public Size PageDisplaySize { get; }
         public CancellationToken Token { get; }
 
-        public TileRequest(TileKey key, IRef<SKPicture> picture, double ppiScale, Size pageDisplaySize, CancellationToken token)
+        public TileRequest(in TileKey key, IRef<SKPicture> picture, double ppiScale, in Size pageDisplaySize, CancellationToken token)
         {
             Key = key;
             Picture = picture;
@@ -58,18 +58,20 @@ public sealed class TileRenderService : IAsyncDisposable
     {
         public static readonly TileRequestComparer Instance = new();
 
-        public int Compare(TileRequest? x, TileRequest? y)
+        public int Compare(TileRequest x, TileRequest y)
         {
-            if (ReferenceEquals(x, y)) return 0;
-            if (y is null) return 1;
-            if (x is null) return -1;
-
             // Prioritize by page number first, then by tile position (top-to-bottom, left-to-right)
             int cmp = x.Key.PageNumber.CompareTo(y.Key.PageNumber);
-            if (cmp != 0) return cmp;
+            if (cmp != 0)
+            {
+                return cmp;
+            }
 
             cmp = x.Key.Row.CompareTo(y.Key.Row);
-            if (cmp != 0) return cmp;
+            if (cmp != 0)
+            {
+                return cmp;
+            }
 
             return x.Key.Column.CompareTo(y.Key.Column);
         }
@@ -150,7 +152,7 @@ public sealed class TileRenderService : IAsyncDisposable
                         return ValueTask.CompletedTask;
                     }
 
-                    RenderTile(request);
+                    RenderTile(in request);
                 }
                 catch (OperationCanceledException)
                 {
@@ -175,7 +177,7 @@ public sealed class TileRenderService : IAsyncDisposable
         }
     }
 
-    private void RenderTile(TileRequest request)
+    private void RenderTile(in TileRequest request)
     {
         Debug.ThrowOnUiThread();
 
@@ -224,15 +226,20 @@ public sealed class TileRenderService : IAsyncDisposable
 
             request.Token.ThrowIfCancellationRequested();
 
-            // Extract bitmap from surface
+            // Extract bitmap from surface, create SKImage, and dispose the bitmap.
+            // SetImmutable allows SKImage.FromBitmap to share pixel data (zero-copy).
+            // The SKImage holds its own native reference to the pixels, so the bitmap
+            // can be safely disposed. Caching the SKImage avoids per-frame
+            // SKImage.FromBitmap allocations in the draw loop.
             var bitmap = new SKBitmap(imageInfo);
             surface.ReadPixels(imageInfo, bitmap.GetPixels(), imageInfo.RowBytes, 0, 0);
-
-            // Mark immutable so SKImage.FromBitmap() shares pixel data instead of copying.
-            // Without this, every draw call copies all pixel data (~256KB per tile per frame).
             bitmap.SetImmutable();
 
-            Cache.Add(request.Key, bitmap);
+            var image = SKImage.FromBitmap(bitmap);
+            bitmap.Dispose();
+
+            int memorySize = imageInfo.BytesSize;
+            Cache.Add(request.Key, image, memorySize);
 
             TileReady?.Invoke(request.Key);
         }
@@ -282,10 +289,10 @@ public sealed class TileRenderService : IAsyncDisposable
     /// <param name="picture">A cloned reference to the page's SKPicture. The caller retains ownership of this reference;
     /// the service will clone it internally for each tile request.</param>
     /// <param name="tileLevel">The tile level to render at.</param>
-    /// <param name="tiles">List of (column, row) tile coordinates to render.</param>
+    /// <param name="tiles">Span of (column, row) tile coordinates to render.</param>
     /// <param name="ppiScale">The PPI scale factor.</param>
     /// <param name="pageDisplaySize">The page display size (in display coordinates).</param>
-    public void RequestTiles(int pageNumber, IRef<SKPicture> picture, int tileLevel, IReadOnlyList<TileCoord> tiles, double ppiScale, Size pageDisplaySize)
+    public void RequestTiles(int pageNumber, IRef<SKPicture> picture, int tileLevel, ReadOnlySpan<TileCoord> tiles, double ppiScale, in Size pageDisplaySize)
     {
         if (_mainToken.IsCancellationRequested)
         {
@@ -317,11 +324,16 @@ public sealed class TileRenderService : IAsyncDisposable
 
         try
         {
-            foreach (var tile in tiles)
+            foreach (ref readonly var tile in tiles)
             {
                 var key = new TileKey(pageNumber, tileLevel, tile.Column, tile.Row);
 
-                if (Cache.Contains(key) || !_inFlight.TryAdd(key, 0))
+                // _inFlight is sufficient as the dedup guard here: the caller already filtered
+                // cached tiles via TileCache.FindMissing, and the render worker re-checks the
+                // cache before allocating a surface. Re-acquiring the cache lock per tile just
+                // to repeat the Contains check serialized batches with concurrent Cache.Add
+                // operations for no benefit.
+                if (!_inFlight.TryAdd(key, 0))
                 {
                     continue;
                 }
@@ -330,7 +342,7 @@ public sealed class TileRenderService : IAsyncDisposable
                 // fail with ObjectDisposedException here.
                 var pictureClone = batchPicture.Clone();
 
-                var request = new TileRequest(key, pictureClone, ppiScale, pageDisplaySize, pageToken);
+                var request = new TileRequest(in key, pictureClone, ppiScale, in pageDisplaySize, pageToken);
                 if (!_requestWriter.TryWrite(request))
                 {
                     pictureClone.Dispose();

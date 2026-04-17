@@ -45,7 +45,7 @@ public static class TileGrid
     /// </summary>
     public static double GetTileLevelScale(int tileLevel)
     {
-        return Math.Pow(2, tileLevel);
+        return 1 << tileLevel; // Same as Math.Pow(2, tileLevel);
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public static class TileGrid
     /// <param name="pageDisplaySize">Page size in display coordinates (already scaled by ppiScale).</param>
     /// <param name="tileLevel">The tile level.</param>
     /// <returns>Number of columns (width) and rows (height) in the tile grid.</returns>
-    public static PixelSize GetGridDimensions(Size pageDisplaySize, int tileLevel)
+    public static PixelSize GetGridDimensions(in Size pageDisplaySize, int tileLevel)
     {
         double tileScale = GetTileLevelScale(tileLevel);
         int pixelWidth = (int)Math.Ceiling(pageDisplaySize.Width * tileScale);
@@ -72,7 +72,7 @@ public static class TileGrid
     /// Adjacent tiles share exact edge coordinates (same expression for right/left),
     /// so seam prevention is handled at draw time by disabling edge anti-aliasing.
     /// </summary>
-    public static Rect GetTileDisplayRect(int col, int row, int tileLevel, Size pageDisplaySize)
+    public static Rect GetTileDisplayRect(int col, int row, int tileLevel, in Size pageDisplaySize)
     {
         double invScale = 1.0 / GetTileLevelScale(tileLevel);
         double tileDisplaySize = TilePixelSize * invScale;
