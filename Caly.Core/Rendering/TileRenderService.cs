@@ -44,13 +44,30 @@ public sealed class TileRenderService : IAsyncDisposable
         public Size PageDisplaySize { get; }
         public CancellationToken Token { get; }
 
-        public TileRequest(in TileKey key, IRef<SKPicture> picture, double ppiScale, in Size pageDisplaySize, CancellationToken token)
+        /// <summary>
+        /// Squared Euclidean distance (in tile units) from the tile's centre to the centre of the
+        /// visible area at the time of the request. Primary sort key after <see cref="TileKey.PageNumber"/>:
+        /// smaller = rendered sooner, so tiles fill outwards in rings from the middle of the viewport.
+        /// </summary>
+        public double DistSq { get; }
+
+        /// <summary>
+        /// Clockwise angle from the top (12 o'clock), in radians, in the range [0, 2π). Secondary
+        /// tiebreaker for tiles that share a <see cref="DistSq"/>, so each ring fills clockwise from
+        /// the top edge.
+        /// </summary>
+        public double AngleCw { get; }
+
+        public TileRequest(in TileKey key, IRef<SKPicture> picture, double ppiScale, in Size pageDisplaySize,
+            CancellationToken token, double distSq, double angleCw)
         {
             Key = key;
             Picture = picture;
             PpiScale = ppiScale;
             PageDisplaySize = pageDisplaySize;
             Token = token;
+            DistSq = distSq;
+            AngleCw = angleCw;
         }
     }
 
@@ -60,20 +77,24 @@ public sealed class TileRenderService : IAsyncDisposable
 
         public int Compare(TileRequest x, TileRequest y)
         {
-            // Prioritize by page number first, then by tile position (top-to-bottom, left-to-right)
+            // Order: page number first (so earlier pages finish before later ones), then distance
+            // from the visible-area centre (rings outward), then clockwise angle from the top.
+            // The net effect is that the middle of the viewport renders first and the ring around
+            // it fills clockwise starting at 12 o'clock — the human eye is drawn to the centre, so
+            // putting content there first makes scrolling feel more responsive than top-to-bottom.
             int cmp = x.Key.PageNumber.CompareTo(y.Key.PageNumber);
             if (cmp != 0)
             {
                 return cmp;
             }
 
-            cmp = x.Key.Row.CompareTo(y.Key.Row);
+            cmp = x.DistSq.CompareTo(y.DistSq);
             if (cmp != 0)
             {
                 return cmp;
             }
 
-            return x.Key.Column.CompareTo(y.Key.Column);
+            return x.AngleCw.CompareTo(y.AngleCw);
         }
     }
 
@@ -282,7 +303,9 @@ public sealed class TileRenderService : IAsyncDisposable
     }
 
     /// <summary>
-    /// Requests tiles for a page. Missing tiles are queued for background rendering.
+    /// Requests tiles for a page. Missing tiles are queued for background rendering, prioritised so
+    /// that tiles near the centre of <paramref name="visibleArea"/> render first and each ring
+    /// around the centre fills clockwise from the top.
     /// The caller provides a cloned picture reference per tile.
     /// </summary>
     /// <param name="pageNumber">The page number.</param>
@@ -292,7 +315,10 @@ public sealed class TileRenderService : IAsyncDisposable
     /// <param name="tiles">Span of (column, row) tile coordinates to render.</param>
     /// <param name="ppiScale">The PPI scale factor.</param>
     /// <param name="pageDisplaySize">The page display size (in display coordinates).</param>
-    public void RequestTiles(int pageNumber, IRef<SKPicture> picture, int tileLevel, ReadOnlySpan<TileCoord> tiles, double ppiScale, in Size pageDisplaySize)
+    /// <param name="visibleArea">Visible area in page display coordinates. Used to compute the
+    /// centre from which the render priority radiates outward.</param>
+    public void RequestTiles(int pageNumber, IRef<SKPicture> picture, int tileLevel, ReadOnlySpan<TileCoord> tiles,
+        double ppiScale, in Size pageDisplaySize, in Rect visibleArea)
     {
         if (_mainToken.IsCancellationRequested)
         {
@@ -322,6 +348,13 @@ public sealed class TileRenderService : IAsyncDisposable
             return;
         }
 
+        // Centre of the visible area, expressed in tile-coordinates at the current level. Each
+        // tile is then scored relative to this centre; the priority queue uses that score so the
+        // worker threads pull the most centrally-located tiles first.
+        double tileDisplaySize = TileGrid.TilePixelSize / TileGrid.GetTileLevelScale(tileLevel);
+        double centreColTile = (visibleArea.Left + visibleArea.Right) * 0.5 / tileDisplaySize;
+        double centreRowTile = (visibleArea.Top + visibleArea.Bottom) * 0.5 / tileDisplaySize;
+
         try
         {
             foreach (ref readonly var tile in tiles)
@@ -338,11 +371,28 @@ public sealed class TileRenderService : IAsyncDisposable
                     continue;
                 }
 
+                // Use the tile centre (+0.5) rather than the top-left corner so tiles symmetric
+                // around the focal point get identical DistSq values and fall into the same ring.
+                double dCol = tile.Column + 0.5 - centreColTile;
+                double dRow = tile.Row + 0.5 - centreRowTile;
+                double distSq = dCol * dCol + dRow * dRow;
+
+                // Clockwise angle from 12 o'clock in screen coordinates (row increases downward).
+                // Atan2(dCol, -dRow) yields 0 at the top, π/2 at the right, π at the bottom, and
+                // -π/2 at the left; the normalisation pulls the left half into [π, 2π) so a simple
+                // ascending sort walks the ring clockwise from the top.
+                double angleCw = Math.Atan2(dCol, -dRow);
+                if (angleCw < 0)
+                {
+                    angleCw += 2 * Math.PI;
+                }
+
                 // Safe: batchPicture is held alive for the entire loop, so Clone cannot
                 // fail with ObjectDisposedException here.
                 var pictureClone = batchPicture.Clone();
 
-                var request = new TileRequest(in key, pictureClone, ppiScale, in pageDisplaySize, pageToken);
+                var request = new TileRequest(in key, pictureClone, ppiScale, in pageDisplaySize, pageToken,
+                    distSq, angleCw);
                 if (!_requestWriter.TryWrite(request))
                 {
                     pictureClone.Dispose();

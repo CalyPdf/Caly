@@ -150,7 +150,7 @@ public sealed class TiledPdfPageControl : Control
                 using var borderPaint = new SKPaint();
                 borderPaint.Style = SKPaintStyle.Stroke;
                 borderPaint.Color = SKColors.Red.WithAlpha(120);
-                borderPaint.StrokeWidth = 1f;
+                borderPaint.StrokeWidth = 2f;
 #endif
 
                 for (int i = 0; i < _tileCount; ++i)
@@ -436,7 +436,7 @@ public sealed class TiledPdfPageControl : Control
                 if (missing.Count > 0)
                 {
                     _service.RequestTiles(_pageNumber, _picture, _tileLevel,
-                        CollectionsMarshal.AsSpan(missing), _ppiScale, _pageDisplaySize);
+                        CollectionsMarshal.AsSpan(missing), _ppiScale, _pageDisplaySize, _visibleArea);
                 }
             }
             catch (Exception e)
