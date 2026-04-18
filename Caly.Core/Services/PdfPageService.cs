@@ -107,6 +107,8 @@ namespace Caly.Core.Services
         private readonly ChannelReader<RenderRequest> _requestsReader;
         private readonly CancellationTokenSource _mainCts = new();
         private readonly CancellationToken _mainToken;
+        private CancellationTokenSource _thumbnailsCts = new();
+        private CancellationTokenSource _pagesCts = new();
 
         private async Task ProcessingLoop()
         {
@@ -463,9 +465,7 @@ namespace Caly.Core.Services
                 throw new Exception("Could not write request to channel."); // Should never happen as unbounded channel
             }
         }
-
-        private CancellationTokenSource _thumbnailsCts = new();
-
+        
         public async Task RefreshThumbnails(RefreshPagesRequestMessage m)
         {
             System.Diagnostics.Debug.WriteLine($"[{_pdfDocumentService.FileName}] RefreshThumbnails: '{m.VisibleThumbnails}' ('{m.RealisedThumbnails}')");
@@ -592,8 +592,6 @@ namespace Caly.Core.Services
                 UpdatePictureCache(m.RealisedPages, m.VisiblePages);
             }, token);
         }
-
-        private CancellationTokenSource _pagesCts = new();
 
         private void UpdatePictureCache(Range? realisedPages, Range? visiblePages)
         {
@@ -807,8 +805,23 @@ namespace Caly.Core.Services
 
         public async Task CancelAndClear()
         {
-            await _pagesCts.CancelAsync();
-            await _thumbnailsCts.CancelAsync();
+            try
+            {
+                await _pagesCts.CancelAsync();
+            }
+            catch (ObjectDisposedException)
+            {
+                // No op
+            }
+
+            try
+            {
+                await _thumbnailsCts.CancelAsync();
+            }
+            catch (ObjectDisposedException)
+            {
+                // No op
+            }
 
             // Picture Cache
             UpdatePictureCache(Empty, null);
