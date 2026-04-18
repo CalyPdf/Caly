@@ -328,12 +328,14 @@ public sealed class TiledPdfPageControl : Control
 
             if (newService is not null)
             {
+                newService.TileReady -= OnTileReady;
                 newService.TileReady += OnTileReady;
                 // Service just became available — request tiles if VisibleArea is already set.
                 PrefetchVisibleTiles();
             }
         }
-        else if (change.Property == VisibleAreaProperty || change.Property == ZoomLevelProperty
+        else if (change.Property == VisibleAreaProperty
+                 || change.Property == ZoomLevelProperty
                  || change.Property == PictureProperty)
         {
             // Prefetch tiles for the new visible area. AffectsRender handles the

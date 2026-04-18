@@ -24,7 +24,6 @@ using Avalonia.Controls.Models.TreeDataGrid;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Caly.Core.Models;
-using Caly.Core.Rendering;
 using Caly.Core.Services;
 using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
@@ -59,11 +58,6 @@ public sealed partial class DocumentViewModel : ViewModelBase
     private readonly IPdfDocumentService _pdfService;
     private readonly PdfPageService _pdfPageService;
     private readonly ISettingsService _settingsService;
-
-    /// <summary>
-    /// Tile render service for this document, used by <see cref="Caly.Core.Controls.TiledPdfPageControl"/>.
-    /// </summary>
-    public TileRenderService TileRenderService => _pdfPageService.TileRenderService;
 
     private readonly CancellationTokenSource _mainCts = new();
     private readonly CancellationToken _mainToken;
@@ -397,7 +391,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
             }
 
             // Use 1st page size as default page size
-            var firstPage = new PageViewModel(1, TextSelection, _pdfService.PpiScale);
+            var firstPage = new PageViewModel(1, TextSelection, _pdfPageService.TileRenderService, _pdfService.PpiScale);
             var pageSize = await _pdfPageService.GetPageSize(1, _mainToken).ConfigureAwait(false);
             if (pageSize.HasValue)
             {
@@ -412,7 +406,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
             for (int p = 2; p <= PageCount; ++p)
             {
                 _mainToken.ThrowIfCancellationRequested();
-                var newPage = new PageViewModel(p, TextSelection, _pdfService.PpiScale)
+                var newPage = new PageViewModel(p, TextSelection, _pdfPageService.TileRenderService, _pdfService.PpiScale)
                 {
                     Size = defaultSize
                 };
