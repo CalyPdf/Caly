@@ -150,7 +150,7 @@ public sealed class TiledPdfPageControl : Control
                 using var borderPaint = new SKPaint();
                 borderPaint.Style = SKPaintStyle.Stroke;
                 borderPaint.Color = SKColors.Red.WithAlpha(120);
-                borderPaint.StrokeWidth = 2f;
+                borderPaint.StrokeWidth = 5f;
 #endif
 
                 for (int i = 0; i < _tileCount; ++i)
@@ -276,8 +276,10 @@ public sealed class TiledPdfPageControl : Control
     /// The tile level used on the previous render pass, used to detect zoom-level changes
     /// and trigger deferred eviction of stale tile levels from the cache.
     /// Only accessed on the UI thread in <see cref="Render"/>.
+    /// Uses <see cref="int.MinValue"/> as the unset sentinel because tile levels can be
+    /// negative (zoom-out), so any value a real level could take is ambiguous.
     /// </summary>
-    private int _lastTileLevel = -1;
+    private int _lastTileLevel = int.MinValue;
 
     /// <summary>
     /// When true, stale tile levels should be evicted once all visible tiles at the
@@ -524,8 +526,10 @@ public sealed class TiledPdfPageControl : Control
     {
         // Search lower levels (coarser tiles) for a cached tile that covers this area.
         // At fallback level fl (where fl < tileLevel), the covering tile is at
-        // (col >> d, row >> d) where d = tileLevel - fl.
-        for (int fl = tileLevel - 1; fl >= 0; fl--)
+        // (col >> d, row >> d) where d = tileLevel - fl. Walks down to
+        // TileGrid.MinTileLevel so that zoom-out fallbacks from a cached
+        // negative-level tile are still found when the current level is also negative.
+        for (int fl = tileLevel - 1; fl >= TileGrid.MinTileLevel; fl--)
         {
             int levelDiff = tileLevel - fl;
             int divisor = 1 << levelDiff;
@@ -676,7 +680,7 @@ public sealed class TiledPdfPageControl : Control
         // Detect tile level changes and mark stale levels for deferred eviction.
         // We do NOT evict immediately — old-level tiles serve as fallbacks while
         // new-level tiles are being rendered in the background.
-        if (_lastTileLevel != -1 && _lastTileLevel != tileLevel)
+        if (_lastTileLevel != int.MinValue && _lastTileLevel != tileLevel)
         {
             _staleLevelEvictionPending = true;
         }
@@ -693,6 +697,8 @@ public sealed class TiledPdfPageControl : Control
         int rangeCols = endCol - startCol + 1;
         int rangeRows = endRow - startRow + 1;
         int tileCount = rangeCols * rangeRows;
+
+        System.Diagnostics.Debug.Assert(tileCount >= 0);
 
         _renderTileEntries.Clear();
         _renderTileEntries.EnsureCapacity(tileCount);

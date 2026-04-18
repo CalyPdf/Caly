@@ -26,26 +26,44 @@ public static class TileGrid
     public const int TilePixelSize = 256;
 
     /// <summary>
+    /// Hard floor on the tile level. At levels below this, the whole page shrinks into
+    /// sub-pixel territory, <see cref="TileRenderService"/> skips the render (zero-sized
+    /// surface), and tiles stop being useful. Two extra levels below <c>-2</c> are allowed
+    /// for fallback lookups during rapid zoom-out, but nothing requests tiles at those levels.
+    /// </summary>
+    public const int MinTileLevel = -4;
+
+    /// <summary>
     /// Computes the tile level for a given zoom level.
-    /// Tile level is the ceiling of log2(zoomLevel), clamped to >= 0.
-    /// This ensures tiles are always rendered at or above the needed resolution.
+    /// <para>
+    /// Tile level is <c>ceil(log2(zoomLevel))</c>, so tiles are rendered at or above the
+    /// needed display resolution in both directions:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>zoom &gt; 1 (zoom-in) → positive levels, finer tiles.</description></item>
+    /// <item><description>zoom == 1 → level 0 (1:1 with <c>ppiScale</c>).</description></item>
+    /// <item><description>zoom &lt; 1 (zoom-out) → negative levels, coarser tiles (each tile covers a larger slice of the page at lower pixel density), so overview views cache ~4× fewer bytes per level of zoom-out.</description></item>
+    /// </list>
+    /// Clamped to <see cref="MinTileLevel"/> to avoid degenerate sub-pixel renders.
     /// </summary>
     public static int ComputeTileLevel(double zoomLevel)
     {
-        if (zoomLevel <= 1.0)
+        if (zoomLevel <= 0)
         {
             return 0;
         }
 
-        return (int)Math.Ceiling(Math.Log2(zoomLevel));
+        int level = (int)Math.Ceiling(Math.Log2(zoomLevel));
+        return Math.Max(MinTileLevel, level);
     }
 
     /// <summary>
-    /// Gets the scale factor for a given tile level: 2^tileLevel.
+    /// Gets the scale factor for a given tile level: 2^tileLevel. Supports negative levels
+    /// (fractional scale, for zoom-out).
     /// </summary>
     public static double GetTileLevelScale(int tileLevel)
     {
-        return 1 << tileLevel; // Same as Math.Pow(2, tileLevel);
+        return Math.Pow(2, tileLevel);
     }
 
     /// <summary>
@@ -57,11 +75,14 @@ public static class TileGrid
     public static PixelSize GetGridDimensions(in Size pageDisplaySize, int tileLevel)
     {
         double tileScale = GetTileLevelScale(tileLevel);
-        int pixelWidth = (int)Math.Ceiling(pageDisplaySize.Width * tileScale);
-        int pixelHeight = (int)Math.Ceiling(pageDisplaySize.Height * tileScale);
 
-        int columns = (pixelWidth + TilePixelSize - 1) / TilePixelSize;
-        int rows = (pixelHeight + TilePixelSize - 1) / TilePixelSize;
+        // We use a long for crazy dimensions and avoid int overflowing.
+        // The final render will still be wrong.
+        long pixelWidth = Math.Min(int.MaxValue, (long)Math.Ceiling(pageDisplaySize.Width * tileScale));
+        long pixelHeight = Math.Min(int.MaxValue, (long)Math.Ceiling(pageDisplaySize.Height * tileScale));
+
+        int columns = (int)((pixelWidth + TilePixelSize - 1) / TilePixelSize);
+        int rows = (int)((pixelHeight + TilePixelSize - 1) / TilePixelSize);
 
         return new PixelSize(Math.Max(1, columns), Math.Max(1, rows));
     }
