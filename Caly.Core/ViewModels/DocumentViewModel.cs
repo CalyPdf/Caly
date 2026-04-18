@@ -411,7 +411,9 @@ public sealed partial class DocumentViewModel : ViewModelBase
                     Size = defaultSize
                 };
                 _pdfPageService.RequestPageSize(newPage);
-                Dispatcher.UIThread.Invoke(() => Pages.Add(newPage)); // Could do in batches
+                Dispatcher.UIThread.Invoke(() => Pages.Add(newPage),
+                    DispatcherPriority.Send,
+                    _mainToken); // Could do in batches
             }
         }
         finally

@@ -33,7 +33,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.ViewModels;
@@ -42,7 +41,7 @@ namespace Caly.Core.ViewModels;
 /// View model that represent a PDF page.
 /// </summary>
 [DebuggerDisplay("Page {PageNumber}")]
-public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
+public sealed partial class PageViewModel : ViewModelBase, IDisposable
 {
     public override string ToString()
     {
@@ -177,6 +176,9 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
         PpiScale = ppiScale;
         TextSelection = textSelection;
 
+        // We don't unsubscribe from the TextSelection events as it takes
+        // forever when the number of pages is large.
+        // Pages can only exist with TextSelection and Document, which should prevent leaks.
         TextSelection.TextSelectionExtended += _onTextSelectionExtended;
         TextSelection.TextSelectionFocusPageChanged += _onTextSelectionFocusPageChanged;
         TextSelection.TextSelectionReset += _onTextSelectionReset;
@@ -324,36 +326,25 @@ public sealed partial class PageViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
-    public void Clear()
-    {
-        PdfTextLayer = null;
-
-        var picture = PdfPicture;
-        PdfPicture = null;
-
-        var thumbnail = Thumbnail;
-        Thumbnail = null;
-
-        if (picture is not null || thumbnail is not null)
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                picture?.Dispose();
-                thumbnail?.Dispose();
-            }, DispatcherPriority.Loaded);
-        }
-    }
-
-    public ValueTask DisposeAsync()
+    public void Dispose()
     {
         Debug.ThrowOnUiThread();
 
-        TextSelection.TextSelectionExtended -= _onTextSelectionExtended;
-        TextSelection.TextSelectionFocusPageChanged -= _onTextSelectionFocusPageChanged;
-        TextSelection.TextSelectionReset -= _onTextSelectionReset;
+        // We don't unsubscribe from the TextSelection events as it takes
+        // forever when the number of pages is large.
+        // Pages can only exist with TextSelection and Document, which should prevent leaks.
 
-        Clear();
+        PdfTextLayer = null;
 
-        return ValueTask.CompletedTask;
+        var picture = PdfPicture;
+        
+        var thumbnail = Thumbnail;
+
+        // TODO - Do we want to call the below on UI thread?
+        PdfPicture = null;
+        Thumbnail = null;
+
+        picture?.Dispose();
+        thumbnail?.Dispose();
     }
 }

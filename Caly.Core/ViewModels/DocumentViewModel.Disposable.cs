@@ -19,7 +19,7 @@
 // SOFTWARE.
 
 using System;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Caly.Core.ViewModels;
@@ -32,9 +32,15 @@ public partial class DocumentViewModel : IAsyncDisposable
 
         await _mainCts.CancelAsync();
 
-        System.Diagnostics.Debug.Assert(_mainCts.IsCancellationRequested);
-
-        await Parallel.ForEachAsync(Pages, CancellationToken.None, (p, _) => p.DisposeAsync());
+        Parallel.ForEach(Pages.Chunk(100),
+            new ParallelOptions() { MaxDegreeOfParallelism = 4 },
+            (pages, _) =>
+            {
+                foreach (var page in pages)
+                {
+                    page.Dispose();
+                }
+            });
 
         Pages.Clear();
         
