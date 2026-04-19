@@ -325,6 +325,7 @@ internal static class CalyExtensions
                     // We only want to open http / https uris in this method.
                     // We force 'http'.
                     uri = $"http://{uri}";
+                    index = 4;
                 }
             }
 
