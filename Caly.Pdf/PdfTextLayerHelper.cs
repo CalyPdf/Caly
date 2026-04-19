@@ -161,7 +161,12 @@ namespace Caly.Pdf
 
             if (page.Letters.Count == 0)
             {
-                return PdfTextLayer.Empty;
+                if (page.Annotations.Count == 0)
+                {
+                    return PdfTextLayer.Empty;
+                }
+
+                return new PdfTextLayer([], page.Annotations);
             }
 
             var letters = CalyDuplicateOverlappingTextProcessor.GetInPlace(page.Letters, token);
