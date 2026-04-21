@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -224,50 +225,88 @@ public sealed class TileRenderService : IAsyncDisposable
         }
 
         var imageInfo = new SKImageInfo(tileWidth, tileHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
-        var surface = SKSurface.Create(imageInfo);
+        var matrix = TileGrid.CreateRenderMatrix(request.Key.Column, request.Key.Row, request.PpiScale, request.Key.TileLevel);
 
-        if (surface is null)
+        if (matrix.MapRect(request.Picture.Item.CullRect).IntersectsWith(imageInfo.Rect))
         {
-            return;
+            var surface = SKSurface.Create(imageInfo);
+            if (surface is null)
+            {
+                return;
+            }
+
+            try
+            {
+                var canvas = surface.Canvas;
+
+                request.Token.ThrowIfCancellationRequested();
+
+                canvas.SetMatrix(in matrix);
+                canvas.Clear(SKColors.White);
+                // Reuse thread-local paint
+                var paint = t_renderPaint ??= new SKPaint { IsAntialias = false, IsDither = true };
+                canvas.DrawPicture(request.Picture.Item, paint);
+
+                request.Token.ThrowIfCancellationRequested();
+
+                SKPixmap pixmap = new SKPixmap();
+                SKImage image;
+                try
+                {
+                    var hasPixmap = surface.PeekPixels(pixmap);
+#if DEBUG
+                    if (!hasPixmap)
+                    {
+                        // Probably because the surface is rendered on the GPU instead of the CPU.
+                        // Copying the pixels to a SKBitmap should be the fallback solution.
+                        System.Diagnostics.Debug.WriteLine("Cannot get pixmap from surface.");
+                    }
+#endif
+
+                    if (hasPixmap && pixmap.GetPixelSpan().IndexOfAnyExcept(byte.MaxValue) == -1)
+                    {
+                        // It's empty (all pixels are blank)
+                        image = GetEmptyImage();
+                    }
+                    else
+                    {
+                        image = surface.Snapshot();
+                    }
+                }
+                finally
+                {
+                    pixmap.Dispose();
+                }
+
+                Cache.Add(request.Key, image);
+                TileReady?.Invoke(request.Key);
+            }
+            finally
+            {
+                surface.Dispose();
+            }
         }
-
-        try
+        else
         {
-            var canvas = surface.Canvas;
-            canvas.Clear(SKColors.White);
-
             request.Token.ThrowIfCancellationRequested();
 
-            var matrix = TileGrid.CreateRenderMatrix(request.Key.Column, request.Key.Row, request.PpiScale, request.Key.TileLevel);
-            canvas.SetMatrix(in matrix);
-
-            // Reuse thread-local paint
-            var paint = t_renderPaint ??= new SKPaint { IsAntialias = false, IsDither = true };
-            canvas.DrawPicture(request.Picture.Item, paint);
-
-            request.Token.ThrowIfCancellationRequested();
-
-            // Extract bitmap from surface, create SKImage, and dispose the bitmap.
-            // SetImmutable allows SKImage.FromBitmap to share pixel data (zero-copy).
-            // The SKImage holds its own native reference to the pixels, so the bitmap
-            // can be safely disposed. Caching the SKImage avoids per-frame
-            // SKImage.FromBitmap allocations in the draw loop.
-            var bitmap = new SKBitmap(imageInfo);
-            surface.ReadPixels(imageInfo, bitmap.GetPixels(), imageInfo.RowBytes, 0, 0);
-            bitmap.SetImmutable();
-
-            var image = SKImage.FromBitmap(bitmap);
-            bitmap.Dispose();
-
-            int memorySize = imageInfo.BytesSize;
-            Cache.Add(request.Key, image, memorySize);
-
+            // There is nothing to render. The SKPicture's CullRect is a narrow rect of the area
+            // that contains elements to render (SKPicture is recorded with the RTree optimisation).
+            Cache.Add(request.Key, GetEmptyImage());
             TileReady?.Invoke(request.Key);
         }
-        finally
-        {
-            surface.Dispose();
-        }
+    }
+
+    /// <summary>
+    /// Creates and returns a minimal, empty SKImage instance with a single transparent pixel.
+    /// </summary>
+    /// <remarks>This method is useful as a placeholder when a non-null SKImage is required but no image data
+    /// is required.</remarks>
+    /// <returns>An SKImage containing a single transparent pixel. The image uses the Alpha8 color type.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static SKImage GetEmptyImage()
+    {
+        return SKImage.Create(new SKImageInfo(1, 1, SKColorType.Alpha8)); // BytesSize 1 int
     }
 
     /// <summary>

@@ -138,9 +138,9 @@ public sealed class TileCache : IDisposable
     /// </summary>
     /// <param name="key">The tile key.</param>
     /// <param name="image">The SKImage to cache. The cache takes ownership.</param>
-    /// <param name="memorySize">The memory footprint of the image in bytes.</param>
-    public void Add(in TileKey key, SKImage image, int memorySize)
+    public void Add(in TileKey key, SKImage image)
     {
+        int memorySize = image.Info.BytesSize;
         IRef<SKImage> imageRef = RefCountable.Create(image);
         List<CacheEntry>? evicted = null;
 

@@ -156,11 +156,10 @@ public sealed class TiledPdfPageControl : Control
                 for (int i = 0; i < _tileCount; ++i)
                 {
                     ref readonly var tile = ref tiles[i];
-
-                    if (tile.ImageRef.IsAlive)
+                    if (tile.ImageRef is { IsAlive: true, Item.Info.BytesSize: > 1 })
                     {
-                        var image = tile.ImageRef.Item;
-                        canvas.DrawImage(image, tile.SrcRect, tile.DestRect, RenderSamplingOptions, RenderPaint);
+                        // BytesSize of 1 means it's empty
+                        canvas.DrawImage(tile.ImageRef.Item, tile.SrcRect, tile.DestRect, RenderSamplingOptions, RenderPaint);
                     }
 
 #if DEBUG
