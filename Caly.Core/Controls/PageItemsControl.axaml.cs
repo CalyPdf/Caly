@@ -431,6 +431,15 @@ public sealed class PageItemsControl : ItemsControl
             return;
         }
 
+        // Make sure we unsubscribe first
+        pageItem.InteractiveLayer.PointerMoved -= InteractiveLayerPointerMoved;
+        pageItem.InteractiveLayer.PointerWheelChanged -= InteractiveLayerPointerMoved;
+        pageItem.InteractiveLayer.PointerExited -= InteractiveLayerPointerExited;
+        pageItem.InteractiveLayer.PointerReleased -= InteractiveLayerPointerReleased;
+        pageItem.InteractiveLayer.PointerPressed -= InteractiveLayerPointerPressed;
+        pageItem.BeforeRotation -= OnBeforePageRotation;
+
+        // Then subscribe to events
         pageItem.InteractiveLayer.PointerMoved += InteractiveLayerPointerMoved;
         pageItem.InteractiveLayer.PointerWheelChanged += InteractiveLayerPointerMoved;
         pageItem.InteractiveLayer.PointerExited += InteractiveLayerPointerExited;
