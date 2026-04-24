@@ -39,10 +39,16 @@ namespace Caly.Core.Controls;
 
 /// <summary>
 /// Renders PDF pages using pre-rendered bitmap tiles for efficient zooming and scrolling.
-/// Falls back to direct SKPicture rendering for areas where tiles are not yet available.
 /// </summary>
 public sealed class TiledPdfPageControl : Control
 {
+    /// <summary>
+    /// Tile column/row range at a given tile level. Used to compare the range
+    /// produced by the current <see cref="VisibleArea"/> against the range the
+    /// last render produced, so we can skip invalidation when they match.
+    /// </summary>
+    private readonly record struct TileRange(int TileLevel, int StartCol, int StartRow, int EndCol, int EndRow);
+
     /// <summary>
     /// A single tile entry for the draw operation, holding a cloned image reference,
     /// the source rect within the image, and its destination rect on the canvas.
@@ -59,11 +65,16 @@ public sealed class TiledPdfPageControl : Control
 
         public SKRect DestRect { get; }
 
+        public bool CanRender { get; }
+
         public TileDrawEntry(IRef<SKImage> imageRef, SKRect srcRect, SKRect destRect)
         {
             ImageRef = imageRef;
             SrcRect = srcRect;
             DestRect = destRect;
+
+            // BytesSize of 1 means it's empty
+            CanRender = ImageRef is { IsAlive: true, Item.Info.BytesSize: > 1 };
         }
 
         public void Dispose() => ImageRef.Dispose();
@@ -77,9 +88,6 @@ public sealed class TiledPdfPageControl : Control
         // IsAntialias is deliberately false: with AA on, tile edges at fractional screen
         // pixel positions (after the zoom transform) get partial coverage which blends
         // with the canvas background, creating visible white seams between tiles.
-        // With AA off, each screen pixel is either fully in one tile or fully in the next,
-        // eliminating the bleed-through. Image content itself is still smoothly sampled
-        // via s_samplingOptions below, independently of this flag.
         private static readonly SKPaint RenderPaint = new()
         {
             IsAntialias = false,
@@ -156,9 +164,8 @@ public sealed class TiledPdfPageControl : Control
                 for (int i = 0; i < _tileCount; ++i)
                 {
                     ref readonly var tile = ref tiles[i];
-                    if (tile.ImageRef is { IsAlive: true, Item.Info.BytesSize: > 1 })
+                    if (tile is { CanRender: true, ImageRef.IsAlive: true })
                     {
-                        // BytesSize of 1 means it's empty
                         canvas.DrawImage(tile.ImageRef.Item, tile.SrcRect, tile.DestRect, RenderSamplingOptions, RenderPaint);
                     }
 
@@ -287,12 +294,26 @@ public sealed class TiledPdfPageControl : Control
     /// Only accessed on the UI thread in <see cref="Render"/>.
     /// </summary>
     private bool _staleLevelEvictionPending;
+    
+    /// <summary>
+    /// Tile range produced by the last content render. Compared against the current
+    /// tile range on <see cref="VisibleAreaProperty"/> changes so we only invalidate
+    /// when the set of drawn tiles would actually differ — <see cref="VisibleAreaProperty"/>
+    /// is deliberately left out of <see cref="AffectsRender"/> because sub-tile-boundary
+    /// scrolls change the area without changing which tiles are drawn.
+    /// <see cref="_lastRenderedTileRangeValid"/> is false when the last render took a
+    /// base/empty path (no visible area, no picture, etc.), so transitions back into
+    /// content rendering still invalidate.
+    /// Only accessed on the UI thread.
+    /// </summary>
+    private TileRange _lastRenderedTileRange;
+    private bool _lastRenderedTileRangeValid;
 
     /// <summary>
     /// Number of extra tile rows/columns rendered beyond the visible area, so
     /// short scrolls don't immediately reveal unrendered regions.
     /// </summary>
-    private const int RenderTileMargin = 2;
+    private const int RenderTileMargin = 1;
 
     /// <summary>
     /// Reusable buffer for building tile draw entries in <see cref="Render"/>.
@@ -305,7 +326,7 @@ public sealed class TiledPdfPageControl : Control
     {
         ClipToBoundsProperty.OverrideDefaultValue<TiledPdfPageControl>(true);
 
-        AffectsRender<TiledPdfPageControl>(PictureProperty, IsPageVisibleProperty, ZoomLevelProperty, VisibleAreaProperty);
+        AffectsRender<TiledPdfPageControl>(PictureProperty, IsPageVisibleProperty, ZoomLevelProperty);
         AffectsMeasure<TiledPdfPageControl>(PictureProperty);
     }
 
@@ -335,12 +356,16 @@ public sealed class TiledPdfPageControl : Control
                 PrefetchVisibleTiles();
             }
         }
-        else if (change.Property == VisibleAreaProperty
-                 || change.Property == ZoomLevelProperty
-                 || change.Property == PictureProperty)
+        else if (change.Property == VisibleAreaProperty)
         {
-            // Prefetch tiles for the new visible area. AffectsRender handles the
-            // redraw side — we only need to queue missing tiles here.
+            // VisibleArea is not in AffectsRender: small scrolls shift the area
+            // without changing which tiles are drawn, so we'd redraw for nothing.
+            // Only prefetch + invalidate when the computed tile range actually differs.
+            HandleVisibleAreaChanged();
+        }
+        else if (change.Property == ZoomLevelProperty || change.Property == PictureProperty)
+        {
+            // AffectsRender handles the redraw; we only need to queue missing tiles.
             PrefetchVisibleTiles();
         }
     }
@@ -375,11 +400,6 @@ public sealed class TiledPdfPageControl : Control
         IRef<SKPicture> pictureClone;
         try
         {
-            if (!picture.IsAlive)
-            {
-                return;
-            }
-
             pictureClone = picture.Clone();
         }
         catch (ObjectDisposedException)
@@ -454,6 +474,49 @@ public sealed class TiledPdfPageControl : Control
     }
 
     /// <summary>
+    /// Handles a change to <see cref="VisibleAreaProperty"/>. Since the property is not
+    /// in <see cref="AffectsRender"/>, this computes the current tile range once and:
+    /// <list type="bullet">
+    ///   <item>skips both prefetch and invalidate when the range matches the last render
+    ///     (sub-tile-boundary scroll — no visible change),</item>
+    ///   <item>otherwise queues a prefetch for missing tiles and invalidates the visual.</item>
+    /// </list>
+    /// Sharing the computed range between the skip check and the subsequent prefetch
+    /// avoids queueing a thread-pool work item that would just recompute the same range
+    /// and exit after finding no missing tiles.
+    /// </summary>
+    private void HandleVisibleAreaChanged()
+    {
+        var visibleArea = VisibleArea;
+        var pageDisplaySize = PageDisplaySize;
+
+        if (!visibleArea.HasValue || visibleArea.Value.IsEmpty()
+            || pageDisplaySize.Width <= 0 || pageDisplaySize.Height <= 0)
+        {
+            // Render() will take the base/empty path. Only invalidate if the previous
+            // render drew content — otherwise the scene is already in the right state.
+            if (_lastRenderedTileRangeValid)
+            {
+                InvalidateVisual();
+            }
+            return;
+        }
+
+        int tileLevel = TileGrid.ComputeTileLevel(ZoomLevel);
+        var range = GetTileRange(visibleArea.Value, in pageDisplaySize, tileLevel, RenderTileMargin);
+
+        if (_lastRenderedTileRangeValid && _lastRenderedTileRange == range)
+        {
+            // Same tile range as the last render — no new tiles to request and
+            // the existing scene is still correct. Skip both prefetch and repaint.
+            return;
+        }
+
+        PrefetchVisibleTiles();
+        InvalidateVisual();
+    }
+
+    /// <summary>
     /// Computes the tile column/row range for the given visible area, expanded by a margin
     /// and clamped to the grid dimensions.
     /// </summary>
@@ -467,6 +530,17 @@ public sealed class TiledPdfPageControl : Control
         startRow = Math.Max(0, (int)(visibleArea.Top / tileDisplaySize) - margin);
         endCol = Math.Min(gridDims.Width - 1, (int)Math.Ceiling(visibleArea.Right / tileDisplaySize) - 1 + margin);
         endRow = Math.Min(gridDims.Height - 1, (int)Math.Ceiling(visibleArea.Bottom / tileDisplaySize) - 1 + margin);
+    }
+
+    /// <summary>
+    /// Convenience overload of <see cref="GetTileRange(in Rect, in Size, int, int, out int, out int, out int, out int)"/>
+    /// that returns the range as a <see cref="TileRange"/>.
+    /// </summary>
+    private static TileRange GetTileRange(in Rect visibleArea, in Size pageDisplaySize, int tileLevel, int margin)
+    {
+        GetTileRange(in visibleArea, in pageDisplaySize, tileLevel, margin,
+            out int startCol, out int startRow, out int endCol, out int endRow);
+        return new TileRange(tileLevel, startCol, startRow, endCol, endRow);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -630,7 +704,7 @@ public sealed class TiledPdfPageControl : Control
             // Use the closest higher level that has any cached tiles
             if (foundAny)
             {
-                return;
+                break;
             }
         }
     }
@@ -648,12 +722,15 @@ public sealed class TiledPdfPageControl : Control
 
         if (viewPort.IsEmpty())
         {
+            _lastRenderedTileRangeValid = false;
             base.Render(context);
             return;
         }
 
-        if (!VisibleArea.HasValue || VisibleArea.Value.IsEmpty())
+        var visibleArea = VisibleArea;
+        if (!visibleArea.HasValue || visibleArea.Value.IsEmpty())
         {
+            _lastRenderedTileRangeValid = false;
             base.Render(context);
             return;
         }
@@ -661,6 +738,7 @@ public sealed class TiledPdfPageControl : Control
         var picture = Picture;
         if (picture?.IsAlive != true)
         {
+            _lastRenderedTileRangeValid = false;
             base.Render(context);
             return;
         }
@@ -670,6 +748,8 @@ public sealed class TiledPdfPageControl : Control
 
         if (service is null || pageDisplaySize.Width <= 0 || pageDisplaySize.Height <= 0)
         {
+            _lastRenderedTileRangeValid = false;
+            base.Render(context);
             return;
         }
 
@@ -690,8 +770,13 @@ public sealed class TiledPdfPageControl : Control
         // viewport are pre-drawn, so the compositor can handle short scrolls without
         // triggering a new render pass. At high zoom levels this keeps per-frame work
         // bounded by viewport size rather than growing with the full tile grid.
-        GetTileRange(VisibleArea.Value, in pageDisplaySize, tileLevel, RenderTileMargin,
+        GetTileRange(visibleArea.Value, in pageDisplaySize, tileLevel, RenderTileMargin,
             out int startCol, out int startRow, out int endCol, out int endRow);
+
+        // Record the rendered range so subsequent VisibleArea changes can skip
+        // invalidation when the tile range is unchanged.
+        _lastRenderedTileRange = new TileRange(tileLevel, startCol, startRow, endCol, endRow);
+        _lastRenderedTileRangeValid = true;
 
         int rangeCols = endCol - startCol + 1;
         int rangeRows = endRow - startRow + 1;
@@ -725,12 +810,13 @@ public sealed class TiledPdfPageControl : Control
 
             for (int r = 0; r < rangeRows; r++)
             {
+                int row = startRow + r;
+                int flatRowIndex = r * rangeCols;
+
                 for (int c = 0; c < rangeCols; c++)
                 {
-                    int flatIndex = r * rangeCols + c;
                     int col = startCol + c;
-                    int row = startRow + r;
-                    var imageRef = exactLevelRefs[flatIndex];
+                    var imageRef = exactLevelRefs[flatRowIndex + c];
 
                     if (imageRef is not null)
                     {

@@ -207,7 +207,8 @@ namespace Caly.Core.Services
         public int NumberOfPages => _pdfDocumentService.NumberOfPages;
 
         /// <summary>
-        /// The tile render service for this document. Set by <see cref="DocumentViewModel"/> after construction.
+        /// The tile render service for this document. Created in the constructor and disposed
+        /// in <see cref="DisposeAsync"/>; shared across all <see cref="PageViewModel"/>s for this document.
         /// </summary>
         public TileRenderService TileRenderService { get; }
 
@@ -624,7 +625,7 @@ namespace Caly.Core.Services
                 {
                     System.Diagnostics.Debug.WriteLine($"Removed page #{kvp.Key}'s picture from cache.");
                     picture.Dispose();
-                    TileRenderService?.InvalidatePage(kvp.Key);
+                    TileRenderService.InvalidatePage(kvp.Key);
                 }
             }
         }

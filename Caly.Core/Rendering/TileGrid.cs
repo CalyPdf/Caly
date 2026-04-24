@@ -26,10 +26,10 @@ public static class TileGrid
     public const int TilePixelSize = 256;
 
     /// <summary>
-    /// Hard floor on the tile level. At levels below this, the whole page shrinks into
-    /// sub-pixel territory, <see cref="TileRenderService"/> skips the render (zero-sized
-    /// surface), and tiles stop being useful. Two extra levels below <c>-2</c> are allowed
-    /// for fallback lookups during rapid zoom-out, but nothing requests tiles at those levels.
+    /// Hard floor on the tile level. Below this, the page shrinks into sub-pixel territory,
+    /// <see cref="TileRenderService"/> would render a zero-sized surface, and tiles stop
+    /// being useful. Also serves as the floor for coarser-tile fallback lookups during
+    /// rapid zoom-out (see <c>TryGetFallbackTile</c> in <c>TiledPdfPageControl</c>).
     /// </summary>
     public const int MinTileLevel = -4;
 
@@ -63,7 +63,10 @@ public static class TileGrid
     /// </summary>
     public static double GetTileLevelScale(int tileLevel)
     {
-        return Math.Pow(2, tileLevel);
+        // 2 ^ tileLevel
+        return tileLevel >= 0
+            ? 1L << tileLevel
+            : 1.0 / (1L << -tileLevel);
     }
 
     /// <summary>

@@ -251,6 +251,8 @@ public sealed class TileRenderService : IAsyncDisposable
 
                 SKPixmap pixmap = new SKPixmap();
                 SKImage image;
+                bool shouldRender = true;
+
                 try
                 {
                     var hasPixmap = surface.PeekPixels(pixmap);
@@ -265,7 +267,8 @@ public sealed class TileRenderService : IAsyncDisposable
 
                     if (hasPixmap && pixmap.GetPixelSpan().IndexOfAnyExcept(byte.MaxValue) == -1)
                     {
-                        // It's empty (all pixels are blank)
+                        // It's empty (all pixels are white)
+                        shouldRender = false;
                         image = GetEmptyImage();
                     }
                     else
@@ -279,7 +282,11 @@ public sealed class TileRenderService : IAsyncDisposable
                 }
 
                 Cache.Add(request.Key, image);
-                TileReady?.Invoke(request.Key);
+
+                if (shouldRender)
+                {
+                    TileReady?.Invoke(request.Key);
+                }
             }
             finally
             {
@@ -293,7 +300,6 @@ public sealed class TileRenderService : IAsyncDisposable
             // There is nothing to render. The SKPicture's CullRect is a narrow rect of the area
             // that contains elements to render (SKPicture is recorded with the RTree optimisation).
             Cache.Add(request.Key, GetEmptyImage());
-            TileReady?.Invoke(request.Key);
         }
     }
 

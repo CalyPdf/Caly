@@ -281,16 +281,16 @@ public sealed class TileCache : IDisposable
                 }
             }
 
-            // Rebuild level index for this page
+            // Every surviving key is at keepLevel (we only removed others), so the level
+            // index collapses to {keepLevel} without re-scanning keys.
             if (_pageLevels.TryGetValue(pageNumber, out var levels))
             {
                 levels.Clear();
-                foreach (var key in keys)
+                if (keys.Count > 0)
                 {
-                    levels.Add(key.TileLevel);
+                    levels.Add(keepLevel);
                 }
-
-                if (levels.Count == 0)
+                else
                 {
                     _pageLevels.Remove(pageNumber);
                 }
