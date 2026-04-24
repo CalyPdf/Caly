@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Bob/source/repos/Caly/**)",
+      "Bash(dotnet build:*)"
+    ]
+  }
+}
