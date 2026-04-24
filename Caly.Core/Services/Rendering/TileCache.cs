@@ -24,7 +24,7 @@ using System.Threading;
 using Caly.Core.Utilities;
 using SkiaSharp;
 
-namespace Caly.Core.Rendering;
+namespace Caly.Core.Services.Rendering;
 
 /// <summary>
 /// Thread-safe LRU tile cache with a configurable memory budget.

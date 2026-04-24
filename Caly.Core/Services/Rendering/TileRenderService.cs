@@ -29,7 +29,7 @@ using Avalonia;
 using Caly.Core.Utilities;
 using SkiaSharp;
 
-namespace Caly.Core.Rendering;
+namespace Caly.Core.Services.Rendering;
 
 /// <summary>
 /// Background tile rendering service. One instance per document.

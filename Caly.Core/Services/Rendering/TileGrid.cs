@@ -3,7 +3,7 @@ using System;
 using Avalonia;
 using SkiaSharp;
 
-namespace Caly.Core.Rendering;
+namespace Caly.Core.Services.Rendering;
 
 /// <summary>
 /// A (column, row) coordinate in the tile grid.

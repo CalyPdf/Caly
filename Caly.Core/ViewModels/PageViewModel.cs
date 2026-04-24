@@ -23,7 +23,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Caly.Core.Events;
 using Caly.Core.Models;
-using Caly.Core.Rendering;
+using Caly.Core.Services.Rendering;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
