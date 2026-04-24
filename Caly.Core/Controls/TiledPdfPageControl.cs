@@ -31,6 +31,7 @@ using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Caly.Core.Rendering;
 using Caly.Core.Utilities;
 using SkiaSharp;
@@ -94,18 +95,18 @@ public sealed class TiledPdfPageControl : Control
             IsDither = true
         };
 
-        // Bilinear filtering for smooth tile scaling when the zoom ratio
-        // is not exactly 1:1 with the tile level resolution.
-        private static readonly SKSamplingOptions RenderSamplingOptions = new(SKFilterMode.Linear, SKMipmapMode.Nearest);
-
         private TileDrawEntry[]? _tiles;
         private readonly int _tileCount;
+        private readonly SKSamplingOptions _samplingOptions;
+        private readonly SKRect _cullRect;
 
-        public TiledDrawOperation(Rect bounds, TileDrawEntry[] tiles, int tileCount)
+        public TiledDrawOperation(Rect bounds, SKRect cullRect, TileDrawEntry[] tiles, int tileCount, SKSamplingOptions samplingOptions)
         {
             Bounds = bounds;
+            _cullRect = cullRect;
             _tiles = tiles;
             _tileCount = tileCount;
+            _samplingOptions = samplingOptions;
         }
 
         public Rect Bounds { get; }
@@ -147,34 +148,42 @@ public sealed class TiledPdfPageControl : Control
                     return;
                 }
 
-                canvas.Save();
-
 #if DEBUG
                 using var backgroundPaint = new SKPaint();
                 backgroundPaint.Style = SKPaintStyle.Fill;
                 backgroundPaint.Color = SKColors.Aqua;
                 canvas.DrawPaint(backgroundPaint);
-
-                using var borderPaint = new SKPaint();
-                borderPaint.Style = SKPaintStyle.Stroke;
-                borderPaint.Color = SKColors.Red.WithAlpha(120);
-                borderPaint.StrokeWidth = 5f;
 #endif
+
+                canvas.Save();
+                canvas.ClipRect(_cullRect);
 
                 for (int i = 0; i < _tileCount; ++i)
                 {
                     ref readonly var tile = ref tiles[i];
                     if (tile is { CanRender: true, ImageRef.IsAlive: true })
                     {
-                        canvas.DrawImage(tile.ImageRef.Item, tile.SrcRect, tile.DestRect, RenderSamplingOptions, RenderPaint);
+                        canvas.DrawImage(tile.ImageRef.Item, tile.SrcRect, tile.DestRect, _samplingOptions, RenderPaint);
                     }
-
-#if DEBUG
-                    canvas.DrawRect(tile.DestRect, borderPaint);
-#endif
                 }
 
                 canvas.Restore();
+
+#if DEBUG
+                using var borderPaint = new SKPaint();
+                borderPaint.Style = SKPaintStyle.Stroke;
+                borderPaint.Color = SKColors.Red.WithAlpha(120);
+                borderPaint.StrokeWidth = 5f;
+
+                for (int i = 0; i < _tileCount; ++i)
+                {
+                    ref readonly var tile = ref tiles[i];
+                    canvas.DrawRect(tile.DestRect, borderPaint);
+                }
+
+                borderPaint.Color = SKColors.DarkMagenta.WithAlpha(120);
+                canvas.DrawRect(_cullRect, borderPaint);
+#endif
             }
         }
 
@@ -294,7 +303,7 @@ public sealed class TiledPdfPageControl : Control
     /// Only accessed on the UI thread in <see cref="Render"/>.
     /// </summary>
     private bool _staleLevelEvictionPending;
-    
+
     /// <summary>
     /// Tile range produced by the last content render. Compared against the current
     /// tile range on <see cref="VisibleAreaProperty"/> changes so we only invalidate
@@ -314,6 +323,43 @@ public sealed class TiledPdfPageControl : Control
     /// short scrolls don't immediately reveal unrendered regions.
     /// </summary>
     private const int RenderTileMargin = 1;
+
+    /// <summary>
+    /// Sampling used while the user is actively scrolling or zooming. Nearest-neighbour
+    /// skips the per-pixel filter math and makes fast motion cheaper; the visible loss
+    /// in quality isn't noticeable while the scene is moving.
+    /// </summary>
+    private static readonly SKSamplingOptions InteractiveSamplingOptions =
+        new(SKFilterMode.Nearest, SKMipmapMode.None);
+
+    /// <summary>
+    /// Sampling used when the scene is idle. Bilinear filtering for smooth tile scaling
+    /// when the zoom ratio is not exactly 1:1 with the tile level resolution.
+    /// </summary>
+    private static readonly SKSamplingOptions IdleSamplingOptions =
+        new(SKFilterMode.Linear, SKMipmapMode.Nearest);
+
+    /// <summary>
+    /// How long after the last zoom/scroll event before the control switches back to
+    /// <see cref="IdleSamplingOptions"/>. Short enough to feel instantaneous once motion
+    /// stops; long enough to ride out per-frame bursts during continuous scrolling.
+    /// </summary>
+    private static readonly TimeSpan SettleDelay = TimeSpan.FromMilliseconds(150);
+
+    /// <summary>
+    /// True while the control is in an "interactive" state — zoom or visible-area
+    /// changes have fired recently and we're still within <see cref="SettleDelay"/> of
+    /// the last one. Drives the sampling choice in <see cref="Render"/>.
+    /// Only accessed on the UI thread.
+    /// </summary>
+    private bool _isInteracting;
+
+    /// <summary>
+    /// Dispatcher timer that flips <see cref="_isInteracting"/> back to false and triggers
+    /// a repaint at <see cref="IdleSamplingOptions"/> quality. Lazily created on first
+    /// interaction so pages that never scroll/zoom don't pay for the timer.
+    /// </summary>
+    private DispatcherTimer? _settleTimer;
 
     /// <summary>
     /// Reusable buffer for building tile draw entries in <see cref="Render"/>.
@@ -340,33 +386,53 @@ public sealed class TiledPdfPageControl : Control
         }
         else if (change.Property == TileRenderServiceProperty)
         {
-            var oldService = change.GetOldValue<TileRenderService?>();
-            var newService = change.GetNewValue<TileRenderService?>();
-
-            if (oldService is not null)
+            if (change.OldValue is TileRenderService oldService)
             {
                 oldService.TileReady -= OnTileReady;
             }
 
-            if (newService is not null)
+            if (change.NewValue is TileRenderService newService)
             {
                 newService.TileReady -= OnTileReady;
                 newService.TileReady += OnTileReady;
                 // Service just became available — request tiles if VisibleArea is already set.
-                PrefetchVisibleTiles();
+                RequestVisibleTiles();
             }
         }
         else if (change.Property == VisibleAreaProperty)
         {
+            if (!this.IsAttachedToVisualTree())
+            {
+                return;
+            }
+
             // VisibleArea is not in AffectsRender: small scrolls shift the area
             // without changing which tiles are drawn, so we'd redraw for nothing.
             // Only prefetch + invalidate when the computed tile range actually differs.
+            MarkInteracting();
             HandleVisibleAreaChanged();
         }
-        else if (change.Property == ZoomLevelProperty || change.Property == PictureProperty)
+        else if (change.Property == ZoomLevelProperty)
         {
+            if (!this.IsAttachedToVisualTree())
+            {
+                return;
+            }
+
             // AffectsRender handles the redraw; we only need to queue missing tiles.
-            PrefetchVisibleTiles();
+            MarkInteracting();
+            RequestVisibleTiles();
+        }
+        else if (change.Property == PictureProperty)
+        {
+            _lastRenderedTileRange = default;
+
+            if (!this.IsAttachedToVisualTree())
+            {
+                return;
+            }
+
+            RequestVisibleTiles();
         }
     }
 
@@ -377,7 +443,7 @@ public sealed class TiledPdfPageControl : Control
     /// background thread — doing them inline on the UI thread makes scrolling stutter because each
     /// scroll pixel bursts many locked cache operations and prioritized channel inserts.
     /// </summary>
-    private void PrefetchVisibleTiles()
+    private void RequestVisibleTiles()
     {
         if (!VisibleArea.HasValue || VisibleArea.Value.IsEmpty())
         {
@@ -512,7 +578,7 @@ public sealed class TiledPdfPageControl : Control
             return;
         }
 
-        PrefetchVisibleTiles();
+        RequestVisibleTiles();
         InvalidateVisual();
     }
 
@@ -533,8 +599,8 @@ public sealed class TiledPdfPageControl : Control
     }
 
     /// <summary>
-    /// Convenience overload of <see cref="GetTileRange(in Rect, in Size, int, int, out int, out int, out int, out int)"/>
-    /// that returns the range as a <see cref="TileRange"/>.
+    /// Computes the tile column/row range for the given visible area, expanded by a margin
+    /// and clamped to the grid dimensions.
     /// </summary>
     private static TileRange GetTileRange(in Rect visibleArea, in Size pageDisplaySize, int tileLevel, int margin)
     {
@@ -562,6 +628,41 @@ public sealed class TiledPdfPageControl : Control
         {
             TileRenderService.TileReady -= OnTileReady;
             TileRenderService.CancelPage(PageNumber);
+        }
+
+        _settleTimer?.Stop();
+        _isInteracting = false;
+    }
+
+    /// <summary>
+    /// Flags the control as actively interacting (zoom/scroll in flight) and (re)starts the
+    /// settle timer. While the flag is set, <see cref="Render"/> uses
+    /// <see cref="InteractiveSamplingOptions"/>; when the timer fires without another
+    /// interaction resetting it, <see cref="OnSettleTick"/> flips back and triggers a
+    /// high-quality repaint.
+    /// </summary>
+    private void MarkInteracting()
+    {
+        _isInteracting = true;
+        var timer = _settleTimer ??= CreateSettleTimer();
+        timer.Stop();
+        timer.Start();
+    }
+
+    private DispatcherTimer CreateSettleTimer()
+    {
+        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = SettleDelay };
+        timer.Tick += OnSettleTick;
+        return timer;
+    }
+
+    private void OnSettleTick(object? sender, EventArgs e)
+    {
+        _settleTimer!.Stop();
+        if (_isInteracting)
+        {
+            _isInteracting = false;
+            InvalidateVisual();
         }
     }
 
@@ -712,7 +813,7 @@ public sealed class TiledPdfPageControl : Control
     /// <summary>
     /// This operation is executed on the UI thread.
     /// Draws cached tiles for visible area + margin. Tile requesting is handled
-    /// separately in <see cref="PrefetchVisibleTiles"/>.
+    /// separately in <see cref="RequestVisibleTiles"/>.
     /// </summary>
     public override void Render(DrawingContext context)
     {
@@ -742,6 +843,9 @@ public sealed class TiledPdfPageControl : Control
             base.Render(context);
             return;
         }
+
+        var scale = (float)PpiScale;
+        var cullRect = SKMatrix.CreateScale(scale, scale).MapRect(picture.Item.CullRect);
 
         var service = TileRenderService;
         var pageDisplaySize = PageDisplaySize;
@@ -890,6 +994,7 @@ public sealed class TiledPdfPageControl : Control
         CollectionsMarshal.AsSpan(_renderTileEntries).CopyTo(tileBuffer);
         _renderTileEntries.Clear();
 
-        context.Custom(new TiledDrawOperation(viewPort, tileBuffer, entryCount));
+        var samplingOptions = _isInteracting ? InteractiveSamplingOptions : IdleSamplingOptions;
+        context.Custom(new TiledDrawOperation(viewPort, cullRect, tileBuffer, entryCount, samplingOptions));
     }
 }
