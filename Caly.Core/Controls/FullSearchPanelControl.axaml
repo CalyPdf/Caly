@@ -21,7 +21,7 @@
 					<TextBox DockPanel.Dock="Top"
                              Name="PART_TextBoxSearch"
                              Focusable="True"
-                             Watermark="Search..."
+                             PlaceholderText="Search..."
                              Text="{Binding TextSearch}"/>
 
 					<ProgressBar DockPanel.Dock="Top"
