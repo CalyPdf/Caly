@@ -19,4 +19,10 @@
     </Style>
     <!-- End change delays for all ScrollViewers -->
 
+    <!-- Hide app title in main window -->
+    <Style Selector="WindowDrawnDecorations /template/ Panel#PART_TitleTextPanel > TextBlock">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <!-- End hide app title in main window -->
+
 </Styles>

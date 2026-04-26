@@ -1135,9 +1135,9 @@ public sealed class PageItemsControl : ItemsControl
         if (CalyExtensions.IsMobilePlatform())
         {
             LayoutTransform.GestureRecognizers.Add(new PinchGestureRecognizer());
-            Gestures.AddPinchHandler(LayoutTransform, _onPinchChangedHandler);
-            Gestures.AddPinchEndedHandler(LayoutTransform, _onPinchEndedHandler);
-            Gestures.AddHoldingHandler(LayoutTransform, _onHoldingChangedHandler);
+            LayoutTransform.AddHandler(PinchEvent, _onPinchChangedHandler);
+            LayoutTransform.AddHandler(PinchEndedEvent, _onPinchChangedHandler);
+            LayoutTransform.AddHandler(HoldingEvent, _onPinchChangedHandler);
         }
     }
 
@@ -1162,10 +1162,9 @@ public sealed class PageItemsControl : ItemsControl
 
             if (CalyExtensions.IsMobilePlatform())
             {
-                Gestures.RemovePinchHandler(LayoutTransform, _onPinchChangedHandler);
-                Gestures.RemovePinchEndedHandler(LayoutTransform, _onPinchEndedHandler);
-                LayoutTransform.RemoveHandler(Gestures.HoldingEvent, _onHoldingChangedHandler);
-                //Gestures.RemoveHoldingHandler(LayoutTransformControl, _onHoldingChangedHandler);
+                LayoutTransform.RemoveHandler(PinchEvent, _onPinchChangedHandler);
+                LayoutTransform.RemoveHandler(PinchEndedEvent, _onPinchChangedHandler);
+                LayoutTransform.RemoveHandler(HoldingEvent, _onPinchChangedHandler);
             }
         }
     }
