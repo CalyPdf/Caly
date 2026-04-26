@@ -107,6 +107,22 @@ public partial class App : Application
                 Avalonia.Rendering.RendererDebugOverlays.RenderTimeGraph;
 #endif
         }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime)
+        {
+            MainView? mainView = null;
+            activityLifetime.MainViewFactory = () => mainView = new MainView
+            {
+                DataContext = new MainViewModel()
+            };
+            services.AddSingleton<Visual>(_ => mainView ??
+                throw new InvalidOperationException("MainView has not been created yet."));
+            services.AddSingleton<IStorageProvider>(_ =>
+                TopLevel.GetTopLevel(mainView)?.StorageProvider ??
+                throw new ArgumentNullException(nameof(IStorageProvider)));
+            services.AddSingleton<IClipboard>(_ =>
+                TopLevel.GetTopLevel(mainView)?.Clipboard ??
+                throw new ArgumentNullException(nameof(IClipboard)));
+        }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             singleViewPlatform.MainView = new MainView

@@ -12,10 +12,6 @@
         ShowActivated="True"
         Width="450" MinWidth="450" MaxWidth="450"
         Height="150" MinHeight="150" MaxHeight="200">
-    <!--
-        ExtendClientAreaChromeHints="NoChrome"
-        ExtendClientAreaToDecorationsHint="True"
-	-->
     <Grid RowDefinitions="Auto, Auto, *" x:DataType="vm:ExceptionViewModel">
         <TextBlock Margin="5" FontSize="18" FontWeight="Bold">Error</TextBlock>
         <TextBlock Grid.Row="1" Margin="5" FontStyle="Italic" TextWrapping="Wrap" Text="{Binding Message, Mode=OneTime}"/>
