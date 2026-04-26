@@ -21,6 +21,7 @@
                            CloseItemCommand="{Binding CloseTabCommand}"
                            ItemsSource="{Binding PdfDocuments}"
                            SelectedIndex="{Binding SelectedDocumentIndex}"
+                           RightThumbWidth="300"
                            MinTabItemWidth="100">
 		<TabControl.ItemTemplate>
 			<DataTemplate>
