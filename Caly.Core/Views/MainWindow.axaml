@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:Caly.Core.Views"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Caly.Core.Views.MainWindow"
         Icon="/Assets/caly-logo.ico"
@@ -14,6 +15,6 @@
         WindowStartupLocation="CenterScreen">
     <Border DragDrop.AllowDrop="True"
             Margin="{Binding $parent[Window].OffScreenMargin}">
-        <views:MainView />
+        <views:MainView WindowDecorationProperties.ElementRole="User" />
     </Border>
 </Window>
