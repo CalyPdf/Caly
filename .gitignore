@@ -460,3 +460,4 @@ $RECYCLE.BIN/
 *.lib
 */.avalonia-build-tasks
 /dotnet-install.sh
+/.claude/settings.local.json
