@@ -26,7 +26,8 @@ public sealed class CalySettings
     {
         Width = 1000,
         Height = 500,
-        PaneSize = 350
+        PaneSize = 350,
+        Debug = null
     };
 
     // TODO - Add version for compatibility checks
@@ -39,6 +40,17 @@ public sealed class CalySettings
 
     public int PaneSize { get; set; }
 
+    public CalySettingsDebug? Debug { get; set; }
+
+
+    public sealed class CalySettingsDebug
+    {
+        public bool? Render { get; set; }
+        public bool? Layout { get; set; }
+        public bool? Fps { get; set; }
+        public bool? DirtyRects { get; set; }
+    }
+    
     public enum CalySettingsProperty
     {
         PaneSize = 0

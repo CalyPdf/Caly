@@ -102,10 +102,6 @@ public partial class App : Application
 
             desktop.Startup += Desktop_Startup;
             desktop.Exit += Desktop_Exit;
-#if DEBUG
-            desktop.MainWindow.RendererDiagnostics.DebugOverlays =
-                Avalonia.Rendering.RendererDebugOverlays.RenderTimeGraph;
-#endif
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime)
         {

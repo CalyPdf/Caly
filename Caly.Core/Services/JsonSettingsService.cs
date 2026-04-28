@@ -145,6 +145,31 @@ internal sealed class JsonSettingsService : ISettingsService
                 return;
             }
 
+            if (_current.Debug is not null)
+            {
+                // Set debug UI elements
+                if (_current.Debug.Render == true)
+                {
+                    mw.RendererDiagnostics.DebugOverlays |= Avalonia.Rendering.RendererDebugOverlays.RenderTimeGraph;
+                }
+
+                if (_current.Debug.Layout == true)
+                {
+                    mw.RendererDiagnostics.DebugOverlays |= Avalonia.Rendering.RendererDebugOverlays.LayoutTimeGraph;
+                }
+
+                if (_current.Debug.Fps == true)
+                {
+                    mw.RendererDiagnostics.DebugOverlays |= Avalonia.Rendering.RendererDebugOverlays.Fps;
+                }
+
+                if (_current.Debug.DirtyRects == true)
+                {
+                    mw.RendererDiagnostics.DebugOverlays |= Avalonia.Rendering.RendererDebugOverlays.DirtyRects;
+                }
+            }
+            
+            // Set window size and location
             if (_current.IsMaximised)
             {
                 mw.WindowState = WindowState.Maximized;
