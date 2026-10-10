@@ -4,7 +4,7 @@ using SharpIpp.Protocol.Models;
 using CalyPrintColorMode = Caly.Core.Services.Interfaces.PrintColorMode;
 using IppPrintColorMode = SharpIpp.Protocol.Models.PrintColorMode;
 
-namespace Caly.Tests;
+namespace Caly.Printing.Tests;
 
 /// <summary>
 /// Covers the SharpIppNext-typed conversions in <see cref="IppJobTemplateFactory"/>.

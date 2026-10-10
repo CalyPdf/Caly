@@ -8,6 +8,9 @@
     <Project Path="Caly.Printing/Caly.Printing.Core/Caly.Printing.Core.csproj">
       <BuildType Solution="Portable|*" Project="Release" />
     </Project>
+    <Project Path="Caly.Printing/Caly.Printing.Tests/Caly.Printing.Tests.csproj">
+      <BuildType Solution="Portable|*" Project="Release" />
+    </Project>
     <Project Path="Caly.Printing/Caly.Printing.Unix/Caly.Printing.Unix.csproj">
       <BuildType Solution="Portable|*" Project="Release" />
     </Project>

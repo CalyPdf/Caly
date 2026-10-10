@@ -5,6 +5,7 @@
 [![Linux x64](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-linux-x64.yml/badge.svg)](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-linux-x64.yml)
 [![Linux arm64](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-linux-arm64.yml/badge.svg)](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-linux-arm64.yml)
 [![macOS arm64](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-macos-arm64.yml/badge.svg)](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-macos-arm64.yml)
+[![Printing](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-printing.yml/badge.svg)](https://github.com/CalyPdf/CalyPdf/actions/workflows/tests-printing.yml)
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/604c1d8a-5cdf-49c6-8be3-d85bfb680a99" />

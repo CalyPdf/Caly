@@ -1,0 +1,130 @@
+# Builds Caly.Printing.Tests and runs it against a real print spooler on every platform:
+# the Windows spooler (GDI) on the Windows runners, CUPS (IPP) on Linux and macOS.
+name: Printing
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Name of the queue the provisioning steps create. The spooler tests print to this queue
+  # and to no other; without the variable they skip locally and fail on CI.
+  CALY_TEST_PRINTER: CalyTestPrinter
+
+jobs:
+  test:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: windows-x64, runs-on: windows-latest }
+          - { target: windows-arm64, runs-on: windows-11-arm }
+          - { target: linux-x64, runs-on: ubuntu-latest }
+          - { target: linux-arm64, runs-on: ubuntu-24.04-arm }
+          - { target: macos-arm64, runs-on: macos-latest }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-printing-${{ matrix.target }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: |
+            nuget-printing-${{ matrix.target }}-
+
+      # SkiaSharp needs fontconfig; cups-filters supplies the filters that turn Caly's JPEG
+      # documents into PostScript for the test queue.
+      - name: Install Linux native dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libfontconfig1
+          sudo apt-get install -y cups cups-filters
+
+      # A Local Port named after a file path makes the spooler write each job to that file,
+      # so "Microsoft Print To PDF" prints unattended (no Save dialog).
+      - name: Provision test printer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP 'caly-print'
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          $out = Join-Path $dir 'out.pdf'
+          Start-Service Spooler
+          Add-PrinterPort -Name $out
+          Add-Printer -Name $env:CALY_TEST_PRINTER -DriverName 'Microsoft Print To PDF' -PortName $out
+          "CALY_TEST_PRINTER_OUTPUT=$out" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # Generic PostScript queue whose output is discarded: the CUPS filter chain really runs,
+      # and abort-job keeps one failed job from stopping the queue for the tests after it.
+      - name: Provision test printer (CUPS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo systemctl start cups
+          fi
+          sudo lpadmin -p "$CALY_TEST_PRINTER" -E -v file:///dev/null \
+            -m drv:///sample.drv/generic.ppd -o printer-error-policy=abort-job
+          lpstat -t
+
+      - name: Restore
+        run: dotnet restore Caly.Printing/Caly.Printing.Tests/Caly.Printing.Tests.csproj
+
+      - name: Build
+        run: dotnet build Caly.Printing/Caly.Printing.Tests/Caly.Printing.Tests.csproj -c Release --no-restore
+
+      - name: Test
+        run: >-
+          dotnet test Caly.Printing/Caly.Printing.Tests/Caly.Printing.Tests.csproj
+          -c Release
+          --no-build
+          --logger "trx;LogFileName=Caly.Printing.Tests.${{ matrix.target }}.trx"
+          --logger "console;verbosity=normal"
+          --results-directory ${{ github.workspace }}/TestResults
+
+      - name: Spooler diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          if ($IsWindows) {
+            Get-Printer | Format-Table Name, DriverName, PortName -AutoSize
+            Get-PrintJob -PrinterName $env:CALY_TEST_PRINTER
+            Get-WinEvent -LogName 'Microsoft-Windows-PrintService/Admin' -MaxEvents 30 -ErrorAction SilentlyContinue |
+              Format-List TimeCreated, Message
+          } else {
+            lpstat -t
+            lpstat -W all -o
+            sudo tail -n 300 /var/log/cups/error_log
+          }
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: printing-test-results-${{ matrix.target }}
+          path: ${{ github.workspace }}/TestResults
+          if-no-files-found: warn

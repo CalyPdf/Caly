@@ -20,6 +20,9 @@ dotnet test Caly.Tests -v detailed
 # Run a single test class
 dotnet test Caly.Tests --filter "FullyQualifiedName~SortedObservableCollectionTests"
 
+# Run the printing tests (spooler tests skip unless CALY_TEST_PRINTER names a test queue)
+dotnet test Caly.Printing/Caly.Printing.Tests
+
 # Run benchmarks (Release required)
 dotnet run --project Caly.Benchmarks -c Release
 
@@ -41,6 +44,7 @@ dotnet publish Caly.Desktop -r win-x64 -c AOT -f net10.0
 | `Caly.Android` / `Caly.iOS` | Mobile platform heads |
 | `Caly.Pdf` | PDF parsing, text extraction, layout analysis via PdfPig |
 | `Caly.Tests` | xUnit unit tests |
+| `Caly.Printing.Tests` | xUnit tests for `Caly.Printing.*`: unit tests, plus tests that print to a real spooler (Windows spooler, CUPS). The spooler tests run only in the `Printing` GitHub Actions workflow, which provisions the queue named by `CALY_TEST_PRINTER`; locally they skip, on CI a missing queue fails them |
 | `Caly.Benchmarks` | BenchmarkDotNet performance benchmarks |
 
 ### Layered Architecture
