@@ -26,15 +26,37 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
+using Caly.Core.Services;
 using Caly.Core.Utilities;
 using Caly.Pdf.Models;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
+using UglyToad.PdfPig.Artwork;
 using UglyToad.PdfPig.Core;
 
 namespace Caly.Core.Controls;
+
+/// <summary>
+/// What hovering 3D artwork says about viewing it.
+/// </summary>
+internal enum Artwork3DHint : byte
+{
+    /// <summary>A click shows the model.</summary>
+    ClickToView,
+
+    /// <summary>There is no reader for the artwork's format.</summary>
+    FormatNotSupported,
+
+    /// <summary>3D views cannot be drawn in this run of the application.</summary>
+    GpuUnavailable,
+
+    /// <summary>The model was read and cannot be shown; the reason comes with the hint.</summary>
+    Refused
+}
 
 /// <summary>
 /// Control that represents the text layer of a PDF page, handling text selection and interaction.
@@ -53,6 +75,25 @@ public sealed class PageInteractiveLayerControl : Control
     private const string AnnotationFlyoutClass = "calyAnnotationFlyout";
 
     private const string AnnotationFlyoutBackgroundKey = "CalyAnnotationFlyoutBackground";
+
+    /// <summary>
+    /// Size of the "3D" badge drawn on 3D artwork, and its inset from the artwork's top-left corner, in
+    /// screen pixels at 100% display scaling. The badge keeps this size at every page zoom.
+    /// </summary>
+    internal const double Artwork3DBadgeWidth = 30;
+    internal const double Artwork3DBadgeHeight = 18;
+    internal const double Artwork3DBadgeMargin = 4;
+
+    private const double Artwork3DBadgeCornerRadius = 3;
+    private const double Artwork3DBadgeFontSize = 11;
+    private const int Artwork3DMaxViewNames = 10;
+
+    private static readonly ImmutableSolidColorBrush Artwork3DBadgeBrush = new(Color.FromArgb(0xCC, 0x1F, 0x29, 0x37));
+    // Per control, built when a badge is first drawn: it holds on to a typeface, and those do not
+    // outlive the application's font manager.
+    private FormattedText? _artwork3DBadgeText;
+
+    private PdfArtwork3D? _shownArtwork3D;
 
     public static readonly StyledProperty<PdfTextLayer?> PdfTextLayerProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, PdfTextLayer?>(nameof(PdfTextLayer));
@@ -78,13 +119,45 @@ public sealed class PageInteractiveLayerControl : Control
     public static readonly StyledProperty<IReadOnlyList<PdfRectangle[]>?> SearchResultsProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, IReadOnlyList<PdfRectangle[]>?>(nameof(SearchResults));
 
+    /// <summary>
+    /// Defines the <see cref="ActiveArtwork3DIndex"/> property.
+    /// </summary>
+    public static readonly StyledProperty<int> ActiveArtwork3DIndexProperty =
+        AvaloniaProperty.Register<PageInteractiveLayerControl, int>(nameof(ActiveArtwork3DIndex), -1);
+
+    /// <summary>
+    /// Defines the <see cref="Artwork3DRefusals"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IReadOnlyDictionary<int, string>?> Artwork3DRefusalsProperty =
+        AvaloniaProperty.Register<PageInteractiveLayerControl, IReadOnlyDictionary<int, string>?>(nameof(Artwork3DRefusals));
+
     private StreamGeometry[]? _selectedWordsGeometry;
     private StreamGeometry[]? _searchResultsGeometry;
 
     static PageInteractiveLayerControl()
     {
         AffectsRender<PageInteractiveLayerControl>(PdfTextLayerProperty, VisibleAreaProperty,
-            SelectedWordsProperty, SearchResultsProperty);
+            SelectedWordsProperty, SearchResultsProperty, ActiveArtwork3DIndexProperty);
+    }
+
+    /// <summary>
+    /// Position, in the text layer's 3D artworks, of the one being viewed in place; -1 when none is.
+    /// Its view has a toolbar where the badge would be.
+    /// </summary>
+    public int ActiveArtwork3DIndex
+    {
+        get => GetValue(ActiveArtwork3DIndexProperty);
+        set => SetValue(ActiveArtwork3DIndexProperty, value);
+    }
+
+    /// <summary>
+    /// Why 3D artworks of the page that were read cannot be shown, by their position in the text
+    /// layer's 3D artworks; null when none was refused. Hovering one says its reason.
+    /// </summary>
+    public IReadOnlyDictionary<int, string>? Artwork3DRefusals
+    {
+        get => GetValue(Artwork3DRefusalsProperty);
+        set => SetValue(Artwork3DRefusalsProperty, value);
     }
 
     public PageInteractiveLayerControl()
@@ -168,8 +241,166 @@ public sealed class PageInteractiveLayerControl : Control
         }
     }
 
+    /// <summary>
+    /// The rectangle of the "3D" badge for artwork occupying <paramref name="box"/>, in layer coordinates:
+    /// at the artwork's top-left corner, with a constant on-screen size whatever the page zoom.
+    /// </summary>
+    internal static Rect GetArtwork3DBadgeRect(PdfRectangle box, double zoom)
+    {
+        if (!(zoom > 0) || double.IsInfinity(zoom))
+        {
+            zoom = 1;
+        }
+
+        // The layer's y axis grows downwards: the smallest y is the top edge, whatever the corner order.
+        double left = Math.Min(Math.Min(box.TopLeft.X, box.TopRight.X), Math.Min(box.BottomLeft.X, box.BottomRight.X));
+        double top = Math.Min(Math.Min(box.TopLeft.Y, box.TopRight.Y), Math.Min(box.BottomLeft.Y, box.BottomRight.Y));
+
+        return new Rect(
+            left + Artwork3DBadgeMargin / zoom,
+            top + Artwork3DBadgeMargin / zoom,
+            Artwork3DBadgeWidth / zoom,
+            Artwork3DBadgeHeight / zoom);
+    }
+
+    /// <summary>
+    /// Whether a click on artwork of this format will show it, and if not, why.
+    /// </summary>
+    /// <param name="refusal">Why this artwork could not be shown when it was read, if it was.</param>
+    internal static Artwork3DHint GetArtwork3DHint(Artwork3DFormat format, string? refusal = null)
+    {
+        // Whether a given PRC model can be shown is only known once it is read: the click finds out.
+        if (format != Artwork3DFormat.U3D && format != Artwork3DFormat.Prc)
+        {
+            return Artwork3DHint.FormatNotSupported;
+        }
+
+        if (!string.IsNullOrEmpty(refusal))
+        {
+            return Artwork3DHint.Refused;
+        }
+
+        return Artwork3DAvailability.IsUnavailable ? Artwork3DHint.GpuUnavailable : Artwork3DHint.ClickToView;
+    }
+
+    /// <summary>
+    /// Why an artwork of the page could not be shown when it was read: looked up by its position among
+    /// the page's artworks, since the artwork object itself is new whenever the text layer is rebuilt.
+    /// </summary>
+    internal static string? GetArtwork3DRefusal(IReadOnlyList<PdfArtwork3D>? artworks, PdfArtwork3D artwork, IReadOnlyDictionary<int, string>? refusals)
+    {
+        if (artworks is null || refusals is null || refusals.Count == 0)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < artworks.Count; ++i)
+        {
+            if (ReferenceEquals(artworks[i], artwork))
+            {
+                return refusals.TryGetValue(i, out string? refusal) ? refusal : null;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What hovering an artwork of this page says about viewing it.</summary>
+    internal Artwork3DHint GetArtwork3DHint(PdfArtwork3D artwork)
+    {
+        return GetArtwork3DHint(artwork.Format, GetArtwork3DRefusal(PdfTextLayer?.Artworks3D, artwork, Artwork3DRefusals));
+    }
+
+    /// <summary>
+    /// The text shown when hovering 3D artwork: its format, the views its author defined, and what a
+    /// click will do.
+    /// </summary>
+    internal static string GetArtwork3DDescription(string formatDisplayName, IReadOnlyList<string> viewNames, Artwork3DHint hint, string? refusal = null)
+    {
+        var sb = new StringBuilder();
+        sb.Append("3D model (").Append(formatDisplayName).AppendLine(")");
+
+        if (viewNames.Count == 0)
+        {
+            sb.AppendLine("No authored views");
+        }
+        else
+        {
+            sb.Append("Views: ");
+            int shown = Math.Min(viewNames.Count, Artwork3DMaxViewNames);
+            for (int i = 0; i < shown; ++i)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+
+                sb.Append(viewNames[i]);
+            }
+
+            if (viewNames.Count > shown)
+            {
+                sb.Append(" and ").Append(viewNames.Count - shown).Append(" more");
+            }
+
+            sb.AppendLine();
+        }
+
+        switch (hint)
+        {
+            case Artwork3DHint.ClickToView:
+                sb.Append("Click to view in 3D.");
+                break;
+            case Artwork3DHint.GpuUnavailable:
+                sb.Append(Artwork3DAvailability.UnavailableMessage);
+                break;
+            case Artwork3DHint.Refused:
+                sb.Append(refusal);
+                break;
+            default:
+                sb.Append(formatDisplayName).Append(" models are not supported yet.");
+                break;
+        }
+
+        return sb.ToString();
+    }
+
+    internal string GetArtwork3DDescription(PdfArtwork3D artwork)
+    {
+        string? refusal = GetArtwork3DRefusal(PdfTextLayer?.Artworks3D, artwork, Artwork3DRefusals);
+        return GetArtwork3DDescription(artwork.FormatDisplayName, artwork.ViewNames, GetArtwork3DHint(artwork.Format, refusal), refusal);
+    }
+
+    internal void ShowArtwork3D(PdfArtwork3D artwork)
+    {
+        if (FlyoutBase.GetAttachedFlyout(this) is not Flyout attachedFlyout)
+        {
+            return;
+        }
+
+        if (ReferenceEquals(_shownArtwork3D, artwork) && attachedFlyout.IsOpen)
+        {
+            // Pointer moves over the same artwork: nothing to rebuild.
+            return;
+        }
+
+        _shownArtwork3D = artwork;
+
+        attachedFlyout.FlyoutPresenterClasses.Remove(AnnotationFlyoutClass);
+        attachedFlyout.Content = new TextBlock()
+        {
+            MaxWidth = 280,
+            TextWrapping = TextWrapping.Wrap,
+            Text = GetArtwork3DDescription(artwork)
+        };
+
+        attachedFlyout.ShowAt(this);
+    }
+
     internal void HideAnnotation()
     {
+        _shownArtwork3D = null;
+
         if (FlyoutBase.GetAttachedFlyout(this) is not Flyout attachedFlyout)
         {
             return;
@@ -265,6 +496,11 @@ public sealed class PageInteractiveLayerControl : Control
                 _searchResultsGeometry = null;
             }
         }
+        else if (change.Property == Artwork3DRefusalsProperty)
+        {
+            // What the open flyout says of an artwork may no longer be true: the next pointer move writes it again.
+            _shownArtwork3D = null;
+        }
 #if DEBUG
         else if (change.Property == PdfTextLayerProperty)
         {
@@ -359,6 +595,52 @@ public sealed class PageInteractiveLayerControl : Control
                 }
 
                 context.DrawGeometry(SelectionBrush, null, geometry);
+            }
+        }
+
+        if (PdfTextLayer.Artworks3D is { Count: > 0 } artworks)
+        {
+            RenderArtwork3DBadges(context, artworks, VisibleArea.Value);
+        }
+    }
+
+    private void RenderArtwork3DBadges(DrawingContext context, IReadOnlyList<PdfArtwork3D> artworks, Rect visibleArea)
+    {
+        // The page zoom is a layout transform above this control: draw the badge at the inverse scale
+        // so it keeps its size on screen.
+        Matrix transform = GetLayoutTransformMatrix();
+        double zoom = Math.Sqrt(transform.M11 * transform.M11 + transform.M12 * transform.M12);
+        if (!(zoom > 0) || double.IsInfinity(zoom))
+        {
+            zoom = 1;
+        }
+
+        _artwork3DBadgeText ??= new FormattedText("3D", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold), Artwork3DBadgeFontSize, Brushes.White);
+
+        int active = ActiveArtwork3DIndex;
+        for (int i = 0; i < artworks.Count; ++i)
+        {
+            if (i == active)
+            {
+                // Being viewed: its view has a toolbar at this corner.
+                continue;
+            }
+
+            PdfArtwork3D artwork = artworks[i];
+            Rect badge = GetArtwork3DBadgeRect(artwork.BoundingBox, zoom);
+            if (!badge.Intersects(visibleArea))
+            {
+                continue;
+            }
+
+            context.DrawRectangle(Artwork3DBadgeBrush, null, badge, Artwork3DBadgeCornerRadius / zoom, Artwork3DBadgeCornerRadius / zoom);
+
+            using (context.PushTransform(Matrix.CreateScale(1 / zoom, 1 / zoom) * Matrix.CreateTranslation(badge.X, badge.Y)))
+            {
+                context.DrawText(_artwork3DBadgeText, new Point(
+                    (Artwork3DBadgeWidth - _artwork3DBadgeText.Width) / 2,
+                    (Artwork3DBadgeHeight - _artwork3DBadgeText.Height) / 2));
             }
         }
     }
