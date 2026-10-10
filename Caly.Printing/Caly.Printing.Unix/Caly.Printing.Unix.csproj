@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SharpIppNext" Version="4.2.4" />
+		<PackageReference Include="SharpIppNext" Version="5.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
