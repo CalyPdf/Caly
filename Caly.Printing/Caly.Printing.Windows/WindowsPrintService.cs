@@ -77,21 +77,21 @@ public sealed class WindowsPrintService : IPrintService
             const uint level = 4; // PRINTER_INFO_4W — fastest for name enumeration
 
             // First call: get required buffer size.
-            PInvoke.EnumPrinters(flags, null, level, Span<byte>.Empty, out uint needed, out _);
+            PInvoke.EnumPrinters(flags, null, level, null, 0, out uint needed, out _);
             if (needed == 0)
             {
                 return [];
             }
 
             Span<byte> buffer = needed <= 1024 ? stackalloc byte[(int)needed] : new byte[needed];
-            if (!PInvoke.EnumPrinters(flags, null, level, buffer, out _, out uint count))
-            {
-                return [];
-            }
-
             var result = new List<PrinterInfo>();
             fixed (byte* pBuf = buffer)
             {
+                if (!PInvoke.EnumPrinters(flags, null, level, pBuf, needed, out _, out uint count))
+                {
+                    return [];
+                }
+
                 var ptr = (PrinterInfo4W*)pBuf;
                 for (uint i = 0; i < count; i++)
                 {

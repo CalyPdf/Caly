@@ -111,13 +111,14 @@ public sealed class UnixPrintService : IPrintService, IDisposable
         var result = new List<PrinterInfo>(attrs.Length);
         foreach (var p in attrs)
         {
-            var name = p.PrinterName;
+            // PrinterName is StringWithLanguage?; its string conversion yields null for no-value.
+            string? name = p.PrinterName;
             if (string.IsNullOrWhiteSpace(name))
             {
                 continue;
             }
 
-            var uri = p.PrinterUriSupported?
+            var uri = p.PrinterUriSupported?.GetValueOrDefault()?
                           .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u.AbsolutePath)) ??
                       BuildCupsUri(name);
 
@@ -183,14 +184,18 @@ public sealed class UnixPrintService : IPrintService, IDisposable
                 return ConservativeDefaults();
             }
 
+            // Response attributes are IppValue<T>? (SharpIppNext 5): null when the printer omitted
+            // the attribute, IsValue == false when it sent the out-of-band no-value. Both mean
+            // "unknown" here, and IppValue<T>.GetValueOrDefault() collapses no-value to default.
+
             // OrientationRequestedSupported is Orientation[] (enum: Portrait=3, Landscape=4).
-            bool supportsLandscape = attrs.OrientationRequestedSupported is { Length: > 0 } orient
+            bool supportsLandscape = attrs.OrientationRequestedSupported?.GetValueOrDefault() is { Length: > 0 } orient
                 && Array.Exists(orient, o => o == Orientation.Landscape);
 
             // PrintColorModeSupported is PrintColorMode[], a struct "smart enum" wrapping the
             // RFC 8011 keyword strings ("color", "monochrome", ...).
-            // ColorSupported (bool?) is a simpler fallback when the mode list is absent.
-            var modes = attrs.PrintColorModeSupported;
+            // ColorSupported (bool) is a simpler fallback when the mode list is absent.
+            var modes = attrs.PrintColorModeSupported?.GetValueOrDefault();
             bool isColor;
             bool monoDirective;
 
@@ -206,14 +211,14 @@ public sealed class UnixPrintService : IPrintService, IDisposable
             {
                 // Attribute missing — fall back to ColorSupported bool if present,
                 // otherwise assume color + monochrome both supported.
-                isColor = attrs.ColorSupported ?? true;
+                isColor = attrs.ColorSupported?.GetValueOrDefault(true) ?? true;
                 monoDirective = true;
             }
 
             // NumberUpSupported is Range[] — IPP allows either a set of integers or a
             // rangeOfInteger, and SharpIppNext models a plain integer as Lower == Upper.
             var nUp = IppAttributeMapping.MapNumberUpSupported(
-                attrs.NumberUpSupported is { Length: > 0 } ranges
+                attrs.NumberUpSupported?.GetValueOrDefault() is { Length: > 0 } ranges
                     ? Array.ConvertAll(ranges, r => (r.Lower, r.Upper))
                     : null);
 
@@ -361,7 +366,7 @@ public sealed class UnixPrintService : IPrintService, IDisposable
                             PrinterUri = printer.IppUri,
                             RequestingUserName = userName,
                             JobId = jobId.Value,
-                            DocumentFormat = "image/jpeg",
+                            DocumentFormat = DocumentFormat.ImageJpeg,
                             LastDocument = isLast
                         }
                     };
@@ -403,7 +408,7 @@ public sealed class UnixPrintService : IPrintService, IDisposable
                         PrinterUri = printer.IppUri,
                         RequestingUserName = userName,
                         JobId = jobId.Value,
-                        DocumentFormat = "image/jpeg",
+                        DocumentFormat = DocumentFormat.ImageJpeg,
                         LastDocument = true
                     }
                 };
