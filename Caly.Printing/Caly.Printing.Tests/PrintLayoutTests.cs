@@ -2,7 +2,7 @@ using Avalonia;
 using Caly.Core.Services.Interfaces;
 using Caly.Printing.Core;
 
-namespace Caly.Tests;
+namespace Caly.Printing.Tests;
 
 public class PrintLayoutTests
 {

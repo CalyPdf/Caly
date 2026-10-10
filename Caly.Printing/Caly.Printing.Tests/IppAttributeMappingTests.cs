@@ -1,7 +1,7 @@
 using Caly.Core.Services.Interfaces;
 using Caly.Printing.Unix;
 
-namespace Caly.Tests;
+namespace Caly.Printing.Tests;
 
 public class IppAttributeMappingTests
 {

@@ -1,7 +1,7 @@
 using Caly.Printing.Core;
 using SkiaSharp;
 
-namespace Caly.Tests;
+namespace Caly.Printing.Tests;
 
 public class PrintServiceHelperTests
 {
