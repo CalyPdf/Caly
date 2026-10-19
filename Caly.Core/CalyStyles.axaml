@@ -25,4 +25,19 @@
     </Style>
     <!-- End hide app title in main window -->
 
+    <!-- Align the drawn caption buttons with the tab-strip title bar.
+         On Linux (X11/XWayland, Wayland) Avalonia renders client-side window decorations
+         with WindowDrawnDecorations. That template insets the caption-button overlay by the
+         shadow + border thickness (~9 px at the top). But Caly extends its content to the very
+         top of the client area - OffScreenMargin is 0 on X11, so our tab strip starts at y=0 -
+         which leaves the min/max/close buttons ~9 px lower than the tab strip's "+" button:
+         they look split by the title bar. Windows uses native caption buttons and is unaffected.
+         Zero the overlay inset so the buttons sit in the title strip, flush to the top-right. -->
+    <Style Selector="WindowDrawnDecorations:has-shadow /template/ Panel#PART_OverlayWrapper">
+        <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="WindowDrawnDecorations:has-border /template/ StackPanel#PART_OverlayPanel">
+        <Setter Property="Margin" Value="0" />
+    </Style>
+    <!-- End align drawn caption buttons -->
 </Styles>
