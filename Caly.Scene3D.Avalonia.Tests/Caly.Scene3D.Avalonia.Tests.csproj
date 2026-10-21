@@ -26,7 +26,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Caly.Scene3D.Avalonia\Caly.Scene3D.Avalonia.csproj" />
-		<PackageReference Include="Caly.Rendering.Scene3D.U3D" Version="1.0.0" />
+		<ProjectReference Include="..\external\Scene3D\Caly.Rendering.Scene3D.U3D\Caly.Rendering.Scene3D.U3D.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

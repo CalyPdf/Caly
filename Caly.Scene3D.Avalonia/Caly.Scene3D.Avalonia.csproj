@@ -20,7 +20,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Caly.Rendering.Scene3D" Version="1.0.0" />
+		<ProjectReference Include="..\external\Scene3D\Caly.Rendering.Scene3D\Caly.Rendering.Scene3D.csproj" />
 	</ItemGroup>
 
 </Project>

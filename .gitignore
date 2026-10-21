@@ -457,9 +457,8 @@ $RECYCLE.BIN/
 .claude/*
 !.claude/skills/
 
-# Local clones kept beside the submodules for reference (this branch takes Scene3D and the
-# OpenJpeg filter as packages, not as source)
-/external/Scene3D/
+# Local clone kept beside the submodules for reference (this branch takes the OpenJpeg filter
+# as a package, not as source)
 /external/UglyToad.PdfPig.Filters.Jpx.OpenJpeg/
 
 # Caly 
