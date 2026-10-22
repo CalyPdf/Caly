@@ -379,14 +379,16 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
 
             var pageTextLayer = await ExecuteWithLockAsync(lockCt =>
                     {
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(lockCt);
                         try
                         {
-                            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(lockCt);
                             linkedCts.CancelAfter(PageTimeOut);
                             return document.GetPageTextLayerContent(pageNumber, linkedCts.Token);
                         }
-                        catch (OperationCanceledException)
+                        catch (Exception e) when (e is OperationCanceledException || linkedCts.IsCancellationRequested)
                         {
+                            // Also any other exception once cancelled: PdfPig wraps the cancellation of a
+                            // page of an encrypted document in a PdfDocumentEncryptedException.
                             if (!lockCt.IsCancellationRequested)
                             {
                                 App.Messenger.Send(new ShowNotificationMessage(NotificationType.Error,

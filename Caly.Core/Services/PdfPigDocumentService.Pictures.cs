@@ -50,14 +50,28 @@ internal sealed partial class PdfPigDocumentService
 
             return await ExecuteWithLockAsync(lockCt =>
                 {
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(lockCt);
                     try
                     {
-                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(lockCt);
                         linkedCts.CancelAfter(PageTimeOut);
-                        return document?.GetPageAsSKPicture(pageNumber, linkedCts.Token);
+                        var picture = document?.GetPageAsSKPicture(pageNumber, linkedCts.Token);
+
+                        // The renderer catches exceptions per annotation, the cancellation among them, so
+                        // a render cancelled while drawing annotations returns a picture without them
+                        // (e.g. the poster of 3D artwork). Such a picture must not be cached.
+                        if (picture is not null && linkedCts.IsCancellationRequested)
+                        {
+                            picture.Dispose();
+                            linkedCts.Token.ThrowIfCancellationRequested();
+                        }
+
+                        return picture;
                     }
-                    catch (OperationCanceledException)
+                    catch (Exception e) when (e is OperationCanceledException || linkedCts.IsCancellationRequested)
                     {
+                        // Also any other exception once cancelled: PdfPig wraps everything a page of an
+                        // encrypted document throws, the cancellation included, in a
+                        // PdfDocumentEncryptedException. It must not become a cached error picture.
                         if (!lockCt.IsCancellationRequested)
                         {
                             App.Messenger.Send(new ShowNotificationMessage(NotificationType.Error,
