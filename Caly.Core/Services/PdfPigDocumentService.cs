@@ -1,4 +1,4 @@
-﻿// Copyright (c) BobLd
+// Copyright (c) BobLd
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ using Caly.Core.Services.Interfaces;
 using Caly.Core.Utilities;
 using Caly.Core.ViewModels;
 using Caly.Pdf;
+using Caly.PdfPig.Fonts;
 using Caly.Pdf.Models;
 using Caly.Pdf.PageFactories;
 using CommunityToolkit.Mvvm.Messaging;
@@ -156,6 +157,10 @@ internal sealed partial class PdfPigDocumentService : IPdfDocumentService
 
                 return await Task.Run(async () =>
                 {
+                    // Bundled outlines for non-embedded Standard 14 fonts, so they render (and their
+                    // glyph boxes come out) the same on every OS. Process-wide; only the first call registers.
+                    StandardFontSubstitutes.Register();
+
                     var pdfParsingOptions = new ParsingOptions()
                     {
                         SkipMissingFonts = true,
