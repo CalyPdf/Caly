@@ -2,6 +2,11 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
+		<!--
+		  Microsoft.AI.Foundry.Local.Runtime picks the runtime identifier in a .targets file, which is
+		  too late for restore (NETSDK1047). Say the same thing up front.
+		-->
+		<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
@@ -25,6 +30,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Caly.Core\Caly.Core.csproj" />
+		<ProjectReference Include="..\Caly.Ai.FoundryLocal\Caly.Ai.FoundryLocal.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

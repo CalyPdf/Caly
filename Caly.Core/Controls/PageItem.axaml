@@ -107,6 +107,8 @@
                                                                       PageNumber="{Binding PageNumber}"
 																	  SelectedWords="{Binding SelectedWords}"
 																	  SearchResults="{Binding SearchResults}"
+																	  AiBoxes="{Binding AiBoxes}"
+																	  AiBoxCommand="{Binding AiBoxCommand}"
                                                                       HorizontalAlignment="Stretch"
                                                                       VerticalAlignment="Stretch">
 

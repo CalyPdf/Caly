@@ -87,6 +87,16 @@ public sealed partial class PageViewModel : ViewModelBase, IDisposable
     private IReadOnlyList<Range>? _searchResultsRanges; // Needed as the text layer might not be available when we set search results
     [ObservableProperty] private IReadOnlyList<PdfRectangle[]>? _searchResults;
 
+    /// <summary>
+    /// Boxes the AI tab found on this page (tables, charts), or <c>null</c>.
+    /// </summary>
+    [ObservableProperty] private IReadOnlyList<Caly.Core.Models.Ai.AiPageBox>? _aiBoxes;
+
+    /// <summary>
+    /// Run with the box's item index when one of <see cref="AiBoxes"/> is clicked.
+    /// </summary>
+    [ObservableProperty] private System.Windows.Input.ICommand? _aiBoxCommand;
+
     public TextSelection TextSelection { get; }
 
     public double PpiScale { get; }

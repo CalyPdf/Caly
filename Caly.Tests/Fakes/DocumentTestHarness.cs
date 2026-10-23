@@ -117,9 +117,9 @@ internal static class DocumentTestHarness
     /// reading it.
     /// </summary>
     public static DocumentViewModel NewLoadedDocument(RenderingPdfDocumentService pdfService,
-        PdfPageService pageService, int pageCount = 2)
+        PdfPageService pageService, int pageCount = 2, IDocumentAiService? ai = null)
     {
-        var document = new DocumentViewModel(pdfService, pageService, new NoopTextSearchService());
+        var document = new DocumentViewModel(pdfService, pageService, new NoopTextSearchService(), ai);
 
         pdfService.Publish(pageCount);
         pageService.Initialise();

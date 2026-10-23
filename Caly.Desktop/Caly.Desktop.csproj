@@ -146,4 +146,18 @@
 		<ProjectReference Include="..\Caly.Printing\Caly.Printing.Windows\Caly.Printing.Windows.csproj" />
 		<ProjectReference Include="..\Caly.Printing\Caly.Printing.Unix\Caly.Printing.Unix.csproj" />
 	</ItemGroup>
+
+	<!--
+	  Document AI (Foundry Local). Left out of the Native AOT build (Portable) until the package is
+	  known to work with it; the AI tab is simply absent there.
+	  Microsoft.AI.Foundry.Local.Runtime chooses the RuntimeIdentifier in a .targets file, too late
+	  for restore (NETSDK1047), so it is said up front.
+	-->
+	<PropertyGroup Condition="'$(Configuration)' != 'Portable'">
+		<DefineConstants>$(DefineConstants);CALY_AI</DefineConstants>
+		<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(Configuration)' != 'Portable'">
+		<ProjectReference Include="..\Caly.Ai.FoundryLocal\Caly.Ai.FoundryLocal.csproj" />
+	</ItemGroup>
 </Project>

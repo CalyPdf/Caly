@@ -433,6 +433,22 @@
                                 </ListBox>
                             </TabItem>
 
+                            <!-- AI tab, only when the platform provides a model -->
+                            <TabItem MinHeight="40"
+                                     Focusable="False"
+                                     IsVisible="{Binding Ai, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                     IsEnabled="{Binding Ai, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <TabItem.Header>
+                                    <PathIcon Width="17"
+                                              Height="17"
+                                              Data="{StaticResource sparkle_regular}">
+                                        <ToolTip.Tip>AI</ToolTip.Tip>
+                                    </PathIcon>
+                                </TabItem.Header>
+
+                                <controls:AiPanelControl DataContext="{Binding Ai}"/>
+                            </TabItem>
+
 						</TabControl>
 					</Border>
 

@@ -32,6 +32,8 @@ public partial class DocumentViewModel : IAsyncDisposable
 
         await _mainCts.CancelAsync();
 
+        Ai?.Dispose();
+
         Parallel.ForEach(Pages.Chunk(100),
             new ParallelOptions() { MaxDegreeOfParallelism = 4 },
             (pages, _) =>

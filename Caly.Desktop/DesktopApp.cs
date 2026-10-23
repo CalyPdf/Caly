@@ -24,6 +24,10 @@ using Caly.Core.Services.Interfaces;
 using Caly.Printing.Unix;
 using Caly.Printing.Windows;
 using Microsoft.Extensions.DependencyInjection;
+#if CALY_AI
+using Caly.Ai.FoundryLocal;
+using Caly.Core.Services;
+#endif
 
 namespace Caly.Desktop;
 
@@ -35,6 +39,13 @@ internal sealed class DesktopApp : App
 {
     protected override void OverrideRegisteredServices(IServiceCollection services)
     {
+#if CALY_AI
+        // Registered whatever the settings say: the tab checks CalySettings.Ai.Enabled once settings
+        // are loaded. Nothing is started until the user runs an AI action.
+        services.AddSingleton<IDocumentAiService>(sp =>
+            new FoundryLocalDocumentAiService(sp.GetRequiredService<ISettingsService>().GetSettings().Ai.ModelId));
+#endif
+
         if (OperatingSystem.IsWindows())
         {
             if (OperatingSystem.IsOSPlatformVersionAtLeast("windows", 5, 0))

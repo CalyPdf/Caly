@@ -212,7 +212,7 @@ public sealed partial class DocumentViewModel : ViewModelBase
 #endif
 
     public DocumentViewModel(IPdfDocumentService pdfService, PdfPageService pdfPageService,
-        ITextSearchService textSearchService)
+        ITextSearchService textSearchService, IDocumentAiService? documentAiService = null)
     {
         ArgumentNullException.ThrowIfNull(pdfService, nameof(pdfService));
 
@@ -224,6 +224,8 @@ public sealed partial class DocumentViewModel : ViewModelBase
         _textSearchService = textSearchService;
 
         _pdfService.PasswordPrompt = RequestPasswordAsync;
+
+        Ai = CreateAiPanel(documentAiService);
 
         _buildSearchIndex = new Lazy<Task>(BuildSearchIndex);
 

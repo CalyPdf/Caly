@@ -75,6 +75,11 @@ public sealed class CalySettings
 
     public CalySettingsDebug? Debug { get; set; }
 
+    /// <summary>
+    /// Document AI (Foundry Local). An absent section means the defaults.
+    /// </summary>
+    public CalySettingsAi Ai { get; set; } = new();
+
 
     public sealed class CalySettingsDebug
     {
@@ -89,6 +94,17 @@ public sealed class CalySettings
         public bool LogRenderTimings { get; set; }
     }
     
+    public sealed class CalySettingsAi
+    {
+        public const string DefaultModelId = "qwen3.5-0.8b-generic-gpu:4";
+
+        public string ModelId { get; set; } = DefaultModelId;
+
+        // Never ignored: the file omits default values, and an omitted false would read back as true.
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public bool Enabled { get; set; } = true;
+    }
+
     public enum CalySettingsProperty
     {
         PaneSize = 0

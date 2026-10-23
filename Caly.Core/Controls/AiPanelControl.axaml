@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Caly.Core.ViewModels"
+             xmlns:ai="clr-namespace:Caly.Core.Models.Ai"
+             x:Class="Caly.Core.Controls.AiPanelControl"
+             x:DataType="vm:AiPanelViewModel">
+
+	<Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,4,0,0" RowSpacing="6">
+
+		<StackPanel Grid.Row="0" Spacing="6">
+			<ComboBox HorizontalAlignment="Stretch"
+                      SelectedIndex="{Binding ActionIndex}">
+				<ComboBoxItem>Summarise / analyse</ComboBoxItem>
+				<ComboBoxItem>Extract tables (CSV)</ComboBoxItem>
+				<ComboBoxItem>Extract chart data (CSV)</ComboBoxItem>
+			</ComboBox>
+
+			<ComboBox HorizontalAlignment="Stretch"
+                      SelectedIndex="{Binding ScopeIndex}">
+				<ComboBoxItem>Current page</ComboBoxItem>
+				<ComboBoxItem>Page range</ComboBoxItem>
+				<ComboBoxItem>Whole document</ComboBoxItem>
+			</ComboBox>
+
+			<StackPanel Orientation="Horizontal" Spacing="6"
+                        IsVisible="{Binding IsRangeScope}">
+				<TextBlock VerticalAlignment="Center">Pages</TextBlock>
+				<TextBox Width="60" Text="{Binding RangeFrom}"/>
+				<TextBlock VerticalAlignment="Center">to</TextBlock>
+				<TextBox Width="60" Text="{Binding RangeTo}"/>
+			</StackPanel>
+
+			<Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+				<Button Grid.Column="0"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Command="{Binding RunCommand}">Run</Button>
+				<Button Grid.Column="1"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Command="{Binding CancelCommand}">Cancel</Button>
+			</Grid>
+		</StackPanel>
+
+		<StackPanel Grid.Row="1" Spacing="4">
+			<ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"/>
+			<TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Opacity="0.7"/>
+		</StackPanel>
+
+		<TextBox Grid.Row="2"
+                 MinHeight="80"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Text="{Binding OutputText, Mode=OneWay}"
+                 PlaceholderText="Results appear here."/>
+
+		<ListBox Grid.Row="3"
+                 MaxHeight="120"
+                 IsVisible="{Binding Items.Count}"
+                 ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding SelectedItem}">
+			<ListBox.ItemTemplate>
+				<DataTemplate x:DataType="ai:AiResultItem">
+					<StackPanel Orientation="Horizontal" Spacing="6">
+						<TextBlock Text="{Binding Kind}"/>
+						<TextBlock Text="- page"/>
+						<TextBlock Text="{Binding PageNumber}"/>
+					</StackPanel>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+
+		<Grid Grid.Row="4" ColumnDefinitions="*,*,*" ColumnSpacing="6">
+			<Button Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Command="{Binding CopyCommand}">Copy</Button>
+			<Button Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Command="{Binding SaveCommand}">Save</Button>
+			<Button Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Command="{Binding ClearCommand}">Clear</Button>
+		</Grid>
+	</Grid>
+</UserControl>

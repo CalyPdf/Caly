@@ -26,7 +26,9 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
+using Caly.Core.Models.Ai;
 using Caly.Core.Utilities;
+using System.Windows.Input;
 using Caly.Pdf.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -78,13 +80,30 @@ public sealed class PageInteractiveLayerControl : Control
     public static readonly StyledProperty<IReadOnlyList<PdfRectangle[]>?> SearchResultsProperty =
         AvaloniaProperty.Register<PageInteractiveLayerControl, IReadOnlyList<PdfRectangle[]>?>(nameof(SearchResults));
 
+    /// <summary>
+    /// Defines the <see cref="AiBoxes"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IReadOnlyList<AiPageBox>?> AiBoxesProperty =
+        AvaloniaProperty.Register<PageInteractiveLayerControl, IReadOnlyList<AiPageBox>?>(nameof(AiBoxes));
+
+    /// <summary>
+    /// Defines the <see cref="AiBoxCommand"/> property.
+    /// </summary>
+    public static readonly StyledProperty<ICommand?> AiBoxCommandProperty =
+        AvaloniaProperty.Register<PageInteractiveLayerControl, ICommand?>(nameof(AiBoxCommand));
+
+    private static readonly Color AiColor = Color.FromRgb(0x1E, 0x90, 0xFF);
+    private static readonly ImmutableSolidColorBrush AiFillBrush = new(AiColor, 0.12);
+    private static readonly ImmutableSolidColorBrush AiSelectedFillBrush = new(AiColor, 0.30);
+    private static readonly ImmutableSolidColorBrush AiStrokeBrush = new(AiColor);
+
     private StreamGeometry[]? _selectedWordsGeometry;
     private StreamGeometry[]? _searchResultsGeometry;
 
     static PageInteractiveLayerControl()
     {
         AffectsRender<PageInteractiveLayerControl>(PdfTextLayerProperty, VisibleAreaProperty,
-            SelectedWordsProperty, SearchResultsProperty);
+            SelectedWordsProperty, SearchResultsProperty, AiBoxesProperty);
     }
 
     public PageInteractiveLayerControl()
@@ -108,6 +127,48 @@ public sealed class PageInteractiveLayerControl : Control
     {
         get => GetValue(SearchResultsProperty);
         set => SetValue(SearchResultsProperty, value);
+    }
+
+    /// <summary>
+    /// Boxes found by the AI tab, in 0..1 of this page.
+    /// </summary>
+    public IReadOnlyList<AiPageBox>? AiBoxes
+    {
+        get => GetValue(AiBoxesProperty);
+        set => SetValue(AiBoxesProperty, value);
+    }
+
+    /// <summary>
+    /// Run with the item index of the box that was clicked.
+    /// </summary>
+    public ICommand? AiBoxCommand
+    {
+        get => GetValue(AiBoxCommandProperty);
+        set => SetValue(AiBoxCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Runs <see cref="AiBoxCommand"/> for the topmost AI box under <paramref name="point"/>.
+    /// </summary>
+    /// <returns><c>true</c> if a box took the click.</returns>
+    internal bool TryActivateAiBox(Point point)
+    {
+        if (AiBoxes is not { Count: > 0 } boxes || AiBoxCommand is not { } command)
+        {
+            return false;
+        }
+
+        var size = Bounds.Size;
+        for (int i = boxes.Count - 1; i >= 0; i--)
+        {
+            if (boxes[i].Box.ToRect(size).Contains(point) && command.CanExecute(boxes[i].ItemIndex))
+            {
+                command.Execute(boxes[i].ItemIndex);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public PdfTextLayer? PdfTextLayer
@@ -310,6 +371,26 @@ public sealed class PageInteractiveLayerControl : Control
 #endif
     }
 
+    private void RenderAiBoxes(DrawingContext context)
+    {
+        if (AiBoxes is not { Count: > 0 } boxes)
+        {
+            return;
+        }
+
+        // Keep the outline the same width on screen whatever the zoom.
+        var matrix = GetLayoutTransformMatrix();
+        double scale = Math.Sqrt(matrix.M11 * matrix.M11 + matrix.M12 * matrix.M12);
+        double thickness = 2.0 / (scale > 0 ? scale : 1.0);
+
+        foreach (var box in boxes)
+        {
+            var rect = box.Box.ToRect(Bounds.Size);
+            var pen = new ImmutablePen(AiStrokeBrush, box.IsSelected ? thickness * 1.5 : thickness);
+            context.DrawRectangle(box.IsSelected ? AiSelectedFillBrush : AiFillBrush, pen, rect);
+        }
+    }
+
     public override void Render(DrawingContext context)
     {
         if (Bounds.Width <= 0 || Bounds.Height <= 0)
@@ -324,6 +405,8 @@ public sealed class PageInteractiveLayerControl : Control
 
         // We need to fill to get Pointer events
         context.FillRectangle(Brushes.Transparent, Bounds);
+
+        RenderAiBoxes(context);
 
         if (PdfTextLayer?.TextBlocks is null)
         {

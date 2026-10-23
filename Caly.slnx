@@ -25,6 +25,10 @@
     <BuildType Solution="Portable|*" Project="Release" />
     <Deploy />
   </Project>
+  <Project Path="Caly.Ai.FoundryLocal/Caly.Ai.FoundryLocal.csproj">
+    <BuildType Solution="Portable|*" Project="Release" />
+    <Build Solution="Portable|*" Project="false" />
+  </Project>
   <Project Path="Caly.Benchmarks/Caly.Benchmarks.csproj">
     <BuildType Solution="Portable|*" Project="Release" />
   </Project>

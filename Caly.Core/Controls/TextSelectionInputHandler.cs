@@ -183,7 +183,8 @@ internal sealed class TextSelectionInputHandler
             // Annotation
             PdfAnnotation? annotation = control.PdfTextLayer.FindAnnotationOver(point.X, point.Y);
 
-            if (!HandleAnnotationAction(_owner, annotation))
+            // A box found by the AI tab takes the click over what is under it.
+            if (!control.TryActivateAiBox(point) && !HandleAnnotationAction(_owner, annotation))
             {
                 // Annotation not found or action not handled, we check for words.
                 // Words
