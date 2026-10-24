@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# A text-only PDF (no NUL bytes) would get CRLF line endings on checkout, breaking its xref offsets.
+Caly.Tests/Documents/checkbox-widget.pdf binary
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

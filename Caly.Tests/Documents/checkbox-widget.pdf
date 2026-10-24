@@ -1,0 +1,102 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm 10 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> /Annots [6 0 R 9 0 R] >>
+endobj
+4 0 obj
+<<  /Length 140 >>
+stream
+BT /F1 14 Tf 72 712 Td (Checked checkbox \(ZapfDingbats a20, not embedded\):) Tj ET
+BT /F1 14 Tf 72 652 Td (Text field with a value:) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (Check1) /V /Yes /AS /Yes /F 4 /Rect [430 708 443.4934 719.6907] /DA (/ZaDb 0 Tf 0 g) /MK << /CA (4) >> /AP << /N << /Yes 7 0 R /Off 8 0 R >> >> /P 3 0 R >>
+endobj
+7 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 13.4933 11.6906] /Resources << /Font << /ZaDb 11 0 R >> >> /Length 148 >>
+stream
+q
+1 g
+0 0 13.4934 11.6907 re
+f
+0.5 0.5 12.4934 10.6907 re
+s
+Q
+q
+1 1 11.4934 9.6907 re
+W
+n
+BT
+/ZaDb 7.9666 Tf
+3.3768 3.1487 Td
+7.6718 TL
+(4) Tj
+ET
+Q
+endstream
+endobj
+8 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 13.4933 11.6906] /Length 62 >>
+stream
+q
+1 g
+0 0 13.4934 11.6907 re
+f
+0.5 0.5 12.4934 10.6907 re
+s
+Q
+endstream
+endobj
+9 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Tx /T (Name1) /V (Jane Doe) /F 4 /Rect [250 645 450 665] /DA (/Helv 0 Tf 0 g) /AP << /N 12 0 R >> /P 3 0 R >>
+endobj
+10 0 obj
+<< /Fields [6 0 R 9 0 R] /DA (/Helv 0 Tf 0 g) /DR << /Font << /Helv 5 0 R /ZaDb 11 0 R >> >> >>
+endobj
+11 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /ZapfDingbats >>
+endobj
+12 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 200 20] /Resources << /Font << /Helv 5 0 R >> >> /Length 59 >>
+stream
+/Tx BMC
+q
+BT
+0 g
+/Helv 12 Tf
+2 5 Td
+(Jane Doe) Tj
+ET
+Q
+EMC
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000075 00000 n 
+0000000132 00000 n 
+0000000280 00000 n 
+0000000471 00000 n 
+0000000541 00000 n 
+0000000758 00000 n 
+0000001056 00000 n 
+0000001225 00000 n 
+0000001388 00000 n 
+0000001500 00000 n 
+0000001574 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+1773
+%%EOF
